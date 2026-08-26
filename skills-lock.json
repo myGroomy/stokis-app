@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "design-md-validator": {
+      "source": "fabricioctelles/skills",
+      "sourceType": "github",
+      "skillPath": "skills/design-md-validator/SKILL.md",
+      "computedHash": "7b74ab42a1a4f08f854c5f9699c948d1e1dbcf6980062b690f84e9c9347b8747"
+    }
+  }
+}

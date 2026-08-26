@@ -1,0 +1,214 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary: #1868db;
+  --color-primary-hover: #0055cc;
+  --color-primary-active: #09326c;
+  --color-surface: #ffffff;
+  --color-background: #f7f8f9;
+  --color-border: #dcdfe4;
+  --color-text-primary: #172b4d;
+  --color-text-secondary: #44546f;
+  --color-text-inverse: #ffffff;
+  --color-success: #216e4e;
+  --color-success-subtle: #e3fcef;
+  --color-warning: #7f5f01;
+  --color-warning-subtle: #fffae6;
+  --color-danger: #ca3521;
+  --color-danger-subtle: #ffebe6;
+  --color-discovery: #5243aa;
+  --color-discovery-subtle: #eae6ff;
+  --color-info: #165561;
+  --color-info-subtle: #e6fcff;
+  --spacing-space-100: 8px;
+  --spacing-space-200: 16px;
+  --spacing-space-300: 24px;
+  --spacing-space-400: 32px;
+  --rounded-sm: 3px;
+  --rounded-md: 4px;
+  --rounded-lg: 8px;
+  --rounded-xl: 12px;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color-scheme: light;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #f7f8f9;
+    color: #172b4d;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Ubuntu, "Helvetica Neue", sans-serif;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #172b4d;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+
+  p,
+  span,
+  label {
+    text-wrap: pretty;
+  }
+}
+
+/* Atlassian Card styling */
+.surface-card {
+  background-color: #ffffff;
+  border: 1px solid #dcdfe4;
+  border-radius: 8px;
+  box-shadow: 0 1px 1px rgba(9, 30, 66, 0.25), 0 0 1px 1px rgba(9, 30, 66, 0.13);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.surface-card:hover {
+  border-color: #091e4224;
+}
+
+.surface-card-interactive {
+  background-color: #ffffff;
+  border: 1px solid #dcdfe4;
+  border-radius: 8px;
+  box-shadow: 0 1px 1px rgba(9, 30, 66, 0.25), 0 0 1px 1px rgba(9, 30, 66, 0.13);
+  transition: all 0.2s ease;
+}
+
+.surface-card-interactive:hover {
+  background-color: #f7f8f9;
+  border-color: #1868db;
+  box-shadow: 0 4px 8px -2px rgba(9, 30, 66, 0.25), 0 0 1px rgba(9, 30, 66, 0.31);
+}
+
+/* Atlassian Buttons */
+.btn-primary {
+  background-color: #1868db;
+  color: #ffffff;
+  font-weight: 500;
+  border-radius: 3px;
+  transition: background-color 0.15s ease;
+}
+
+.btn-primary:hover {
+  background-color: #0055cc;
+}
+
+.btn-primary:active {
+  background-color: #09326c;
+}
+
+.btn-default {
+  background-color: #f1f2f4;
+  color: #172b4d;
+  font-weight: 500;
+  border-radius: 3px;
+  border: 1px solid #dcdfe4;
+  transition: background-color 0.15s ease;
+}
+
+.btn-default:hover {
+  background-color: #e9eaec;
+}
+
+/* Atlassian Form Controls */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+  background-color: #ffffff !important;
+  border: 1px solid #dcdfe4 !important;
+  color: #172b4d !important;
+  border-radius: 4px !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+select:focus,
+textarea:focus {
+  border-color: #1868db !important;
+  box-shadow: 0 0 0 2px rgba(24, 104, 219, 0.25) !important;
+  outline: none !important;
+  background-color: #ffffff !important;
+}
+
+/* Atlassian Badges & Lozenges */
+.lozenge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.lozenge-default {
+  background-color: #f1f2f4;
+  color: #44546f;
+  border: 1px solid #dcdfe4;
+}
+
+.lozenge-success {
+  background-color: #e3fcef;
+  color: #216e4e;
+  border: 1px solid #baf3db;
+}
+
+.lozenge-warning {
+  background-color: #fffae6;
+  color: #7f5f01;
+  border: 1px solid #ffe380;
+}
+
+.lozenge-danger {
+  background-color: #ffebe6;
+  color: #ca3521;
+  border: 1px solid #ffbdad;
+}
+
+.lozenge-discovery {
+  background-color: #eae6ff;
+  color: #5243aa;
+  border: 1px solid #c0b6f2;
+}
+
+.lozenge-info {
+  background-color: #e6fcff;
+  color: #165561;
+  border: 1px solid #b3f5ff;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f7f8f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #dcdfe4;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a6c5e2;
+}
+

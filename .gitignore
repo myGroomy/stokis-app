@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.agents/
+skills/
+.opencode/
+opencode.json*
+*.md:Zone.Identifier*
+*.xlsx:Zone.Identifier*
+*.py:Zone.Identifier*
+*.sh:Zone.Identifier*

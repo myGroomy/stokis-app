@@ -196,7 +196,7 @@ export default function CabangAdminPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm mobile-card-table">
               <thead className="bg-[#F7F8F9] text-[#44546F] font-semibold border-b border-[#DCDFE4]">
                 <tr>
                   <th className="px-5 py-3">ID</th>
@@ -208,19 +208,19 @@ export default function CabangAdminPage() {
                   <th className="px-5 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#DCDFE4] text-[#172B4D]">
+              <tbody className="divide-y sm:divide-y-0 divide-[#DCDFE4] text-[#172B4D]">
                 {cabangList.map((c) => (
                   <tr key={c.Cabang_ID} className="hover:bg-[#F7F8F9] transition-colors">
-                    <td className="px-5 py-4 font-mono text-[#44546F]">{c.Cabang_ID}</td>
-                    <td className="px-5 py-4 font-semibold">{c.Nama_Cabang}</td>
-                    <td className="px-5 py-4 text-[#44546F]">
+                    <td className="px-5 py-4 font-mono text-[#44546F]" data-label="ID">{c.Cabang_ID}</td>
+                    <td className="px-5 py-4 font-semibold" data-label="Nama Cabang">{c.Nama_Cabang}</td>
+                    <td className="px-5 py-4 text-[#44546F]" data-label="PIC">
                       <div className="font-medium text-[#172B4D]">PIC: {c.PIC_Nama || 'Belum diatur'}</div>
                       <div className="mt-0.5">{c.Nomor_WA_Cabang || 'Belum diatur'}</div>
                     </td>
-                    <td className="px-5 py-4 text-[#44546F] max-w-xs truncate">
+                    <td className="px-5 py-4 text-[#44546F] max-w-xs truncate" data-label="Alamat">
                       {c.Alamat || 'Belum diatur'}
                     </td>
-                    <td className="px-5 py-4 text-center space-x-2">
+                    <td className="px-5 py-4 text-center space-x-2" data-label="Database" data-label-hide-mobile>
                       {c.Spreadsheet_ID && (
                         <a
                           href={`https://docs.google.com/spreadsheets/d/${c.Spreadsheet_ID}`}
@@ -248,14 +248,14 @@ export default function CabangAdminPage() {
                         </a>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-center">
+                    <td className="px-5 py-4 text-center" data-label="Status">
                       {c.Aktif ? (
                         <span className="lozenge lozenge-success">Aktif</span>
                       ) : (
                         <span className="lozenge lozenge-default">Nonaktif</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-right space-x-2">
+                    <td className="px-5 py-4 text-right space-x-2" data-label="Aksi">
                       <button
                         onClick={() => handleOpenEdit(c)}
                         className="inline-flex p-1.5 text-[#44546F] hover:text-[#1868DB] hover:bg-[#F1F2F4] rounded transition-colors"

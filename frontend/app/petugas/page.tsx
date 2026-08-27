@@ -5,64 +5,76 @@ import { useCabang } from '@/lib/CabangContext';
 import { 
   Users, 
   UserPlus, 
-  Phone, 
   Edit2, 
   X, 
   Loader2, 
-  ShieldAlert
+  ShieldAlert,
+  Shield,
+  Key,
 } from 'lucide-react';
 
-interface Petugas {
-  Petugas_ID: string;
+interface User {
+  User_ID: string;
+  Username: string;
   Nama: string;
-  Nomor_WA?: string;
+  Role: string;
+  Cabang_ID: string;
   Aktif: boolean;
 }
 
 export default function PetugasPage() {
   const { selectedCabang } = useCabang();
 
-  const [petugasList, setPetugasList] = useState<Petugas[]>([]);
+  const [usersList, setUsersList] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Modal State
   const [showModal, setShowModal] = useState<boolean>(false);
-  const [editingPetugas, setEditingPetugas] = useState<Petugas | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [formUsername, setFormUsername] = useState<string>('');
+  const [formPin, setFormPin] = useState<string>('');
   const [formNama, setFormNama] = useState<string>('');
-  const [formNomorWa, setFormNomorWa] = useState<string>('');
+  const [formRole, setFormRole] = useState<string>('petugas');
   const [saving, setSaving] = useState<boolean>(false);
 
-  const fetchPetugas = async () => {
+  const fetchUsers = async () => {
     if (!selectedCabang) return;
     try {
       setLoading(true);
-      const res = await fetch(`/api/petugas?cabang=${selectedCabang.Cabang_ID}`);
+      const res = await fetch(`/api/users`);
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
-        setPetugasList(json.data);
+        const filtered = json.data.filter((u: any) =>
+          String(u.Cabang_ID || '').includes(selectedCabang.Cabang_ID)
+        );
+        setUsersList(filtered);
       }
     } catch (e) {
-      console.error('Error fetching petugas:', e);
+      console.error('Error fetching users:', e);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPetugas();
+    fetchUsers();
   }, [selectedCabang]);
 
   const handleOpenAdd = () => {
-    setEditingPetugas(null);
+    setEditingUser(null);
+    setFormUsername('');
+    setFormPin('');
     setFormNama('');
-    setFormNomorWa('');
+    setFormRole('petugas');
     setShowModal(true);
   };
 
-  const handleOpenEdit = (p: Petugas) => {
-    setEditingPetugas(p);
-    setFormNama(p.Nama);
-    setFormNomorWa(p.Nomor_WA || '');
+  const handleOpenEdit = (u: User) => {
+    setEditingUser(u);
+    setFormUsername(u.Username);
+    setFormPin('');
+    setFormNama(u.Nama);
+    setFormRole(u.Role);
     setShowModal(true);
   };
 
@@ -72,29 +84,33 @@ export default function PetugasPage() {
 
     try {
       setSaving(true);
-      if (editingPetugas) {
-        await fetch(`/api/petugas/${editingPetugas.Petugas_ID}`, {
-          method: 'PUT',
+      if (editingUser) {
+        const payload: any = {
+          userId: editingUser.User_ID,
+          nama: formNama,
+          role: formRole,
+        };
+        if (formPin) payload.pin = formPin;
+        await fetch('/api/users', {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            cabangId: selectedCabang.Cabang_ID,
-            Nama: formNama,
-            Nomor_WA: formNomorWa,
-          }),
+          body: JSON.stringify(payload),
         });
       } else {
-        await fetch('/api/petugas', {
+        await fetch('/api/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            username: formUsername,
+            pin: formPin,
+            nama: formNama,
+            role: formRole,
             cabangId: selectedCabang.Cabang_ID,
-            Nama: formNama,
-            Nomor_WA: formNomorWa,
           }),
         });
       }
       setShowModal(false);
-      fetchPetugas();
+      fetchUsers();
     } catch (err: any) {
       alert('Error: ' + err.message);
     } finally {
@@ -102,18 +118,17 @@ export default function PetugasPage() {
     }
   };
 
-  const handleToggleActive = async (p: Petugas) => {
-    if (!selectedCabang) return;
+  const handleToggleActive = async (u: User) => {
     try {
-      await fetch(`/api/petugas/${p.Petugas_ID}/status`, {
-        method: 'PATCH',
+      await fetch('/api/users', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          cabangId: selectedCabang.Cabang_ID,
-          aktif: !p.Aktif,
+          userId: u.User_ID,
+          aktif: !u.Aktif,
         }),
       });
-      fetchPetugas();
+      fetchUsers();
     } catch (err: any) {
       alert('Error: ' + err.message);
     }
@@ -135,10 +150,10 @@ export default function PetugasPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold text-[#172B4D] flex items-center gap-2">
             <Users className="w-6 h-6 text-[#1868DB]" />
-            <span>Administrasi Petugas Stock Opname</span>
+            <span>Manajemen Pengguna</span>
           </h1>
           <p className="text-[#44546F] text-sm mt-1">
-            Daftar karyawan yang berwenang melakukan SO di: <span className="text-[#172B4D] font-semibold">{selectedCabang.Nama_Cabang}</span>
+            Daftar akun pengguna untuk cabang: <span className="text-[#172B4D] font-semibold">{selectedCabang.Nama_Cabang}</span>
           </p>
         </div>
 
@@ -147,71 +162,74 @@ export default function PetugasPage() {
           className="inline-flex items-center gap-2 btn-primary px-4 py-2 text-sm self-start sm:self-auto"
         >
           <UserPlus className="w-4 h-4" />
-          <span>Tambah Petugas Baru</span>
+          <span>Tambah Pengguna</span>
         </button>
       </div>
 
-      {/* Petugas Table */}
+      {/* Users Table */}
       <div className="surface-card overflow-hidden">
         {loading ? (
           <div className="p-16 text-center">
             <Loader2 className="w-8 h-8 text-[#1868DB] animate-spin mx-auto mb-2" />
-            <p className="text-[#44546F] text-sm">Memuat daftar petugas...</p>
+            <p className="text-[#44546F] text-sm">Memuat daftar pengguna...</p>
           </div>
-        ) : petugasList.length === 0 ? (
+        ) : usersList.length === 0 ? (
           <div className="p-16 text-center space-y-2">
             <Users className="w-12 h-12 text-[#44546F] mx-auto" />
-            <h3 className="text-sm font-semibold text-[#172B4D]">Belum Ada Petugas Terdaftar</h3>
-            <p className="text-[#44546F] text-sm">Tambahkan petugas untuk keperluan pencatatan sesi SO.</p>
+            <h3 className="text-sm font-semibold text-[#172B4D]">Belum Ada Pengguna</h3>
+            <p className="text-[#44546F] text-sm">Tambahkan pengguna baru untuk cabang ini.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm mobile-card-table">
               <thead className="bg-[#F7F8F9] text-[#44546F] font-semibold border-b border-[#DCDFE4]">
                 <tr>
-                  <th className="px-5 py-3">ID Petugas</th>
+                  <th className="px-5 py-3">ID</th>
+                  <th className="px-5 py-3">Username</th>
                   <th className="px-5 py-3">Nama Lengkap</th>
-                  <th className="px-5 py-3">Nomor WhatsApp</th>
+                  <th className="px-5 py-3">Role</th>
                   <th className="px-5 py-3 text-center">Status</th>
                   <th className="px-5 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#DCDFE4] text-[#172B4D]">
-                {petugasList.map((p) => (
-                  <tr key={p.Petugas_ID} className="hover:bg-[#F7F8F9] transition-colors">
-                    <td className="px-5 py-4 font-mono text-[#44546F]">{p.Petugas_ID}</td>
-                    <td className="px-5 py-4 font-semibold">{p.Nama}</td>
-                    <td className="px-5 py-4 text-[#44546F]">
-                      {p.Nomor_WA ? (
-                        <div className="flex items-center gap-1.5 font-mono text-[#172B4D]">
-                          <Phone className="w-3.5 h-3.5 text-[#216E4E]" />
-                          <span>{p.Nomor_WA}</span>
-                        </div>
+              <tbody className="divide-y sm:divide-y-0 divide-[#DCDFE4] text-[#172B4D]">
+                {usersList.map((u) => (
+                  <tr key={u.User_ID} className="hover:bg-[#F7F8F9] transition-colors">
+                    <td className="px-5 py-4 font-mono text-[#44546F]" data-label="ID">{u.User_ID}</td>
+                    <td className="px-5 py-4 font-semibold text-[#1868DB]" data-label="Username">{u.Username}</td>
+                    <td className="px-5 py-4" data-label="Nama">{u.Nama}</td>
+                    <td className="px-5 py-4" data-label="Role">
+                      {u.Role === 'admin' ? (
+                        <span className="inline-flex items-center gap-1 lozenge lozenge-new">
+                          <Shield className="w-3 h-3" /> Admin
+                        </span>
                       ) : (
-                        <span className="text-[#44546F]">Tidak ada nomor</span>
+                        <span className="inline-flex items-center gap-1 lozenge lozenge-default">
+                          <Key className="w-3 h-3" /> Petugas
+                        </span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-center">
-                      {p.Aktif ? (
+                    <td className="px-5 py-4 text-center" data-label="Status">
+                      {u.Aktif ? (
                         <span className="lozenge lozenge-success">Aktif</span>
                       ) : (
                         <span className="lozenge lozenge-default">Nonaktif</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-right space-x-2">
+                    <td className="px-5 py-4 text-right space-x-2" data-label="Aksi">
                       <button
-                        onClick={() => handleOpenEdit(p)}
+                        onClick={() => handleOpenEdit(u)}
                         className="inline-flex p-1.5 text-[#44546F] hover:text-[#1868DB] hover:bg-[#F1F2F4] rounded transition-colors"
-                        title="Edit Petugas"
+                        title="Edit Pengguna"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleToggleActive(p)}
+                        onClick={() => handleToggleActive(u)}
                         className="text-xs text-[#CA3521] hover:text-[#AE2A19] font-medium px-2 py-1 hover:bg-[#FFEBE6] rounded transition-colors"
-                        title={p.Aktif ? "Nonaktifkan" : "Aktifkan"}
+                        title={u.Aktif ? "Nonaktifkan" : "Aktifkan"}
                       >
-                        {p.Aktif ? "Nonaktifkan" : "Aktifkan"}
+                        {u.Aktif ? "Nonaktifkan" : "Aktifkan"}
                       </button>
                     </td>
                   </tr>
@@ -230,7 +248,7 @@ export default function PetugasPage() {
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-[#172B4D]" />
                 <h3 className="text-lg font-semibold text-[#172B4D]">
-                  {editingPetugas ? 'Edit Informasi Petugas' : 'Tambah Petugas Baru'}
+                  {editingUser ? 'Edit Pengguna' : 'Tambah Pengguna Baru'}
                 </h3>
               </div>
               <button onClick={() => setShowModal(false)} className="text-[#44546F] hover:text-[#172B4D]">
@@ -239,12 +257,41 @@ export default function PetugasPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {!editingUser && (
+                <div className="space-y-1">
+                  <label className="text-sm font-semibold text-[#44546F]">Username</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Username untuk login"
+                    value={formUsername}
+                    onChange={(e) => setFormUsername(e.target.value)}
+                    className="w-full px-3 py-2 text-sm"
+                  />
+                </div>
+              )}
+
               <div className="space-y-1">
-                <label className="text-sm font-semibold text-[#44546F]">Nama Lengkap Petugas</label>
+                <label className="text-sm font-semibold text-[#44546F]">
+                  {editingUser ? 'PIN Baru (kosongkan jika tidak diubah)' : 'PIN (6 digit)'}
+                </label>
+                <input
+                  type="password"
+                  required={!editingUser}
+                  placeholder="123456"
+                  maxLength={6}
+                  value={formPin}
+                  onChange={(e) => setFormPin(e.target.value.replace(/\D/g, ''))}
+                  className="w-full px-3 py-2 text-sm font-mono"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-[#44546F]">Nama Lengkap</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ketik nama lengkap..."
+                  placeholder="Nama lengkap"
                   value={formNama}
                   onChange={(e) => setFormNama(e.target.value)}
                   className="w-full px-3 py-2 text-sm"
@@ -252,14 +299,15 @@ export default function PetugasPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-semibold text-[#44546F]">Nomor WhatsApp</label>
-                <input
-                  type="text"
-                  placeholder="Contoh: 628123456789"
-                  value={formNomorWa}
-                  onChange={(e) => setFormNomorWa(e.target.value)}
-                  className="w-full px-3 py-2 text-sm font-mono"
-                />
+                <label className="text-sm font-semibold text-[#44546F]">Role</label>
+                <select
+                  value={formRole}
+                  onChange={(e) => setFormRole(e.target.value)}
+                  className="w-full px-3 py-2 text-sm"
+                >
+                  <option value="petugas">Petugas</option>
+                  <option value="admin">Admin</option>
+                </select>
               </div>
 
               <div className="flex gap-2 justify-end pt-4 border-t border-[#DCDFE4]">
@@ -275,7 +323,7 @@ export default function PetugasPage() {
                   disabled={saving}
                   className="btn-primary px-4 py-2"
                 >
-                  {saving ? 'Menyimpan...' : 'Simpan Petugas'}
+                  {saving ? 'Menyimpan...' : editingUser ? 'Simpan Perubahan' : 'Tambah Pengguna'}
                 </button>
               </div>
             </form>

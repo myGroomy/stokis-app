@@ -135,7 +135,7 @@ export default function KonfirmasiLaporanPage() {
             href={laporan.Link_PDF}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-default inline-flex items-center justify-center gap-2 px-5 py-3"
+            className="btn-default inline-flex items-center justify-center gap-2 px-5 py-3 min-h-[44px]"
           >
             <FileText className="w-4 h-4 text-[#1868DB]" />
             <span>Buka File PDF Drive</span>
@@ -146,7 +146,7 @@ export default function KonfirmasiLaporanPage() {
         <button
           onClick={handleShareWhatsApp}
           disabled={updatingWa}
-          className="inline-flex items-center justify-center gap-2 bg-[#22A06B] hover:bg-[#216E4E] text-white px-6 py-3 rounded font-medium text-sm transition-colors disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 bg-[#22A06B] hover:bg-[#216E4E] text-white px-6 py-3 rounded font-medium text-sm transition-colors disabled:opacity-50 min-h-[44px]"
         >
           <Share2 className="w-4 h-4" />
           <span>{waSent ? 'Kirim Ulang ke WhatsApp' : 'Kirim Laporan ke WhatsApp'}</span>

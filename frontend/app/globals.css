@@ -212,3 +212,79 @@ textarea:focus {
   background: #a6c5e2;
 }
 
+/* Mobile card layout for tables */
+@media (max-width: 639px) {
+  .mobile-card-table thead {
+    display: none;
+  }
+
+  .mobile-card-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .mobile-card-table tr {
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border: 1px solid #dcdfe4;
+    border-radius: 8px;
+    padding: 12px;
+    gap: 6px;
+  }
+
+  .mobile-card-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0;
+    border: none;
+    font-size: 13px;
+  }
+
+  .mobile-card-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #44546f;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+
+  .mobile-card-table td:last-child {
+    justify-content: flex-end;
+    padding-top: 6px;
+    border-top: 1px solid #dcdfe4;
+  }
+}
+
+/* Touch-friendly targets */
+@media (max-width: 639px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .btn-primary,
+  .btn-default {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Mobile input sizing */
+@media (max-width: 639px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+

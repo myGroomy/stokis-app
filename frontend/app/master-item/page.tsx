@@ -204,7 +204,7 @@ export default function MasterItemPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm mobile-card-table">
               <thead className="bg-[#F7F8F9] text-[#44546F] font-semibold border-b border-[#DCDFE4]">
                 <tr>
                   <th className="px-5 py-3">ID Item</th>
@@ -216,18 +216,18 @@ export default function MasterItemPage() {
                   <th className="px-5 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#DCDFE4] text-[#172B4D]">
+              <tbody className="divide-y sm:divide-y-0 divide-[#DCDFE4] text-[#172B4D]">
                 {items.map((item) => (
                   <tr key={item.Item_ID} className="hover:bg-[#F7F8F9] transition-colors">
-                    <td className="px-5 py-4 font-mono text-[#44546F]">{item.Item_ID}</td>
-                    <td className="px-5 py-4 font-semibold">{item.Nama_Barang}</td>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4 font-mono text-[#44546F]" data-label="ID">{item.Item_ID}</td>
+                    <td className="px-5 py-4 font-semibold" data-label="Nama">{item.Nama_Barang}</td>
+                    <td className="px-5 py-4" data-label="Area">
                       <span className="bg-[#F1F2F4] text-[#44546F] px-2 py-1 rounded border border-[#DCDFE4] font-medium text-xs">
                         {item.Area}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-[#44546F] font-mono">{item.Satuan}</td>
-                    <td className="px-5 py-4 text-center">
+                    <td className="px-5 py-4 text-[#44546F] font-mono" data-label="Satuan">{item.Satuan}</td>
+                    <td className="px-5 py-4 text-center" data-label="Threshold">
                       {editingThreshold === item.Item_ID ? (
                         <div className="inline-flex items-center gap-1.5">
                           <input
@@ -262,14 +262,14 @@ export default function MasterItemPage() {
                         </div>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-center">
+                    <td className="px-5 py-4 text-center" data-label="Status">
                       {item.Aktif ? (
                         <span className="lozenge lozenge-success">Aktif</span>
                       ) : (
                         <span className="lozenge lozenge-default">Nonaktif</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-5 py-4 text-right" data-label="Aksi">
                       <button
                         onClick={() => handleToggleActive(item.Item_ID, item.Aktif)}
                         title={item.Aktif ? "Nonaktifkan item dari form SO" : "Aktifkan item"}

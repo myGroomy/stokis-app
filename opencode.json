@@ -29,54 +29,63 @@
       "description": "Expert planning specialist for complex features and refactoring.",
       "mode": "subagent",
       "prompt": "{file:.opencode/prompts/agents/planner.txt}",
+      "model": "big-pickle",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "architect": {
       "description": "Software architecture specialist for system design and technical decision-making.",
       "mode": "subagent",
       "prompt": "{file:.opencode/prompts/agents/architect.txt}",
+      "model": "big-pickle",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "code-reviewer": {
       "description": "Expert code review specialist. Reviews code for quality, security, and maintainability.",
       "mode": "subagent",
       "prompt": "{file:.opencode/prompts/agents/code-reviewer.txt}",
+      "model": "big-pickle",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "security-reviewer": {
       "description": "Security vulnerability detection and remediation specialist.",
       "mode": "subagent",
       "prompt": "{file:.opencode/prompts/agents/security-reviewer.txt}",
+      "model": "big-pickle",
       "tools": { "read": true, "bash": true, "write": true, "edit": true }
     },
     "tdd-guide": {
       "description": "Test-Driven Development specialist enforcing write-tests-first methodology.",
       "mode": "subagent",
       "prompt": "{file:.opencode/prompts/agents/tdd-guide.txt}",
+      "model": "big-pickle",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
     "build-error-resolver": {
       "description": "Build error resolution specialist. Fixes build/type errors only with minimal diffs.",
       "mode": "subagent",
       "prompt": "{file:.opencode/prompts/agents/build-error-resolver.txt}",
+      "model": "big-pickle",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
     "refactor-cleaner": {
       "description": "Dead code cleanup and consolidation specialist.",
       "mode": "subagent",
       "prompt": "{file:.opencode/prompts/agents/refactor-cleaner.txt}",
+      "model": "big-pickle",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
     "doc-updater": {
       "description": "Documentation specialist. Use for updating codemaps and documentation.",
       "mode": "subagent",
       "prompt": "{file:.opencode/prompts/agents/doc-updater.txt}",
+      "model": "big-pickle",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
     "database-reviewer": {
       "description": "Database specialist for query optimization, schema design, and performance.",
       "mode": "subagent",
       "prompt": "{file:.opencode/prompts/agents/database-reviewer.txt}",
+      "model": "big-pickle",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     }
   },

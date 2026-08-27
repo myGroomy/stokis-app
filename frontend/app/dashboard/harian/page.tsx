@@ -140,7 +140,7 @@ export default function DashboardHarianPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+                <table className="w-full text-left text-sm mobile-card-table">
                   <thead className="bg-[#F7F8F9] text-[#44546F] font-semibold border-b border-[#DCDFE4]">
                     <tr>
                       <th className="px-5 py-3">Nama Barang</th>
@@ -153,17 +153,17 @@ export default function DashboardHarianPage() {
                       <th className="px-5 py-3 text-right">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#DCDFE4] text-[#172B4D]">
+                  <tbody className="divide-y sm:divide-y-0 divide-[#DCDFE4] text-[#172B4D]">
                     {data.detail.map((row: any, i: number) => (
                       <tr key={i} className="hover:bg-[#F7F8F9] transition-colors">
-                        <td className="px-5 py-4 font-semibold">{row.Nama_Barang}</td>
-                        <td className="px-5 py-4 text-[#44546F]">{row.Shift}</td>
-                        <td className="px-5 py-4 text-[#172B4D]">{row.Petugas}</td>
-                        <td className="px-5 py-4 text-center tabular-nums">{row.Step1}</td>
-                        <td className="px-5 py-4 text-center tabular-nums">{row.Step2}</td>
-                        <td className="px-5 py-4 text-center font-bold text-[#1868DB] tabular-nums">{row.Total}</td>
-                        <td className="px-5 py-4 text-center text-[#44546F] tabular-nums">{row.Threshold}</td>
-                        <td className="px-5 py-4 text-right">
+                        <td className="px-5 py-4 font-semibold" data-label="Barang">{row.Nama_Barang}</td>
+                        <td className="px-5 py-4 text-[#44546F]" data-label="Shift">{row.Shift}</td>
+                        <td className="px-5 py-4 text-[#172B4D]" data-label="Petugas">{row.Petugas}</td>
+                        <td className="px-5 py-4 text-center tabular-nums" data-label="Step 1">{row.Step1}</td>
+                        <td className="px-5 py-4 text-center tabular-nums" data-label="Step 2">{row.Step2}</td>
+                        <td className="px-5 py-4 text-center font-bold text-[#1868DB] tabular-nums" data-label="Total">{row.Total}</td>
+                        <td className="px-5 py-4 text-center text-[#44546F] tabular-nums" data-label="Minimum">{row.Threshold}</td>
+                        <td className="px-5 py-4 text-right" data-label="Status">
                           <span
                             className={`lozenge ${
                               row.Status === 'Kritis'

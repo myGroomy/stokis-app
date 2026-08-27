@@ -26,25 +26,24 @@ export async function callAppsScript<T = any>(
   }
 
   try {
-    const query = new URLSearchParams({
+    const params: Record<string, string> = {
       'x-api-key': API_KEY,
       action: action,
-      ...(cabangId ? { cabangId } : {})
-    });
+    };
+    if (cabangId) params.cabangId = cabangId;
 
-    const url = `${APPS_SCRIPT_URL}?${query.toString()}`;
+    // Flatten payload into query params — stringify complex values
+    if (payload) {
+      for (const [key, val] of Object.entries(payload)) {
+        if (val === undefined || val === null) continue;
+        params[key] = typeof val === 'object' ? JSON.stringify(val) : String(val);
+      }
+    }
+
+    const url = `${APPS_SCRIPT_URL}?${new URLSearchParams(params).toString()}`;
 
     const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        action,
-        cabangId,
-        payload: payload || {},
-        'x-api-key': API_KEY,
-      }),
+      method: 'GET',
       redirect: 'follow',
       cache: 'no-store'
     });

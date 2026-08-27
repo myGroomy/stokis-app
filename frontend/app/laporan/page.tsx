@@ -153,7 +153,7 @@ export default function LaporanPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm mobile-card-table">
               <thead className="bg-[#F7F8F9] text-[#44546F] font-semibold border-b border-[#DCDFE4]">
                 <tr>
                   <th className="px-5 py-3">ID Laporan</th>
@@ -165,22 +165,22 @@ export default function LaporanPage() {
                   <th className="px-5 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#DCDFE4] text-[#172B4D]">
+              <tbody className="divide-y sm:divide-y-0 divide-[#DCDFE4] text-[#172B4D]">
                 {laporanList.map((row) => (
                   <tr key={row.Laporan_ID} className="hover:bg-[#F7F8F9] transition-colors">
-                    <td className="px-5 py-4 font-mono font-medium text-[#44546F]">
+                    <td className="px-5 py-4 font-mono font-medium text-[#44546F]" data-label="ID">
                       {row.Laporan_ID}
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4" data-label="Tanggal">
                       <span className="font-semibold text-[#172B4D] tabular-nums">{row.Tanggal_Operasional}</span>
                       <span className="ml-2 font-medium text-[#44546F] bg-[#F1F2F4] border border-[#DCDFE4] px-2 py-0.5 rounded text-xs">
                         {row.Shift}
                       </span>
                     </td>
-                    <td className="px-5 py-4 font-medium text-[#172B4D]">
+                    <td className="px-5 py-4 font-medium text-[#172B4D]" data-label="Petugas">
                       {row.Petugas}
                     </td>
-                    <td className="px-5 py-4 text-center font-bold tabular-nums">
+                    <td className="px-5 py-4 text-center font-bold tabular-nums" data-label="Kritis">
                       {row.Jumlah_Kritis > 0 ? (
                         <span className="bg-[#FFEBE6] text-[#CA3521] border border-[#FFBDAD] px-2 py-1 rounded text-xs">
                           {row.Jumlah_Kritis}
@@ -189,7 +189,7 @@ export default function LaporanPage() {
                         <span className="text-[#44546F]">0</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-center font-bold tabular-nums">
+                    <td className="px-5 py-4 text-center font-bold tabular-nums" data-label="Hampir Habis">
                       {row.Jumlah_Hampir_Habis > 0 ? (
                         <span className="bg-[#FFFAE6] text-[#B38600] border border-[#F8E6A0] px-2 py-1 rounded text-xs">
                           {row.Jumlah_Hampir_Habis}
@@ -198,7 +198,7 @@ export default function LaporanPage() {
                         <span className="text-[#44546F]">0</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-center">
+                    <td className="px-5 py-4 text-center" data-label="WhatsApp">
                       <span
                         className={`lozenge ${
                           row.Status_Kirim_WA === 'Sudah Dikirim'
@@ -209,7 +209,7 @@ export default function LaporanPage() {
                         {row.Status_Kirim_WA || 'Belum'}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-right space-x-2">
+                    <td className="px-5 py-4 text-right space-x-2" data-label="Aksi">
                       {row.Link_PDF && (
                         <a
                           href={row.Link_PDF}

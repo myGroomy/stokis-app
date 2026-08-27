@@ -26,26 +26,21 @@ export async function callAppsScript<T = any>(
   }
 
   try {
-    const params: Record<string, string> = {
+    const body: Record<string, any> = {
       'x-api-key': API_KEY,
       action: action,
     };
-    if (cabangId) params.cabangId = cabangId;
+    if (cabangId) body.cabangId = cabangId;
+    if (payload) body.payload = payload;
 
-    // Flatten payload into query params — stringify complex values
-    if (payload) {
-      for (const [key, val] of Object.entries(payload)) {
-        if (val === undefined || val === null) continue;
-        params[key] = typeof val === 'object' ? JSON.stringify(val) : String(val);
-      }
-    }
-
-    const url = `${APPS_SCRIPT_URL}?${new URLSearchParams(params).toString()}`;
-
-    const res = await fetch(url, {
-      method: 'GET',
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
       redirect: 'follow',
-      cache: 'no-store'
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body)
     });
 
     const text = await res.text();

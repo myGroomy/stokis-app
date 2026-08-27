@@ -1,15 +1,3 @@
-node_modules/
-.next/
-.agents/
-skills/
-.opencode/
-opencode.json*
-*.md:Zone.Identifier*
-*.xlsx:Zone.Identifier*
-*.py:Zone.Identifier*
-*.sh:Zone.Identifier*
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 /.pnp
@@ -26,13 +14,12 @@ opencode.json*
 # next.js
 /.next/
 /out/
-
-# production
 /build
 
 # misc
 .DS_Store
 *.pem
+*:Zone.Identifier*
 
 # debug
 npm-debug.log*
@@ -40,8 +27,8 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-
+# env files
+.env*
 
 # vercel
 .vercel
@@ -49,4 +36,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-.env*
+
+# agents & skills
+.agents/
+skills/
+skills-lock.json
+session-*.md
+
+# opencode
+.opencode/
+opencode.json*
+
+# data
+*.xlsx

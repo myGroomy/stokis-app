@@ -1,16 +1,30 @@
 // app/api/so/previous/route.ts
-import { NextResponse } from "next/server";
-import { callAppsScript } from "@/lib/appsscript";
+import { NextResponse } from 'next/server';
+import { callAppsScript } from '@/lib/appsscript';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const cabangId = searchParams.get("cabang") || "";
+    const cabangId = searchParams.get('cabang');
 
-    const result = await callAppsScript("getPreviousSO", cabangId || undefined);
+    if (!cabangId) {
+      return NextResponse.json(
+        { success: false, error: { message: 'Parameter cabang wajib disertakan' } },
+        { status: 400 }
+      );
+    }
+
+    const result = await callAppsScript('getPreviousSO', cabangId);
 
     if (result.success) {
-      return NextResponse.json({ success: true, data: result.data?.items || {} });
+      // GAS returns { latest: {...}, items: {...} }
+      return NextResponse.json({
+        success: true,
+        data: {
+          latest: result.data?.latest || null,
+          items: result.data?.items || {},
+        },
+      });
     }
 
     return NextResponse.json(
@@ -19,7 +33,7 @@ export async function GET(request: Request) {
     );
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: { message: "Gagal mengambil data SO sebelumnya: " + err.message } },
+      { success: false, error: { message: 'Gagal mengambil data SO sebelumnya: ' + err.message } },
       { status: 500 }
     );
   }

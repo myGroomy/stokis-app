@@ -11,24 +11,62 @@ interface ItemData {
   threshold: number;
   step1: number;
   step2: number;
-  total: number;
-  keterangan: string;
+  keterangan?: string;
   prevStep1: number | null;
   prevStep2: number | null;
   prevTotal: number | null;
-  status: string;
+  prevTanggal?: string | null;
+  prevShift?: string | null;
 }
 
-function getStatusColor(status: string): string {
-  if (status === 'Kritis') return '#CA3521';
-  if (status === 'Hampir Habis') return '#B38600';
-  return '#216E4E';
+type StatusType = 'Kritis' | 'Hampir Habis' | 'Aman' | 'Tidak Dipantau';
+
+function getStatus(item: ItemData): StatusType {
+  const total = item.step1 + item.step2;
+  if (!item.threshold || item.threshold <= 0) return 'Tidak Dipantau';
+  if (total <= item.threshold) return 'Kritis';
+  if (total <= item.threshold * 2) return 'Hampir Habis';
+  return 'Aman';
 }
 
-function getStatusBg(status: string): string {
-  if (status === 'Kritis') return '#FFEBE6';
-  if (status === 'Hampir Habis') return '#FFFAE6';
-  return '#E3FCEF';
+const STATUS_ORDER: Record<StatusType, number> = {
+  Kritis: 0,
+  'Hampir Habis': 1,
+  Aman: 2,
+  'Tidak Dipantau': 3,
+};
+
+const STATUS_COLOR: Record<StatusType, string> = {
+  Kritis: '#CA3521',
+  'Hampir Habis': '#B38600',
+  Aman: '#216E4E',
+  'Tidak Dipantau': '#6B778C',
+};
+
+const STATUS_BG: Record<StatusType, string> = {
+  Kritis: '#FFEBE6',
+  'Hampir Habis': '#FFFAE6',
+  Aman: '#E3FCEF',
+  'Tidak Dipantau': '#F1F2F4',
+};
+
+function drawTableHeader(
+  doc: PDFKit.PDFDocument,
+  yPos: number,
+  pageWidth: number,
+  cols: Record<string, number>,
+  labels: Record<string, string>,
+  headerColor: string = '#1868DB'
+) {
+  doc.rect(40, yPos, pageWidth, 14).fill(headerColor);
+  doc.fontSize(7).font('Helvetica-Bold').fillColor('#FFFFFF');
+  let x = 44;
+  for (const [key, width] of Object.entries(cols)) {
+    const align = ['step1', 'step2', 'total', 'prevS1', 'prevS2', 'prevT', 'currS1', 'currS2', 'currT', 'penggunaan', 'threshold'].includes(key) ? 'right' : 'left';
+    doc.text(labels[key] || key, x, yPos + 3, { width, align: align as any });
+    x += width;
+  }
+  return yPos + 14;
 }
 
 export async function POST(
@@ -37,266 +75,258 @@ export async function POST(
 ) {
   const { laporanId } = await params;
   const body = await req.json();
-  const { items, cabangNama, tanggalOperasional, shift, petugas, previousSO } = body;
+  const { items, cabangNama, cabangKode, tanggalOperasional, shift, petugas, previousSOInfo } = body;
+
+  // Sort items: Kritis → Hampir Habis → Aman → Tidak Dipantau
+  const sortedItems: ItemData[] = [...items].sort((a: ItemData, b: ItemData) => {
+    return STATUS_ORDER[getStatus(a)] - STATUS_ORDER[getStatus(b)];
+  });
+
+  // Standardized filename: [KODE_CABANG]-[TANGGAL]-[SHIFT]
+  const kode = (cabangKode || 'CBG').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  const tgl = (tanggalOperasional || '').replace(/-/g, '');
+  const shiftLabel = (shift || 'SO').toUpperCase();
+  const fileName = `${kode}-${tgl}-${shiftLabel}.pdf`;
 
   const stream = new PassThrough();
   const doc = new PDFDocument({
     size: 'A4',
-    margins: { top: 40, bottom: 40, left: 40, right: 40 },
+    margins: { top: 40, bottom: 50, left: 40, right: 40 },
     bufferPages: true,
   });
 
   doc.pipe(stream);
+  const pageWidth = doc.page.width - 80; // 515 pt usable
 
-  const pageWidth = doc.page.width - 80;
+  // ── PAGE 1: HEADER ────────────────────────────────────────
+  // Logo-area / title block
+  doc.rect(40, 40, pageWidth, 52).fill('#1868DB');
+  doc.fontSize(16).font('Helvetica-Bold').fillColor('#FFFFFF');
+  doc.text('LAPORAN STOCK OPNAME', 40, 50, { width: pageWidth, align: 'center' });
+  doc.fontSize(9).font('Helvetica').fillColor('#B3D4FF');
+  doc.text(`${cabangNama}  ·  ${tanggalOperasional}  ·  Shift ${shift}`, 40, 70, { width: pageWidth, align: 'center' });
 
-  // Header
-  doc.fontSize(18).font('Helvetica-Bold').fillColor('#172B4D');
-  doc.text('LAPORAN STOCK OPNAME', 40, 40, { width: pageWidth, align: 'center' });
-  
-  doc.fontSize(10).font('Helvetica').fillColor('#44546F');
-  doc.text(`${cabangNama} | ${tanggalOperasional} | Shift ${shift}`, 40, 62, { width: pageWidth, align: 'center' });
-  doc.text(`Petugas: ${petugas} | No. Laporan: ${laporanId}`, 40, 75, { width: pageWidth, align: 'center' });
+  let yPos = 104;
 
-  doc.moveTo(40, 92).lineTo(40 + pageWidth, 92).strokeColor('#DCDFE4').lineWidth(1).stroke();
+  // Info row
+  doc.fontSize(8).font('Helvetica').fillColor('#44546F');
+  const infoBoxW = pageWidth / 3;
+  const infoItems = [
+    { label: 'NO. LAPORAN', value: laporanId },
+    { label: 'PETUGAS', value: petugas },
+    { label: 'KODE CABANG', value: cabangKode || '-' },
+  ];
+  infoItems.forEach((info, i) => {
+    const x = 40 + i * infoBoxW;
+    doc.rect(x, yPos, infoBoxW - 2, 28).fill('#F7F8F9').stroke('#DCDFE4');
+    doc.fontSize(7).font('Helvetica-Bold').fillColor('#44546F');
+    doc.text(info.label, x + 6, yPos + 5, { width: infoBoxW - 14 });
+    doc.fontSize(9).font('Helvetica-Bold').fillColor('#172B4D');
+    doc.text(info.value, x + 6, yPos + 15, { width: infoBoxW - 14 });
+  });
+  yPos += 36;
 
-  let yPos = 105;
-
-  // Critical/Restock items section
-  const criticalItems = items.filter((item: ItemData) => {
-    if (item.threshold > 0 && item.total <= item.threshold) return true;
-    if (item.threshold > 0 && item.total <= item.threshold * 2) return true;
-    return false;
+  // ── SECTION: STATUS OVERVIEW ─────────────────────────────
+  const countByStatus = { Kritis: 0, 'Hampir Habis': 0, Aman: 0, 'Tidak Dipantau': 0 };
+  sortedItems.forEach(item => {
+    const s = getStatus(item);
+    countByStatus[s]++;
   });
 
-  if (criticalItems.length > 0) {
-    doc.fontSize(12).font('Helvetica-Bold').fillColor('#CA3521');
-    doc.text('ITEM KRITIS / PERLU RESTOCK', 40, yPos, { width: pageWidth });
-    yPos += 18;
+  const statBoxW = pageWidth / 4;
+  (Object.entries(countByStatus) as [StatusType, number][]).forEach(([status, count], i) => {
+    const x = 40 + i * statBoxW;
+    doc.rect(x, yPos, statBoxW - 3, 30).fill(STATUS_BG[status]).stroke(STATUS_COLOR[status]);
+    doc.fontSize(16).font('Helvetica-Bold').fillColor(STATUS_COLOR[status]);
+    doc.text(String(count), x + 4, yPos + 4, { width: statBoxW - 14, align: 'center' });
+    doc.fontSize(6).font('Helvetica-Bold').fillColor(STATUS_COLOR[status]);
+    doc.text(status.toUpperCase(), x + 4, yPos + 22, { width: statBoxW - 14, align: 'center' });
+  });
+  yPos += 38;
 
-    // Critical items table header
-    doc.fontSize(8).font('Helvetica-Bold').fillColor('#FFFFFF');
-    doc.rect(40, yPos, pageWidth, 16).fill('#CA3521');
-    doc.fillColor('#FFFFFF');
-    
-    const colWidths = { no: 25, nama: 140, s1: 35, s2: 35, total: 35, threshold: 45, status: 75 };
-    let x = 45;
-    doc.text('No', x, yPos + 4, { width: colWidths.no }); x += colWidths.no;
-    doc.text('Nama Barang', x, yPos + 4, { width: colWidths.nama }); x += colWidths.nama;
-    doc.text('Step 1', x, yPos + 4, { width: colWidths.s1, align: 'right' }); x += colWidths.s1;
-    doc.text('Step 2', x, yPos + 4, { width: colWidths.s2, align: 'right' }); x += colWidths.s2;
-    doc.text('Total', x, yPos + 4, { width: colWidths.total, align: 'right' }); x += colWidths.total;
-    doc.text('Threshold', x, yPos + 4, { width: colWidths.threshold, align: 'right' }); x += colWidths.threshold;
-    doc.text('Status', x, yPos + 4, { width: colWidths.status, align: 'center' });
+  // ── SECTION: SO COMPARISON TABLE ─────────────────────────
+  // Detect if any item has prev data
+  const hasPrevData = sortedItems.some(i => i.prevTotal !== null);
+
+  // Previous SO info banner
+  if (hasPrevData && previousSOInfo) {
+    doc.rect(40, yPos, pageWidth, 14).fill('#E9F2FF');
+    doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#1868DB');
+    const prevLabel = `SO Sebelumnya: ${previousSOInfo.tanggal || '-'} · Shift ${previousSOInfo.shift || '-'}`;
+    const currLabel = `SO Sekarang: ${tanggalOperasional} · Shift ${shift}`;
+    doc.text(prevLabel, 44, yPos + 3, { width: pageWidth / 2 - 4 });
+    doc.text(currLabel, 44 + pageWidth / 2, yPos + 3, { width: pageWidth / 2 - 4 });
     yPos += 16;
-
-    doc.fontSize(8).font('Helvetica').fillColor('#172B4D');
-    criticalItems.forEach((item: ItemData, idx: number) => {
-      if (yPos > 750) {
-        doc.addPage();
-        yPos = 40;
-      }
-
-      const bgColor = idx % 2 === 0 ? '#F7F8F9' : '#FFFFFF';
-      doc.rect(40, yPos, pageWidth, 14).fill(bgColor);
-      doc.fillColor('#172B4D');
-
-      const status = item.threshold > 0 && item.total <= item.threshold ? 'Kritis' : 'Hampir Habis';
-      
-      let kx = 45;
-      doc.text(`${idx + 1}`, kx, yPos + 3, { width: colWidths.no }); kx += colWidths.no;
-      doc.text(item.namaBarang, kx, yPos + 3, { width: colWidths.nama }); kx += colWidths.nama;
-      doc.text(String(item.step1), kx, yPos + 3, { width: colWidths.s1, align: 'right' }); kx += colWidths.s1;
-      doc.text(String(item.step2), kx, yPos + 3, { width: colWidths.s2, align: 'right' }); kx += colWidths.s2;
-      doc.text(String(item.total), kx, yPos + 3, { width: colWidths.total, align: 'right' }); kx += colWidths.total;
-      doc.text(String(item.threshold), kx, yPos + 3, { width: colWidths.threshold, align: 'right' }); kx += colWidths.threshold;
-      
-      doc.fontSize(7).font('Helvetica-Bold').fillColor(getStatusColor(status));
-      doc.text(status, kx, yPos + 3, { width: colWidths.status, align: 'center' });
-      doc.fontSize(8).font('Helvetica').fillColor('#172B4D');
-      
-      yPos += 14;
-    });
-
-    yPos += 10;
   }
 
-  // Previous SO Summary
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#172B4D');
-  doc.text('RINGKASAN SO SEBELUMNYA', 40, yPos, { width: pageWidth });
-  yPos += 18;
-
-  const prevDate = previousSO?.date || '-';
-  const prevShift = previousSO?.shift || '-';
-  doc.fontSize(9).font('Helvetica').fillColor('#44546F');
-  doc.text(`Tanggal: ${prevDate} | Shift: ${prevShift}`, 40, yPos, { width: pageWidth });
+  doc.fontSize(10).font('Helvetica-Bold').fillColor('#172B4D');
+  doc.text('PERBANDINGAN STOK (KRITIS LEBIH DULU)', 40, yPos, { width: pageWidth });
   yPos += 14;
 
-  // Previous SO table
-  doc.fontSize(8).font('Helvetica-Bold').fillColor('#FFFFFF');
-  doc.rect(40, yPos, pageWidth, 16).fill('#44546F');
-  doc.fillColor('#FFFFFF');
+  // Table columns
+  // | No | Nama Barang | Area | SO LAMA (S1|S2|Tot) | SO BARU (S1|S2|Tot) | Penggunaan | Ket | Status |
+  // Total width = 515
+  const cols = {
+    no: 18,
+    nama: 100,
+    area: 60,
+    prevS1: 24, prevS2: 24, prevT: 28,
+    currS1: 24, currS2: 24, currT: 28,
+    penggunaan: 36,
+    ket: 74,
+    status: 45,
+  } as const;
 
-  const prevCols = { no: 25, nama: 120, s1: 40, s2: 40, total: 40 };
-  let px = 45;
-  doc.text('No', px, yPos + 4, { width: prevCols.no }); px += prevCols.no;
-  doc.text('Nama Barang', px, yPos + 4, { width: prevCols.nama }); px += prevCols.nama;
-  doc.text('Step 1', px, yPos + 4, { width: prevCols.s1, align: 'right' }); px += prevCols.s1;
-  doc.text('Step 2', px, yPos + 4, { width: prevCols.s2, align: 'right' }); px += prevCols.s2;
-  doc.text('Total', px, yPos + 4, { width: prevCols.total, align: 'right' });
-  yPos += 16;
-
-  doc.fontSize(8).font('Helvetica').fillColor('#172B4D');
-  const itemsWithPrev = items.filter((item: ItemData) => item.prevTotal !== null);
-  itemsWithPrev.forEach((item: ItemData, idx: number) => {
-    if (yPos > 750) {
-      doc.addPage();
-      yPos = 40;
-    }
-
-    const bgColor = idx % 2 === 0 ? '#F7F8F9' : '#FFFFFF';
-    doc.rect(40, yPos, pageWidth, 12).fill(bgColor);
-    doc.fillColor('#172B4D');
-
-    let ix = 45;
-    doc.text(`${idx + 1}`, ix, yPos + 2, { width: prevCols.no }); ix += prevCols.no;
-    doc.text(item.namaBarang, ix, yPos + 2, { width: prevCols.nama }); ix += prevCols.nama;
-    doc.text(String(item.prevStep1 ?? '-'), ix, yPos + 2, { width: prevCols.s1, align: 'right' }); ix += prevCols.s1;
-    doc.text(String(item.prevStep2 ?? '-'), ix, yPos + 2, { width: prevCols.s2, align: 'right' }); ix += prevCols.s2;
-    doc.text(String(item.prevTotal ?? '-'), ix, yPos + 2, { width: prevCols.total, align: 'right' });
-    yPos += 12;
-  });
-
-  yPos += 10;
-
-  // Comparison table - Previous vs Current
-  if (yPos > 600) {
-    doc.addPage();
-    yPos = 40;
-  }
-
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#172B4D');
-  doc.text('PERBANDINGAN SO SEBELUMNYA vs SEKARANG', 40, yPos, { width: pageWidth });
-  yPos += 20;
-
-  // Comparison table header
-  doc.fontSize(7).font('Helvetica-Bold').fillColor('#FFFFFF');
-  doc.rect(40, yPos, pageWidth, 20).fill('#1868DB');
-  doc.fillColor('#FFFFFF');
-
-  const compCols = {
-    no: 20, nama: 75, 
-    prevS1: 25, prevS2: 25, prevT: 25,
-    currS1: 25, currS2: 25, currT: 25,
-    diff: 25, ket: 65, status: 40
+  const labels: Record<string, string> = {
+    no: 'No', nama: 'Nama Barang', area: 'Area',
+    prevS1: 'S1', prevS2: 'S2', prevT: 'Tot',
+    currS1: 'S1', currS2: 'S2', currT: 'Tot',
+    penggunaan: 'Pemakaian',
+    ket: 'Keterangan',
+    status: 'Status',
   };
 
-  // Row 1 - group headers
-  let cx = 42;
-  doc.text('', cx, yPos + 2, { width: compCols.no + compCols.nama });
-  doc.text('SO Sebelumnya', cx + compCols.no + compCols.nama, yPos + 2, { width: 75, align: 'center' });
-  doc.text('SO Sekarang', cx + compCols.no + compCols.nama + 75, yPos + 2, { width: 75, align: 'center' });
-  doc.text('Selisih', cx + compCols.no + compCols.nama + 150, yPos + 2, { width: compCols.diff, align: 'center' });
-  doc.text('Ket', cx + compCols.no + compCols.nama + 175, yPos + 2, { width: compCols.ket, align: 'center' });
-  doc.text('Status', cx + compCols.no + compCols.nama + 240, yPos + 2, { width: compCols.status, align: 'center' });
+  // Mega-header row (group SO Lama / SO Baru)
+  doc.rect(40, yPos, pageWidth, 11).fill('#172B4D');
+  doc.fontSize(6.5).font('Helvetica-Bold').fillColor('#FFFFFF');
+  const soLamaStartX = 40 + cols.no + cols.nama + cols.area + 4;
+  const soBaStartX = soLamaStartX + cols.prevS1 + cols.prevS2 + cols.prevT;
+  doc.text('SO LAMA', soLamaStartX, yPos + 2, { width: cols.prevS1 + cols.prevS2 + cols.prevT, align: 'center' });
+  doc.text('SO BARU', soBaStartX, yPos + 2, { width: cols.currS1 + cols.currS2 + cols.currT, align: 'center' });
+  yPos += 11;
 
-  // Row 2 - column headers
-  yPos += 10;
-  cx = 42;
-  doc.text('No', cx, yPos + 2, { width: compCols.no }); cx += compCols.no;
-  doc.text('Nama Barang', cx, yPos + 2, { width: compCols.nama }); cx += compCols.nama;
-  doc.text('S1', cx, yPos + 2, { width: compCols.prevS1, align: 'right' }); cx += compCols.prevS1;
-  doc.text('S2', cx, yPos + 2, { width: compCols.prevS2, align: 'right' }); cx += compCols.prevS2;
-  doc.text('Tot', cx, yPos + 2, { width: compCols.prevT, align: 'right' }); cx += compCols.prevT;
-  doc.text('S1', cx, yPos + 2, { width: compCols.currS1, align: 'right' }); cx += compCols.currS1;
-  doc.text('S2', cx, yPos + 2, { width: compCols.currS2, align: 'right' }); cx += compCols.currS2;
-  doc.text('Tot', cx, yPos + 2, { width: compCols.currT, align: 'right' }); cx += compCols.currT;
-  doc.text('+/-', cx, yPos + 2, { width: compCols.diff, align: 'right' }); cx += compCols.diff;
-  doc.text('Keterangan', cx, yPos + 2, { width: compCols.ket, align: 'center' }); cx += compCols.ket;
-  doc.text('Status', cx, yPos + 2, { width: compCols.status, align: 'center' });
-  yPos += 14;
+  // Column header row
+  yPos = drawTableHeader(doc, yPos, pageWidth, cols, labels, '#44546F');
 
-  // Comparison data rows
+  // Data rows
   doc.fontSize(7).font('Helvetica').fillColor('#172B4D');
-  items.forEach((item: ItemData, idx: number) => {
-    if (yPos > 750) {
+  let rowCount = 0;
+
+  for (const item of sortedItems) {
+    if (yPos > 760) {
       doc.addPage();
       yPos = 40;
-      // Re-draw header
-      doc.fontSize(7).font('Helvetica-Bold').fillColor('#FFFFFF');
-      doc.rect(40, yPos, pageWidth, 14).fill('#1868DB');
-      doc.fillColor('#FFFFFF');
-      let rx = 42;
-      doc.text('No', rx, yPos + 3, { width: compCols.no }); rx += compCols.no;
-      doc.text('Nama Barang', rx, yPos + 3, { width: compCols.nama }); rx += compCols.nama;
-      doc.text('S1', rx, yPos + 3, { width: compCols.prevS1, align: 'right' }); rx += compCols.prevS1;
-      doc.text('S2', rx, yPos + 3, { width: compCols.prevS2, align: 'right' }); rx += compCols.prevS2;
-      doc.text('Tot', rx, yPos + 3, { width: compCols.prevT, align: 'right' }); rx += compCols.prevT;
-      doc.text('S1', rx, yPos + 3, { width: compCols.currS1, align: 'right' }); rx += compCols.currS1;
-      doc.text('S2', rx, yPos + 3, { width: compCols.currS2, align: 'right' }); rx += compCols.currS2;
-      doc.text('Tot', rx, yPos + 3, { width: compCols.currT, align: 'right' }); rx += compCols.currT;
-      doc.text('+/-', rx, yPos + 3, { width: compCols.diff, align: 'right' }); rx += compCols.diff;
-      doc.text('Keterangan', rx, yPos + 3, { width: compCols.ket, align: 'center' }); rx += compCols.ket;
-      doc.text('Status', rx, yPos + 3, { width: compCols.status, align: 'center' });
-      yPos += 14;
+      // Redraw group headers on continuation pages
+      doc.rect(40, yPos, pageWidth, 11).fill('#172B4D');
+      doc.fontSize(6.5).font('Helvetica-Bold').fillColor('#FFFFFF');
+      doc.text('SO LAMA', soLamaStartX, yPos + 2, { width: cols.prevS1 + cols.prevS2 + cols.prevT, align: 'center' });
+      doc.text('SO BARU', soBaStartX, yPos + 2, { width: cols.currS1 + cols.currS2 + cols.currT, align: 'center' });
+      yPos += 11;
+      yPos = drawTableHeader(doc, yPos, pageWidth, cols, labels, '#44546F');
       doc.fontSize(7).font('Helvetica').fillColor('#172B4D');
     }
 
-    const bgColor = idx % 2 === 0 ? '#F7F8F9' : '#FFFFFF';
-    doc.rect(40, yPos, pageWidth, 11).fill(bgColor);
-    doc.fillColor('#172B4D');
+    const status = getStatus(item);
+    const total = item.step1 + item.step2;
+    const prevTotal = item.prevTotal;
+    const penggunaan = prevTotal !== null ? prevTotal - total : null;
 
-    const diff = item.prevTotal !== null ? item.total - item.prevTotal : null;
-    const status = item.threshold > 0 && item.total <= item.threshold ? 'Kritis' :
-                   item.threshold > 0 && item.total <= item.threshold * 2 ? 'Hampir Habis' : 'Aman';
+    // Row background: kritis gets subtle tint
+    const rowBg = status === 'Kritis' ? '#FFF5F3' :
+                  status === 'Hampir Habis' ? '#FFFCF0' :
+                  rowCount % 2 === 0 ? '#F7F8F9' : '#FFFFFF';
+    doc.rect(40, yPos, pageWidth, 13).fill(rowBg);
 
-    let dx = 42;
-    doc.text(`${idx + 1}`, dx, yPos + 2, { width: compCols.no }); dx += compCols.no;
-    doc.text(item.namaBarang, dx, yPos + 2, { width: compCols.nama }); dx += compCols.nama;
-    doc.text(String(item.prevStep1 ?? '-'), dx, yPos + 2, { width: compCols.prevS1, align: 'right' }); dx += compCols.prevS1;
-    doc.text(String(item.prevStep2 ?? '-'), dx, yPos + 2, { width: compCols.prevS2, align: 'right' }); dx += compCols.prevS2;
-    doc.text(String(item.prevTotal ?? '-'), dx, yPos + 2, { width: compCols.prevT, align: 'right' }); dx += compCols.prevT;
-    doc.text(String(item.step1), dx, yPos + 2, { width: compCols.currS1, align: 'right' }); dx += compCols.currS1;
-    doc.text(String(item.step2), dx, yPos + 2, { width: compCols.currS2, align: 'right' }); dx += compCols.currS2;
-    doc.text(String(item.total), dx, yPos + 2, { width: compCols.currT, align: 'right' }); dx += compCols.currT;
-
-    // Diff with color
-    if (diff !== null) {
-      const diffColor = diff > 0 ? '#216E4E' : diff < 0 ? '#CA3521' : '#44546F';
-      doc.fillColor(diffColor);
-      doc.text(diff > 0 ? `+${diff}` : String(diff), dx, yPos + 2, { width: compCols.diff, align: 'right' });
-    } else {
-      doc.fillColor('#B3BAC5');
-      doc.text('-', dx, yPos + 2, { width: compCols.diff, align: 'right' });
+    // Left border color stripe for kritis/hampir habis
+    if (status === 'Kritis' || status === 'Hampir Habis') {
+      doc.rect(40, yPos, 3, 13).fill(STATUS_COLOR[status]);
     }
-    dx += compCols.diff;
+
+    doc.fillColor('#172B4D');
+    let x = 44;
+
+    doc.text(String(rowCount + 1), x, yPos + 3, { width: cols.no }); x += cols.no;
+    doc.text(item.namaBarang, x, yPos + 3, { width: cols.nama }); x += cols.nama;
+    doc.fontSize(6.5).fillColor('#6B778C');
+    doc.text(item.area || '-', x, yPos + 3, { width: cols.area }); x += cols.area;
+    doc.fontSize(7).fillColor('#44546F');
+
+    // SO Lama
+    doc.text(item.prevStep1 !== null ? String(item.prevStep1) : '-', x, yPos + 3, { width: cols.prevS1, align: 'right' }); x += cols.prevS1;
+    doc.text(item.prevStep2 !== null ? String(item.prevStep2) : '-', x, yPos + 3, { width: cols.prevS2, align: 'right' }); x += cols.prevS2;
+    doc.font('Helvetica-Bold').text(item.prevTotal !== null ? String(item.prevTotal) : '-', x, yPos + 3, { width: cols.prevT, align: 'right' }); x += cols.prevT;
+    doc.font('Helvetica');
+
+    // SO Baru
+    doc.text(String(item.step1), x, yPos + 3, { width: cols.currS1, align: 'right' }); x += cols.currS1;
+    doc.text(String(item.step2), x, yPos + 3, { width: cols.currS2, align: 'right' }); x += cols.currS2;
+    doc.font('Helvetica-Bold').fillColor('#172B4D').text(String(total), x, yPos + 3, { width: cols.currT, align: 'right' }); x += cols.currT;
+    doc.font('Helvetica');
+
+    // Penggunaan (prev - current, represents consumption)
+    if (penggunaan !== null) {
+      const pColor = penggunaan > 0 ? '#CA3521' : penggunaan < 0 ? '#216E4E' : '#44546F';
+      doc.fillColor(pColor).font('Helvetica-Bold');
+      doc.text(penggunaan > 0 ? `+${penggunaan}` : String(penggunaan), x, yPos + 3, { width: cols.penggunaan, align: 'right' });
+      doc.font('Helvetica');
+    } else {
+      doc.fillColor('#B3BAC5').text('-', x, yPos + 3, { width: cols.penggunaan, align: 'right' });
+    }
+    x += cols.penggunaan;
 
     // Keterangan
-    const ket = (item as any).keterangan || '';
-    if (ket) {
-      doc.fillColor('#44546F');
-      doc.fontSize(6);
-      doc.text(ket, dx, yPos + 2, { width: compCols.ket, align: 'left' });
-      doc.fontSize(7);
-    }
-    dx += compCols.ket;
+    const ket = item.keterangan || '';
+    doc.fontSize(6).fillColor('#44546F').text(ket, x, yPos + 3, { width: cols.ket, lineBreak: false });
+    x += cols.ket;
+    doc.fontSize(7);
 
-    doc.fillColor(getStatusColor(status));
-    doc.fontSize(6).font('Helvetica-Bold');
-    doc.text(status, dx, yPos + 2, { width: compCols.status, align: 'center' });
+    // Status badge
+    doc.fontSize(6).font('Helvetica-Bold').fillColor(STATUS_COLOR[status]);
+    doc.text(status, x, yPos + 3, { width: cols.status, align: 'center' });
     doc.fontSize(7).font('Helvetica').fillColor('#172B4D');
 
-    yPos += 11;
-  });
+    // Bottom border for critical rows
+    if (status === 'Kritis') {
+      doc.moveTo(40, yPos + 13).lineTo(40 + pageWidth, yPos + 13).strokeColor('#FFBDAD').lineWidth(0.5).stroke();
+    }
 
-  // Footer
+    yPos += 13;
+    rowCount++;
+  }
+
+  // ── SECTION: ITEM KRITIS DETAIL (Summary at bottom) ──────
+  const kritisItems = sortedItems.filter(i => getStatus(i) === 'Kritis');
+  if (kritisItems.length > 0) {
+    yPos += 8;
+    if (yPos > 720) {
+      doc.addPage();
+      yPos = 40;
+    }
+
+    doc.fontSize(9).font('Helvetica-Bold').fillColor('#CA3521');
+    doc.text(`⚠ DAFTAR ITEM KRITIS (${kritisItems.length} ITEM)`, 40, yPos, { width: pageWidth });
+    yPos += 12;
+
+    kritisItems.forEach((item, idx) => {
+      if (yPos > 760) { doc.addPage(); yPos = 40; }
+      const total = item.step1 + item.step2;
+      const deficit = item.threshold - total;
+      const bg = idx % 2 === 0 ? '#FFEBE6' : '#FFF5F3';
+      doc.rect(40, yPos, pageWidth, 12).fill(bg);
+      doc.fontSize(7).font('Helvetica').fillColor('#172B4D');
+      doc.text(`${idx + 1}. ${item.namaBarang}`, 44, yPos + 2, { width: 200 });
+      doc.fillColor('#44546F').text(`Area: ${item.area || '-'}`, 244, yPos + 2, { width: 100 });
+      doc.fillColor('#CA3521').font('Helvetica-Bold');
+      doc.text(`Stok: ${total} | Min: ${item.threshold} | Kekurangan: ${deficit}`, 344, yPos + 2, { width: pageWidth - 310 });
+      if (item.keterangan) {
+        yPos += 12;
+        doc.fontSize(6.5).font('Helvetica').fillColor('#6B778C');
+        doc.text(`   Ket: ${item.keterangan}`, 44, yPos, { width: pageWidth - 8 });
+      }
+      yPos += 13;
+    });
+  }
+
+  // ── FOOTER on every page ─────────────────────────────────
   const pageCount = doc.bufferedPageRange().count;
   for (let i = 0; i < pageCount; i++) {
     doc.switchToPage(i);
-    doc.fontSize(7).fillColor('#B3BAC5');
+    // footer line
+    doc.moveTo(40, doc.page.height - 35).lineTo(40 + pageWidth, doc.page.height - 35).strokeColor('#DCDFE4').lineWidth(0.5).stroke();
+    doc.fontSize(7).font('Helvetica').fillColor('#B3BAC5');
     doc.text(
-      `Halaman ${i + 1} dari ${pageCount} | Dibuat oleh Sistem Stokis - ${new Date().toLocaleString('id-ID')}`,
-      40, doc.page.height - 30,
+      `${fileName}  ·  Halaman ${i + 1} dari ${pageCount}  ·  Sistem Stokis  ·  ${new Date().toLocaleString('id-ID')}`,
+      40, doc.page.height - 28,
       { width: pageWidth, align: 'center' }
     );
   }
@@ -312,7 +342,7 @@ export async function POST(
   return new NextResponse(pdfBuffer, {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="SO-${laporanId}.pdf"`,
+      'Content-Disposition': `inline; filename="${fileName}"`,
     },
   });
 }

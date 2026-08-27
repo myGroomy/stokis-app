@@ -16,16 +16,27 @@ function submitSO(cabangId, payload) {
     const step1 = Number(item.step1) || 0;
     const step2 = Number(item.step2) || 0;
     const total = step1 + step2;
+    const keterangan = item.keterangan || '';
     const transaksiId = 'TRX' + String(soSheet.getLastRow()).padStart(6, '0');
+
+    // Kolom: Transaksi_ID, Timestamp, Tanggal_Operasional, Shift,
+    //        Item_ID, Nama_Barang, Area, Step1, Step2, Total,
+    //        Petugas, Sesi_ID, Keterangan
     soSheet.appendRow([
       transaksiId, timestamp, payload.tanggalOperasional, payload.shift,
       item.itemId, master['Nama_Barang'], master['Area'],
-      step1, step2, total, payload.petugas, sesiId
+      step1, step2, total,
+      payload.petugas, sesiId, keterangan
     ]);
-    transaksiList.push({ transaksiId, itemId: item.itemId, total });
+
+    transaksiList.push({ transaksiId, itemId: item.itemId, total, keterangan });
   });
 
-  const laporanId = generatePDF_(cabangId, spreadsheet, cabang, sesiId, payload.tanggalOperasional, payload.shift, payload.petugas, transaksiList, masterRows);
+  const laporanId = generatePDF_(
+    cabangId, spreadsheet, cabang, sesiId,
+    payload.tanggalOperasional, payload.shift, payload.petugas,
+    transaksiList, masterRows
+  );
   return { sesiId, laporanId };
 }
 
@@ -58,12 +69,13 @@ function getPreviousSO(cabangId) {
   const items = {};
   latestSession.rows.forEach(r => {
     items[r['Nama_Barang']] = {
-      step1: r['Step1'] || 0,
-      step2: r['Step2'] || 0,
-      total: r['Total'] || 0,
+      step1: Number(r['Step1']) || 0,
+      step2: Number(r['Step2']) || 0,
+      total: Number(r['Total']) || 0,
       tanggal: formatDate_(r['Tanggal_Operasional']),
       shift: r['Shift'] || '',
       petugas: r['Petugas'] || '',
+      keterangan: r['Keterangan'] || '',
     };
   });
 

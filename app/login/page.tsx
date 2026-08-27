@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import { LogIn } from "lucide-react";
+import { QuantumLoaderMini } from "@/components/ui/QuantumLoader";
 
 const PIN_LENGTH = 6;
 
@@ -19,7 +21,8 @@ export default function LoginPage() {
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-[#1868DB] border-t-transparent rounded-full animate-spin" />
+        <QuantumLoaderMini />
+        <span className="ml-3 text-[#1868DB] text-sm font-medium">Memuat...</span>
       </div>
     );
   }
@@ -83,10 +86,23 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center">
-      <div className="w-full max-w-sm">
-        <div className="bg-white border border-[#DCDFE4] rounded-[4px] p-8">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="w-full max-w-sm"
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.05 }}
+          className="bg-white border border-[#DCDFE4] rounded-[4px] p-8 shadow-sm"
+        >
           <div className="flex flex-col items-center mb-6">
-            <img
+            <motion.img
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.3 }}
               src="/favicon.jpg"
               alt="Stokis"
               className="w-14 h-14 rounded-lg shadow-sm object-cover mb-3"
@@ -100,7 +116,11 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
+            <motion.div
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.2, delay: 0.1 }}
+            >
               <label className="block text-xs font-semibold text-[#44546F] mb-1.5">
                 Username
               </label>
@@ -112,9 +132,13 @@ export default function LoginPage() {
                 autoComplete="username"
                 className="w-full px-3 py-2 min-h-[40px] text-sm border border-[#DCDFE4] rounded-[4px] focus:border-[#1868DB] focus:ring-1 focus:ring-[#1868DB] outline-none transition-colors bg-[#FAFBFC]"
               />
-            </div>
+            </motion.div>
 
-            <div>
+            <motion.div
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.2, delay: 0.15 }}
+            >
               <label className="block text-xs font-semibold text-[#44546F] mb-2">
                 PIN (6 Digit)
               </label>
@@ -136,38 +160,52 @@ export default function LoginPage() {
                   />
                 ))}
               </div>
-            </div>
+            </motion.div>
 
-            {error && (
-              <div className="bg-[#FFEBE6] border border-[#FF8F73] rounded-[4px] px-3 py-2">
-                <p className="text-xs font-medium text-[#BF2600]">{error}</p>
-              </div>
-            )}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="bg-[#FFEBE6] border border-[#FF8F73] rounded-[4px] px-3 py-2"
+                >
+                  <p className="text-xs font-medium text-[#BF2600]">{error}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            <button
+            <motion.button
               type="submit"
               disabled={submitting || loading}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
               className="w-full flex items-center justify-center gap-2 bg-[#1868DB] hover:bg-[#1557B0] text-white font-semibold text-sm px-4 py-2 min-h-[40px] rounded-[4px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Memproses...
+                  <QuantumLoaderMini />
+                  <span>Memproses...</span>
                 </>
               ) : (
                 <>
                   <LogIn className="w-4 h-4" />
-                  Masuk
+                  <span>Masuk</span>
                 </>
               )}
-            </button>
+            </motion.button>
           </form>
-        </div>
+        </motion.div>
 
-        <p className="text-center text-[10px] text-[#6B778C] mt-4">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className="text-center text-[10px] text-[#6B778C] mt-4"
+        >
           Stokis v1.0 - Sistem Stock Opname
-        </p>
-      </div>
+        </motion.p>
+      </motion.div>
     </div>
   );
 }

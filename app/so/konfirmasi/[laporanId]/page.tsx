@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useParams } from 'next/navigation';
 import { useCabang } from '@/lib/CabangContext';
 import { 
@@ -16,6 +17,7 @@ import {
   AlertTriangle,
   Send
 } from 'lucide-react';
+import { WATemplateModal } from '@/components/WATemplateModal';
 
 export default function KonfirmasiLaporanPage() {
   const params = useParams();
@@ -27,6 +29,7 @@ export default function KonfirmasiLaporanPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [updatingWa, setUpdatingWa] = useState<boolean>(false);
   const [waSent, setWaSent] = useState<boolean>(false);
+  const [showWATemplate, setShowWATemplate] = useState<boolean>(false);
 
   useEffect(() => {
     if (!selectedCabang || !laporanId) return;
@@ -53,22 +56,19 @@ export default function KonfirmasiLaporanPage() {
     fetchWa();
   }, [selectedCabang, laporanId]);
 
-  const handleShareWhatsApp = async () => {
-    if (!waLink) return;
-    window.open(waLink, '_blank');
+  const handleShareWhatsApp = () => {
+    setShowWATemplate(true);
+  };
 
-    try {
-      setUpdatingWa(true);
-      await fetch(`/api/laporan/${laporanId}/status-wa`, {
+  const handleWASent = () => {
+    setWaSent(true);
+    setShowWATemplate(false);
+    if (laporanId) {
+      fetch(`/api/laporan/${laporanId}/status-wa`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cabangId: selectedCabang?.Cabang_ID }),
       });
-      setWaSent(true);
-    } catch (e) {
-      console.error('Failed to update WA status:', e);
-    } finally {
-      setUpdatingWa(false);
     }
   };
 
@@ -82,102 +82,130 @@ export default function KonfirmasiLaporanPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-10 px-4 space-y-6 text-center">
-      {/* Success Badge */}
-      <div className="inline-flex p-4 rounded-full bg-[#E3FCEF] text-[#216E4E] mb-2">
-        <CheckCircle2 className="w-10 h-10" />
-      </div>
-
-      <div className="space-y-1.5">
-        <h1 className="text-2xl sm:text-3xl font-semibold text-[#172B4D] tracking-tight">
-          Stock Opname Berhasil Disimpan
-        </h1>
-        <p className="text-[#44546F] text-sm max-w-md mx-auto">
-          Data transaksi telah tercatat di spreadsheet cabang dan berkas PDF telah tersimpan di Google Drive.
-        </p>
-      </div>
-
-      {/* Report Info Card */}
-      <div className="surface-card p-6 text-left space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-[#DCDFE4]">
-          <span className="text-sm text-[#44546F] font-semibold">Nomor Laporan</span>
-          <span className="font-mono text-sm font-semibold text-[#172B4D] bg-[#F1F2F4] px-2.5 py-1 rounded">
-            {laporanId}
-          </span>
-        </div>
-
-        {laporan && (
-          <div className="space-y-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-[#44546F]">Tanggal dan Shift:</span>
-              <span className="font-semibold text-[#172B4D]">{laporan.Tanggal_Operasional} ({laporan.Shift})</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[#44546F]">Petugas Penanggung Jawab:</span>
-              <span className="font-semibold text-[#172B4D]">{laporan.Petugas}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[#44546F]">Item Status Kritis:</span>
-              <span className="font-bold text-[#CA3521] tabular-nums">{laporan.Jumlah_Kritis} Item</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[#44546F]">Item Status Hampir Habis:</span>
-              <span className="font-bold text-[#B38600] tabular-nums">{laporan.Jumlah_Hampir_Habis} Item</span>
-            </div>
+    <div className="max-w-2xl mx-auto py-10 px-4 space-y-6">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="success"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.2 }}
+        >
+          {/* Success Badge */}
+          <div className="inline-flex p-4 rounded-full bg-[#E3FCEF] text-[#216E4E] mb-2">
+            <CheckCircle2 className="w-10 h-10" />
           </div>
+
+          <div className="space-y-1.5">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-[#172B4D] tracking-tight">
+              Stock Opname Berhasil Disimpan
+            </h1>
+            <p className="text-[#44546F] text-sm max-w-md mx-auto">
+              Data transaksi telah tercatat di spreadsheet cabang dan berkas PDF telah tersimpan di Google Drive.
+            </p>
+          </div>
+
+          {/* Report Info Card */}
+          <div className="surface-card p-6 text-left space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#DCDFE4]">
+              <span className="text-sm text-[#44546F] font-semibold">Nomor Laporan</span>
+              <span className="font-mono text-sm font-semibold text-[#172B4D] bg-[#F1F2F4] px-2.5 py-1 rounded">
+                {laporanId}
+              </span>
+            </div>
+
+            {laporan && (
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#44546F]">Tanggal dan Shift:</span>
+                  <span className="font-semibold text-[#172B4D]">{laporan.Tanggal_Operasional} ({laporan.Shift})</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#44546F]">Petugas Penanggung Jawab:</span>
+                  <span className="font-semibold text-[#172B4D]">{laporan.Petugas}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#44546F]">Item Status Kritis:</span>
+                  <span className="font-bold text-[#CA3521] tabular-nums">{laporan.Jumlah_Kritis} Item</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#44546F]">Item Status Hampir Habis:</span>
+                  <span className="font-bold text-[#B38600] tabular-nums">{laporan.Jumlah_Hampir_Habis} Item</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            {laporan?.Link_PDF && (
+              <a
+                href={laporan.Link_PDF}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-default inline-flex items-center justify-center gap-2 px-5 py-3 min-h-[44px]"
+              >
+                <FileText className="w-4 h-4 text-[#1868DB]" />
+                <span>Buka File PDF Drive</span>
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
+
+            <button
+              onClick={handleShareWhatsApp}
+              disabled={updatingWa}
+              className="inline-flex items-center justify-center gap-2 bg-[#22A06B] hover:bg-[#216E4E] text-white px-6 py-3 rounded font-medium text-sm transition-colors disabled:opacity-50 min-h-[44px]"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>{waSent ? 'Kirim Ulang ke WhatsApp' : 'Siapkan Pesan WhatsApp'}</span>
+            </button>
+          </div>
+
+          {waSent && (
+            <div className="inline-flex items-center gap-1.5 text-sm text-[#216E4E] font-medium bg-[#E3FCEF] px-4 py-2 rounded border border-[#BAF3DB]">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Status laporan telah diperbarui: Sudah Dikirim</span>
+            </div>
+          )}
+
+          {/* Navigation Footer */}
+          <div className="pt-6 border-t border-[#DCDFE4] flex items-center justify-between text-sm">
+            <Link
+              href="/laporan"
+              className="inline-flex items-center gap-1.5 text-[#44546F] hover:text-[#172B4D] font-semibold transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Riwayat Laporan</span>
+            </Link>
+
+            <Link
+              href="/so/input"
+              className="inline-flex items-center gap-1.5 text-[#1868DB] hover:text-[#0055CC] font-semibold transition-colors"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Input Sesi Baru</span>
+            </Link>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* WhatsApp Template Modal */}
+      <AnimatePresence>
+        {showWATemplate && laporan && (
+          <WATemplateModal
+            isOpen={showWATemplate}
+            onClose={() => setShowWATemplate(false)}
+            cabangNama={selectedCabang?.Nama_Cabang || '-'}
+            tanggal={laporan.Tanggal_Operasional}
+            shift={laporan.Shift}
+            petugas={laporan.Petugas}
+            totalItem={laporan.Jumlah_Kritis + laporan.Jumlah_Hampir_Habis + (laporan.Detail?.length || 0)}
+            jumlahKritis={laporan.Jumlah_Kritis}
+            jumlahHampirHabis={laporan.Jumlah_Hampir_Habis}
+            linkPDF={laporan.Link_PDF || ''}
+          />
         )}
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-        {laporan?.Link_PDF && (
-          <a
-            href={laporan.Link_PDF}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-default inline-flex items-center justify-center gap-2 px-5 py-3 min-h-[44px]"
-          >
-            <FileText className="w-4 h-4 text-[#1868DB]" />
-            <span>Buka File PDF Drive</span>
-            <ExternalLink className="w-4 h-4" />
-          </a>
-        )}
-
-        <button
-          onClick={handleShareWhatsApp}
-          disabled={updatingWa}
-          className="inline-flex items-center justify-center gap-2 bg-[#22A06B] hover:bg-[#216E4E] text-white px-6 py-3 rounded font-medium text-sm transition-colors disabled:opacity-50 min-h-[44px]"
-        >
-          <Share2 className="w-4 h-4" />
-          <span>{waSent ? 'Kirim Ulang ke WhatsApp' : 'Kirim Laporan ke WhatsApp'}</span>
-        </button>
-      </div>
-
-      {waSent && (
-        <div className="inline-flex items-center gap-1.5 text-sm text-[#216E4E] font-medium bg-[#E3FCEF] px-4 py-2 rounded border border-[#BAF3DB]">
-          <CheckCircle2 className="w-4 h-4" />
-          <span>Status laporan telah diperbarui: Sudah Dikirim</span>
-        </div>
-      )}
-
-      {/* Navigation Footer */}
-      <div className="pt-6 border-t border-[#DCDFE4] flex items-center justify-between text-sm">
-        <Link
-          href="/laporan"
-          className="inline-flex items-center gap-1.5 text-[#44546F] hover:text-[#172B4D] font-semibold transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Riwayat Laporan</span>
-        </Link>
-
-        <Link
-          href="/so/input"
-          className="inline-flex items-center gap-1.5 text-[#1868DB] hover:text-[#0055CC] font-semibold transition-colors"
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span>Input Sesi Baru</span>
-        </Link>
-      </div>
+      </AnimatePresence>
     </div>
   );
 }

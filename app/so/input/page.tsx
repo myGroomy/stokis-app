@@ -260,7 +260,7 @@ export default function InputSOPage() {
       petugas,
       items: payloadItems,
       cabangNama: selectedCabang.Nama_Cabang,
-      cabangKode: selectedCabang.Kode_Cabang || selectedCabang.Cabang_ID,
+      cabangKode: selectedCabang.Cabang_ID,
     };
     setPendingPayload(formState);
     setShowSummary(true);

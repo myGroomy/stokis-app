@@ -1,23 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useCabang } from '@/lib/CabangContext';
 import { 
   BarChart3, 
   AlertCircle, 
-  CheckCircle2, 
-  Calendar, 
-  Loader2, 
   Package, 
   TrendingUp,
   ShieldAlert,
-  Layers,
-  ArrowUpRight,
-  BarChart2,
-  LineChart,
-  AreaChart
+  BarChart3Icon,
+  LineChartIcon,
+  AreaChartIcon
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -34,6 +29,7 @@ import {
   ResponsiveContainer,
   Cell
 } from 'recharts';
+import { QuantumLoaderFull } from '@/components/ui/QuantumLoader';
 
 type ChartType = 'bar' | 'line' | 'area';
 
@@ -43,6 +39,58 @@ interface DashboardData {
   hampirHabis: number;
   aman: number;
   detail: any[];
+}
+
+function StatusBarChart({ data }: { data: any[] }) {
+  return (
+    <BarChart data={data}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#E9F2FF" vertical={false} />
+      <XAxis dataKey="name" tick={{ fill: '#44546F', fontSize: 12 }} axisLine={false} />
+      <YAxis tick={{ fill: '#44546F', fontSize: 12 }} axisLine={false} />
+      <Tooltip
+        contentStyle={{ backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #DCDFE4', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+        itemStyle={{ color: '#172B4D' }}
+      />
+      <Legend verticalAlign="bottom" height={36} />
+      <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={48}>
+        {data.map((entry, index) => (
+          <Cell key={`cell-${index}`} fill={entry.color} />
+        ))}
+      </Bar>
+    </BarChart>
+  );
+}
+
+function StatusLineChart({ data }: { data: any[] }) {
+  return (
+    <RechartsLineChart data={data}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#E9F2FF" vertical={false} />
+      <XAxis dataKey="name" tick={{ fill: '#44546F', fontSize: 12 }} axisLine={false} />
+      <YAxis tick={{ fill: '#44546F', fontSize: 12 }} axisLine={false} />
+      <Tooltip
+        contentStyle={{ backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #DCDFE4', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+        itemStyle={{ color: '#172B4D' }}
+      />
+      <Legend verticalAlign="bottom" height={36} />
+      <Line type="monotone" dataKey="value" stroke="#1868DB" strokeWidth={3} dot={{ r: 4 }} />
+    </RechartsLineChart>
+  );
+}
+
+function StatusAreaChart({ data }: { data: any[] }) {
+  return (
+    <RechartsAreaChart data={data}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#E9F2FF" vertical={false} />
+      <XAxis dataKey="name" tick={{ fill: '#44546F', fontSize: 12 }} axisLine={false} />
+      <YAxis tick={{ fill: '#44546F', fontSize: 12 }} axisLine={false} />
+      <Tooltip
+        contentStyle={{ backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #DCDFE4', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+        itemStyle={{ color: '#172B4D' }}
+      />
+      <Legend verticalAlign="bottom" height={36} />
+      <Area type="monotone" dataKey="value" stroke="#1868DB" fill="#E9F2FF" strokeWidth={3} />
+    </RechartsAreaChart>
+  );
 }
 
 export default function DashboardHarianPage() {
@@ -84,22 +132,15 @@ export default function DashboardHarianPage() {
 
   const chartData = useMemo(() => {
     if (!data?.detail) return [];
-    // Group by status for visualization
-    const statusData = [
+    return [
       { name: 'Kritis', value: data.kritis, color: '#CA3521' },
       { name: 'Hampir Habis', value: data.hampirHabis, color: '#B38600' },
       { name: 'Aman', value: data.aman, color: '#216E4E' },
     ];
-    return statusData;
   }, [data]);
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-3">
-        <Loader2 className="w-8 h-8 text-[#1868DB] animate-spin" />
-        <p className="text-[#44546F] text-sm tracking-wide">Memuat ringkasan data harian...</p>
-      </div>
-    );
+    return <QuantumLoaderFull text="Memuat ringkasan data harian" />;
   }
 
   if (!data) {
@@ -109,6 +150,19 @@ export default function DashboardHarianPage() {
       </div>
     );
   }
+
+  const ChartIcon = chartType === 'bar' ? BarChart3Icon : chartType === 'line' ? LineChartIcon : AreaChartIcon;
+
+  const renderChart = () => {
+    switch (chartType) {
+      case 'bar':
+        return <StatusBarChart data={chartData} />;
+      case 'line':
+        return <StatusLineChart data={chartData} />;
+      case 'area':
+        return <StatusAreaChart data={chartData} />;
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -146,22 +200,23 @@ export default function DashboardHarianPage() {
 
           {/* Chart Type Toggle */}
           <div className="flex bg-[#F1F2F4] rounded p-1">
-            {(['bar', 'line', 'area'] as ChartType[]).map((type) => (
-              <button
-                key={type}
-                onClick={() => setChartType(type)}
-                className={`p-1.5 rounded transition-colors ${
-                  chartType === type 
-                    ? 'bg-white text-[#1868DB] shadow-sm' 
-                    : 'text-[#44546F] hover:text-[#172B4D]'
-                }`}
-                title={`${type.charAt(0).toUpperCase() + type.slice(1)} Chart`}
-              >
-                {type === 'bar' && <BarChart2 className="w-4 h-4" />}
-                {type === 'line' && <LineChart2 className="w-4 h-4" />}
-                {type === 'area' && <AreaChart2 className="w-4 h-4" />}
-              </button>
-            ))}
+            {(['bar', 'line', 'area'] as ChartType[]).map((type) => {
+              const Icon = type === 'bar' ? BarChart3Icon : type === 'line' ? LineChartIcon : AreaChartIcon;
+              return (
+                <button
+                  key={type}
+                  onClick={() => setChartType(type)}
+                  className={`p-1.5 rounded transition-colors ${
+                    chartType === type 
+                      ? 'bg-white text-[#1868DB] shadow-sm' 
+                      : 'text-[#44546F] hover:text-[#172B4D]'
+                  }`}
+                  title={`${type.charAt(0).toUpperCase() + type.slice(1)} Chart`}
+                >
+                  <Icon className="w-4 h-4" />
+                </button>
+              );
+            })}
           </div>
         </div>
       </motion.div>
@@ -213,9 +268,7 @@ export default function DashboardHarianPage() {
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-[#172B4D] flex items-center gap-2">
-            {chartType === 'bar' && <BarChart2 className="w-5 h-5 text-[#1868DB]" />}
-            {chartType === 'line' && <LineChart2 className="w-5 h-5 text-[#1868DB]" />}
-            {chartType === 'area' && <AreaChart2 className="w-5 h-5 text-[#1868DB]" />}
+            <ChartIcon className="w-5 h-5 text-[#1868DB]" />
             <span>Distribusi Status Item</span>
           </h3>
           <span className="text-xs font-medium text-[#44546F] bg-[#F1F2F4] px-2 py-1 rounded">
@@ -225,49 +278,7 @@ export default function DashboardHarianPage() {
 
         <div className="h-[320px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            {chartType === 'bar' && (
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E9F2FF" vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: '#44546F', fontSize: 12 }} axisLine={false} />
-                <YAxis tick={{ fill: '#44546F', fontSize: 12 }} axisLine={false} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #DCDFE4', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
-                  itemStyle={{ color: '#172B4D' }}
-                />
-                <Legend verticalAlign="bottom" height={36} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={48}>
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            )}
-            {chartType === 'line' && (
-              <RechartsLineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E9F2FF" vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: '#44546F', fontSize: 12 }} axisLine={false} />
-                <YAxis tick={{ fill: '#44546F', fontSize: 12 }} axisLine={false} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #DCDFE4', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
-                  itemStyle={{ color: '#172B4D' }}
-                />
-                <Legend verticalAlign="bottom" height={36} />
-                <Line type="monotone" dataKey="value" stroke="#1868DB" strokeWidth={3} dot={{ r: 4 }} />
-              </RechartsLineChart>
-            )}
-            {chartType === 'area' && (
-              <RechartsAreaChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E9F2FF" vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: '#44546F', fontSize: 12 }} axisLine={false} />
-                <YAxis tick={{ fill: '#44546F', fontSize: 12 }} axisLine={false} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #DCDFE4', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
-                  itemStyle={{ color: '#172B4D' }}
-                />
-                <Legend verticalAlign="bottom" height={36} />
-                <Area type="monotone" dataKey="value" stroke="#1868DB" fill="#E9F2FF" strokeWidth={3} />
-              </RechartsAreaChart>
-            )}
+            {renderChart()}
           </ResponsiveContainer>
         </div>
       </motion.div>
@@ -340,66 +351,5 @@ export default function DashboardHarianPage() {
         )}
       </motion.div>
     </div>
-  );
-}
-
-// Icons components
-function BarChart2({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M3 3v18h18" />
-      <path d="M18 17V9" />
-      <path d="M13 17V5" />
-      <path d="M8 17v-3" />
-    </svg>
-  );
-}
-
-function LineChart2({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M22 12H18L15 21L9 3L6 12H2" />
-    </svg>
-  );
-}
-
-function AreaChart2({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M22 12V4H2L6 12L10 20L14 10L18 20V12H22Z" />
-    </svg>
   );
 }

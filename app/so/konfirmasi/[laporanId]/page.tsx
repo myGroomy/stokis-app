@@ -5,14 +5,14 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams } from 'next/navigation';
 import { useCabang } from '@/lib/CabangContext';
-import { 
-  CheckCircle2, 
-  FileText, 
-  Share2, 
-  ExternalLink, 
-  ArrowLeft, 
-  PlusCircle, 
-  Loader2, 
+import {
+  CheckCircle2,
+  FileText,
+  Share2,
+  ExternalLink,
+  ArrowLeft,
+  PlusCircle,
+  Loader2,
   ShieldCheck,
   AlertTriangle,
   Send
@@ -75,8 +75,8 @@ export default function KonfirmasiLaporanPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-3">
-        <Loader2 className="w-8 h-8 text-[#1868DB] animate-spin" />
-        <p className="text-[#44546F] text-sm tracking-wide">Menyiapkan laporan PDF...</p>
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <p className="text-base-content/60 text-sm tracking-wide">Menyiapkan laporan PDF...</p>
       </div>
     );
   }
@@ -91,25 +91,23 @@ export default function KonfirmasiLaporanPage() {
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.2 }}
         >
-          {/* Success Badge */}
-          <div className="inline-flex p-4 rounded-full bg-[#E3FCEF] text-[#216E4E] mb-2">
+          <div className="inline-flex p-4 rounded-full bg-success/10 text-success mb-2">
             <CheckCircle2 className="w-10 h-10" />
           </div>
 
           <div className="space-y-1.5">
-            <h1 className="text-2xl sm:text-3xl font-semibold text-[#172B4D] tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-base-content tracking-tight">
               Stock Opname Berhasil Disimpan
             </h1>
-            <p className="text-[#44546F] text-sm max-w-md mx-auto">
+            <p className="text-base-content/60 text-sm max-w-md mx-auto">
               Data transaksi telah tercatat di spreadsheet cabang dan berkas PDF telah tersimpan di Google Drive.
             </p>
           </div>
 
-          {/* Report Info Card */}
-          <div className="surface-card p-6 text-left space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#DCDFE4]">
-              <span className="text-sm text-[#44546F] font-semibold">Nomor Laporan</span>
-              <span className="font-mono text-sm font-semibold text-[#172B4D] bg-[#F1F2F4] px-2.5 py-1 rounded">
+          <div className="card bg-base-100 border border-base-300 p-6 text-left space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-base-300">
+              <span className="text-sm text-base-content/60 font-semibold">Nomor Laporan</span>
+              <span className="font-mono text-sm font-semibold text-base-content bg-base-200 px-2.5 py-1 rounded">
                 {laporanId}
               </span>
             </div>
@@ -117,35 +115,34 @@ export default function KonfirmasiLaporanPage() {
             {laporan && (
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-[#44546F]">Tanggal dan Shift:</span>
-                  <span className="font-semibold text-[#172B4D]">{laporan.Tanggal_Operasional} ({laporan.Shift})</span>
+                  <span className="text-base-content/60">Tanggal dan Shift:</span>
+                  <span className="font-semibold text-base-content">{laporan.Tanggal_Operasional} ({laporan.Shift})</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[#44546F]">Petugas Penanggung Jawab:</span>
-                  <span className="font-semibold text-[#172B4D]">{laporan.Petugas}</span>
+                  <span className="text-base-content/60">Petugas Penanggung Jawab:</span>
+                  <span className="font-semibold text-base-content">{laporan.Petugas}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[#44546F]">Item Status Kritis:</span>
-                  <span className="font-bold text-[#CA3521] tabular-nums">{laporan.Jumlah_Kritis} Item</span>
+                  <span className="text-base-content/60">Item Status Kritis:</span>
+                  <span className="font-bold text-error tabular-nums">{laporan.Jumlah_Kritis} Item</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[#44546F]">Item Status Hampir Habis:</span>
-                  <span className="font-bold text-[#B38600] tabular-nums">{laporan.Jumlah_Hampir_Habis} Item</span>
+                  <span className="text-base-content/60">Item Status Hampir Habis:</span>
+                  <span className="font-bold text-warning tabular-nums">{laporan.Jumlah_Hampir_Habis} Item</span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             {laporan?.Link_PDF && (
               <a
                 href={laporan.Link_PDF}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-default inline-flex items-center justify-center gap-2 px-5 py-3 min-h-[44px]"
+                className="btn gap-2 px-5 py-3 min-h-[44px]"
               >
-                <FileText className="w-4 h-4 text-[#1868DB]" />
+                <FileText className="w-4 h-4 text-primary" />
                 <span>Buka File PDF Drive</span>
                 <ExternalLink className="w-4 h-4" />
               </a>
@@ -154,7 +151,7 @@ export default function KonfirmasiLaporanPage() {
             <button
               onClick={handleShareWhatsApp}
               disabled={updatingWa}
-              className="inline-flex items-center justify-center gap-2 bg-[#22A06B] hover:bg-[#216E4E] text-white px-6 py-3 rounded font-medium text-sm transition-colors disabled:opacity-50 min-h-[44px]"
+              className="btn btn-success gap-2 px-6 py-3 min-h-[44px]"
             >
               <Share2 className="w-4 h-4" />
               <span>{waSent ? 'Kirim Ulang ke WhatsApp' : 'Siapkan Pesan WhatsApp'}</span>
@@ -162,17 +159,16 @@ export default function KonfirmasiLaporanPage() {
           </div>
 
           {waSent && (
-            <div className="inline-flex items-center gap-1.5 text-sm text-[#216E4E] font-medium bg-[#E3FCEF] px-4 py-2 rounded border border-[#BAF3DB]">
+            <div className="alert alert-success text-sm py-2 mt-2">
               <CheckCircle2 className="w-4 h-4" />
               <span>Status laporan telah diperbarui: Sudah Dikirim</span>
             </div>
           )}
 
-          {/* Navigation Footer */}
-          <div className="pt-6 border-t border-[#DCDFE4] flex items-center justify-between text-sm">
+          <div className="pt-6 border-t border-base-300 flex items-center justify-between text-sm">
             <Link
               href="/laporan"
-              className="inline-flex items-center gap-1.5 text-[#44546F] hover:text-[#172B4D] font-semibold transition-colors"
+              className="inline-flex items-center gap-1.5 text-base-content/60 hover:text-base-content font-semibold transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Riwayat Laporan</span>
@@ -180,7 +176,7 @@ export default function KonfirmasiLaporanPage() {
 
             <Link
               href="/so/input"
-              className="inline-flex items-center gap-1.5 text-[#1868DB] hover:text-[#0055CC] font-semibold transition-colors"
+              className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 font-semibold transition-colors"
             >
               <PlusCircle className="w-4 h-4" />
               <span>Input Sesi Baru</span>
@@ -189,7 +185,6 @@ export default function KonfirmasiLaporanPage() {
         </motion.div>
       </AnimatePresence>
 
-      {/* WhatsApp Template Modal */}
       <AnimatePresence>
         {showWATemplate && laporan && (
           <WATemplateModal

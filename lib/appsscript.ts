@@ -48,9 +48,13 @@ export async function callAppsScript<T = any>(
       const data = JSON.parse(text);
       return data as ApiResponse<T>;
     } catch {
+      const isConsentPage = text.includes('consent') || text.includes('oauth_v2') || text.includes('ppConfig');
+      const hint = isConsentPage
+        ? ' | Deployment access mungkin belum "Anyone". Buka Apps Script Editor > Deploy > Manage deployments > Edit > Who has access: Anyone.'
+        : '';
       return {
         success: false,
-        error: { code: 'PARSE_ERROR', message: 'Respon dari Apps Script bukan format JSON valid: ' + text.substring(0, 100) }
+        error: { code: 'PARSE_ERROR', message: 'Respon dari Apps Script bukan format JSON valid: ' + text.substring(0, 150) + hint }
       };
     }
   } catch (err: any) {

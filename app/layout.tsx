@@ -20,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id">
-      <body className="min-h-screen flex flex-col font-sans antialiased" style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-text-primary)' }}>
+      <body data-theme="stokis" className="min-h-screen flex flex-col font-sans antialiased bg-base-200 text-base-content">
         <AuthProvider>
           <CabangProvider>
             <AuthGuard>

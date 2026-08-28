@@ -4,15 +4,15 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCabang } from '@/lib/CabangContext';
-import { 
-  FileText, 
-  Search, 
-  ExternalLink, 
-  Share2, 
-  Calendar, 
-  Clock, 
-  User, 
-  ShieldAlert, 
+import {
+  FileText,
+  Search,
+  ExternalLink,
+  Share2,
+  Calendar,
+  Clock,
+  User,
+  ShieldAlert,
   Loader2,
   Filter
 } from 'lucide-react';
@@ -37,12 +37,10 @@ export default function LaporanPage() {
   const [laporanList, setLaporanList] = useState<LaporanItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Filters
   const [filterTanggal, setFilterTanggal] = useState<string>('');
   const [filterShift, setFilterShift] = useState<string>('');
   const [filterPetugas, setFilterPetugas] = useState<string>('');
 
-  // WhatsApp Modal State
   const [showWATemplate, setShowWATemplate] = useState<boolean>(false);
   const [selectedLaporan, setSelectedLaporan] = useState<LaporanItem | null>(null);
 
@@ -75,10 +73,10 @@ export default function LaporanPage() {
 
   if (!selectedCabang) {
     return (
-      <div className="text-center py-16 surface-card p-8 space-y-3">
-        <ShieldAlert className="w-12 h-12 mx-auto" style={{ color: 'var(--color-warning)' }} />
-        <h3 className="text-base font-bold" style={{ color: 'var(--color-text-primary)' }}>Pilih Cabang Terlebih Dahulu</h3>
-        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Silakan pilih cabang aktif melalui menu di navbar atas.</p>
+      <div className="text-center py-16 card bg-base-100 border border-base-300 p-8 space-y-3">
+        <ShieldAlert className="w-12 h-12 mx-auto text-warning" />
+        <h3 className="text-base font-bold text-base-content">Pilih Cabang Terlebih Dahulu</h3>
+        <p className="text-sm text-base-content/60">Silakan pilih cabang aktif melalui menu di navbar atas.</p>
       </div>
     );
   }
@@ -101,7 +99,6 @@ export default function LaporanPage() {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       <AnimatePresence mode="wait">
-        {/* Header */}
         <motion.div
           key="header"
           initial={{ opacity: 0, y: 8 }}
@@ -110,28 +107,24 @@ export default function LaporanPage() {
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
         >
           <div>
-            <h1
-              className="text-xl sm:text-2xl font-semibold flex items-center gap-2"
-              style={{ color: 'var(--color-text-primary)' }}
-            >
-              <FileText className="w-6 h-6" style={{ color: 'var(--color-primary)' }} />
+            <h1 className="text-xl sm:text-2xl font-semibold flex items-center gap-2 text-base-content">
+              <FileText className="w-6 h-6 text-primary" />
               <span>Riwayat Laporan Stock Opname</span>
             </h1>
-            <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-              Cabang Operasional: <span className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>{selectedCabang.Nama_Cabang}</span>
+            <p className="text-sm mt-1 text-base-content/60">
+              Cabang Operasional: <span className="font-semibold text-base-content">{selectedCabang.Nama_Cabang}</span>
             </p>
           </div>
         </motion.div>
 
-        {/* Filter Bar */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.05 }}
-          className="surface-card p-4 grid grid-cols-1 sm:grid-cols-3 gap-4"
+          className="card bg-base-100 border border-base-300 p-4 grid grid-cols-1 sm:grid-cols-3 gap-4"
         >
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--color-text-secondary)' }}>
+            <label className="text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
               <Calendar className="w-3.5 h-3.5" />
               <span>Filter Tanggal</span>
             </label>
@@ -139,19 +132,19 @@ export default function LaporanPage() {
               type="date"
               value={filterTanggal}
               onChange={(e) => setFilterTanggal(e.target.value)}
-              className="w-full px-3 py-2.5 text-sm tabular-nums"
+              className="input input-bordered w-full min-h-[42px] text-sm"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--color-text-secondary)' }}>
+            <label className="text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
               <Clock className="w-3.5 h-3.5" />
               <span>Filter Shift</span>
             </label>
             <select
               value={filterShift}
               onChange={(e) => setFilterShift(e.target.value)}
-              className="w-full px-3 py-2.5 text-sm cursor-pointer"
+              className="select select-bordered w-full min-h-[42px] text-sm"
             >
               <option value="">Semua Shift</option>
               <option value="Opening">Opening</option>
@@ -160,7 +153,7 @@ export default function LaporanPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--color-text-secondary)' }}>
+            <label className="text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
               <User className="w-3.5 h-3.5" />
               <span>Pencarian Petugas</span>
             </label>
@@ -169,34 +162,33 @@ export default function LaporanPage() {
               placeholder="Ketik nama petugas..."
               value={filterPetugas}
               onChange={(e) => setFilterPetugas(e.target.value)}
-              className="w-full px-3 py-2.5 text-sm"
+              className="input input-bordered w-full min-h-[42px] text-sm"
             />
           </div>
         </motion.div>
 
-        {/* Table Section */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.1 }}
-          className="surface-card overflow-hidden"
+          className="card bg-base-100 border border-base-300 overflow-hidden"
         >
           {loading ? (
             <div className="p-16 text-center">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" style={{ color: 'var(--color-primary)' }} />
-              <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Memuat arsip laporan...</p>
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
+              <p className="text-sm text-base-content/60">Memuat arsip laporan...</p>
             </div>
           ) : laporanList.length === 0 ? (
             <div className="p-16 text-center space-y-2">
-              <FileText className="w-12 h-12 mx-auto" style={{ color: 'var(--color-text-disabled)' }} />
-              <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>Tidak Ada Laporan yang Ditemukan</h3>
-              <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Belum ada catatan SO yang sesuai dengan kriteria filter.</p>
+              <FileText className="w-12 h-12 mx-auto text-base-content/30" />
+              <h3 className="text-sm font-semibold text-base-content">Tidak Ada Laporan yang Ditemukan</h3>
+              <p className="text-sm text-base-content/60">Belum ada catatan SO yang sesuai dengan kriteria filter.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm mobile-card-table">
-                <thead style={{ backgroundColor: 'var(--color-surface-sunken)', borderBottom: '1px solid var(--color-border)' }}>
-                  <tr className="font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
+                <thead className="bg-base-200 border-b border-base-300">
+                  <tr className="font-semibold text-base-content/60">
                     <th className="px-5 py-3">ID Laporan</th>
                     <th className="px-5 py-3">Tanggal dan Shift</th>
                     <th className="px-5 py-3">Petugas</th>
@@ -206,7 +198,7 @@ export default function LaporanPage() {
                     <th className="px-5 py-3 text-right">Aksi</th>
                   </tr>
                 </thead>
-                <tbody style={{ color: 'var(--color-text-primary)' }}>
+                <tbody className="text-base-content">
                   {laporanList.map((row) => (
                     <motion.tr
                       key={row.Laporan_ID}
@@ -214,75 +206,40 @@ export default function LaporanPage() {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 8 }}
                       transition={{ duration: 0.15 }}
-                      className="transition-colors"
-                      style={{ borderBottom: '1px solid var(--color-border)' }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--color-surface-sunken)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }}
+                      className="transition-colors border-b border-base-300 hover:bg-base-200"
                     >
-                      <td className="px-5 py-4 font-mono font-medium" style={{ color: 'var(--color-text-secondary)' }} data-label="ID">
+                      <td className="px-5 py-4 font-mono font-medium text-base-content/60" data-label="ID">
                         {row.Laporan_ID}
                       </td>
                       <td className="px-5 py-4" data-label="Tanggal">
-                        <span className="font-semibold tabular-nums" style={{ color: 'var(--color-text-primary)' }}>{row.Tanggal_Operasional}</span>
-                        <span
-                          className="ml-2 font-medium text-xs px-2 py-0.5 rounded-md"
-                          style={{
-                            backgroundColor: 'var(--color-surface-sunken)',
-                            color: 'var(--color-text-secondary)',
-                            border: '1px solid var(--color-border)',
-                          }}
-                        >
+                        <span className="font-semibold tabular-nums text-base-content">{row.Tanggal_Operasional}</span>
+                        <span className="ml-2 font-medium text-xs px-2 py-0.5 rounded-md bg-base-200 text-base-content/60 border border-base-300">
                           {row.Shift}
                         </span>
                       </td>
-                      <td className="px-5 py-4 font-medium" style={{ color: 'var(--color-text-primary)' }} data-label="Petugas">
+                      <td className="px-5 py-4 font-medium text-base-content" data-label="Petugas">
                         {row.Petugas}
                       </td>
                       <td className="px-5 py-4 text-center font-bold tabular-nums" data-label="Kritis">
                         {row.Jumlah_Kritis > 0 ? (
-                          <span
-                            className="px-2 py-1 rounded-md text-xs"
-                            style={{
-                              backgroundColor: 'var(--color-danger-subtle)',
-                              color: 'var(--color-danger)',
-                              border: '1px solid var(--color-danger-border)',
-                            }}
-                          >
+                          <span className="badge badge-error gap-1">
                             {row.Jumlah_Kritis}
                           </span>
                         ) : (
-                          <span style={{ color: 'var(--color-text-disabled)' }}>0</span>
+                          <span className="text-base-content/30">0</span>
                         )}
                       </td>
                       <td className="px-5 py-4 text-center font-bold tabular-nums" data-label="Hampir Habis">
                         {row.Jumlah_Hampir_Habis > 0 ? (
-                          <span
-                            className="px-2 py-1 rounded-md text-xs"
-                            style={{
-                              backgroundColor: 'var(--color-warning-subtle)',
-                              color: 'var(--color-warning)',
-                              border: '1px solid var(--color-warning-border)',
-                            }}
-                          >
+                          <span className="badge badge-warning gap-1">
                             {row.Jumlah_Hampir_Habis}
                           </span>
                         ) : (
-                          <span style={{ color: 'var(--color-text-disabled)' }}>0</span>
+                          <span className="text-base-content/30">0</span>
                         )}
                       </td>
                       <td className="px-5 py-4 text-center" data-label="WhatsApp">
-                        <span
-                          className="lozenge"
-                          style={{
-                            backgroundColor: row.Status_Kirim_WA === 'Sudah Dikirim' ? 'var(--color-success-subtle)' : 'var(--color-surface-sunken)',
-                            color: row.Status_Kirim_WA === 'Sudah Dikirim' ? 'var(--color-success)' : 'var(--color-text-secondary)',
-                            border: `1px solid ${row.Status_Kirim_WA === 'Sudah Dikirim' ? 'var(--color-success-border)' : 'var(--color-border)'}`,
-                          }}
-                        >
+                        <span className={`badge ${row.Status_Kirim_WA === 'Sudah Dikirim' ? 'badge-success' : 'badge-ghost'}`}>
                           {row.Status_Kirim_WA || 'Belum'}
                         </span>
                       </td>
@@ -293,16 +250,7 @@ export default function LaporanPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             title="Buka Berkas PDF di Google Drive"
-                            className="inline-flex p-1.5 rounded-md transition-colors"
-                            style={{ color: 'var(--color-text-secondary)' }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.color = 'var(--color-primary)';
-                              e.currentTarget.style.backgroundColor = 'var(--color-primary-subtle)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.color = 'var(--color-text-secondary)';
-                              e.currentTarget.style.backgroundColor = 'transparent';
-                            }}
+                            className="btn btn-ghost btn-xs text-base-content/60 hover:text-primary"
                           >
                             <ExternalLink className="w-4 h-4" />
                           </a>
@@ -310,16 +258,7 @@ export default function LaporanPage() {
                         <button
                           onClick={() => handleOpenWATemplate(row)}
                           title="Siapkan Pesan WhatsApp"
-                          className="inline-flex p-1.5 rounded-md transition-colors"
-                          style={{ color: 'var(--color-text-secondary)' }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color = 'var(--color-success)';
-                            e.currentTarget.style.backgroundColor = 'var(--color-success-subtle)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color = 'var(--color-text-secondary)';
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                          }}
+                          className="btn btn-ghost btn-xs text-base-content/60 hover:text-success"
                         >
                           <Share2 className="w-4 h-4" />
                         </button>
@@ -333,7 +272,6 @@ export default function LaporanPage() {
         </motion.div>
       </AnimatePresence>
 
-      {/* WhatsApp Template Modal */}
       <AnimatePresence>
         {showWATemplate && selectedLaporan && (
           <WATemplateModal

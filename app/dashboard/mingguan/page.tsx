@@ -4,26 +4,26 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useCabang } from '@/lib/CabangContext';
-import { 
-  TrendingUp, 
-  ShieldAlert, 
+import {
+  TrendingUp,
+  ShieldAlert,
   Activity,
   BarChart3Icon,
   LineChartIcon,
   AreaChartIcon
 } from 'lucide-react';
-import { 
-  BarChart, 
-  Bar, 
-  LineChart as RechartsLineChart, 
-  Line, 
-  AreaChart as RechartsAreaChart, 
+import {
+  BarChart,
+  Bar,
+  LineChart as RechartsLineChart,
+  Line,
+  AreaChart as RechartsAreaChart,
   Area,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
   ResponsiveContainer
 } from 'recharts';
 import { QuantumLoaderFull } from '@/components/ui/QuantumLoader';
@@ -41,21 +41,21 @@ interface DailyStats {
 function TrendBarChart({ data }: { data: DailyStats[] }) {
   return (
     <BarChart data={data}>
-      <CartesianGrid strokeDasharray="3 3" stroke="#E9F2FF" vertical={false} />
-      <XAxis 
-        dataKey="date" 
-        tick={{ fill: '#44546F', fontSize: 10 }} 
-        axisLine={false} 
+      <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.935 0.004 260)" vertical={false} />
+      <XAxis
+        dataKey="date"
+        tick={{ fill: 'oklch(0.40 0.03 260)', fontSize: 10 }}
+        axisLine={false}
         tickFormatter={(val) => val.split('-')[2] + '/' + val.split('-')[1]}
       />
-      <YAxis tick={{ fill: '#44546F', fontSize: 12 }} axisLine={false} />
+      <YAxis tick={{ fill: 'oklch(0.40 0.03 260)', fontSize: 12 }} axisLine={false} />
       <Tooltip
-        contentStyle={{ backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #DCDFE4', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
-        itemStyle={{ color: '#172B4D' }}
+        contentStyle={{ backgroundColor: 'oklch(0.99 0.002 260)', borderRadius: '4px', border: '1px solid oklch(0.90 0.005 260)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+        itemStyle={{ color: 'oklch(0.18 0.03 260)' }}
         formatter={(value: number) => [`${value} Item`, 'Total']}
       />
       <Legend verticalAlign="bottom" height={36} />
-      <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={32} fill="#1868DB" />
+      <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={32} fill="oklch(0.46 0.17 260)" />
     </BarChart>
   );
 }
@@ -63,21 +63,21 @@ function TrendBarChart({ data }: { data: DailyStats[] }) {
 function TrendLineChart({ data }: { data: DailyStats[] }) {
   return (
     <RechartsLineChart data={data}>
-      <CartesianGrid strokeDasharray="3 3" stroke="#E9F2FF" vertical={false} />
-      <XAxis 
-        dataKey="date" 
-        tick={{ fill: '#44546F', fontSize: 10 }} 
-        axisLine={false} 
+      <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.935 0.004 260)" vertical={false} />
+      <XAxis
+        dataKey="date"
+        tick={{ fill: 'oklch(0.40 0.03 260)', fontSize: 10 }}
+        axisLine={false}
         tickFormatter={(val) => val.split('-')[2] + '/' + val.split('-')[1]}
       />
-      <YAxis tick={{ fill: '#44546F', fontSize: 12 }} axisLine={false} />
+      <YAxis tick={{ fill: 'oklch(0.40 0.03 260)', fontSize: 12 }} axisLine={false} />
       <Tooltip
-        contentStyle={{ backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #DCDFE4', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
-        itemStyle={{ color: '#172B4D' }}
+        contentStyle={{ backgroundColor: 'oklch(0.99 0.002 260)', borderRadius: '4px', border: '1px solid oklch(0.90 0.005 260)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+        itemStyle={{ color: 'oklch(0.18 0.03 260)' }}
         formatter={(value: number) => [`${value} Item`, 'Total']}
       />
       <Legend verticalAlign="bottom" height={36} />
-      <Line type="monotone" dataKey="count" stroke="#1868DB" strokeWidth={3} dot={{ r: 4 }} />
+      <Line type="monotone" dataKey="count" stroke="oklch(0.46 0.17 260)" strokeWidth={3} dot={{ r: 4 }} />
     </RechartsLineChart>
   );
 }
@@ -85,21 +85,21 @@ function TrendLineChart({ data }: { data: DailyStats[] }) {
 function TrendAreaChart({ data }: { data: DailyStats[] }) {
   return (
     <RechartsAreaChart data={data}>
-      <CartesianGrid strokeDasharray="3 3" stroke="#E9F2FF" vertical={false} />
-      <XAxis 
-        dataKey="date" 
-        tick={{ fill: '#44546F', fontSize: 10 }} 
-        axisLine={false} 
+      <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.935 0.004 260)" vertical={false} />
+      <XAxis
+        dataKey="date"
+        tick={{ fill: 'oklch(0.40 0.03 260)', fontSize: 10 }}
+        axisLine={false}
         tickFormatter={(val) => val.split('-')[2] + '/' + val.split('-')[1]}
       />
-      <YAxis tick={{ fill: '#44546F', fontSize: 12 }} axisLine={false} />
+      <YAxis tick={{ fill: 'oklch(0.40 0.03 260)', fontSize: 12 }} axisLine={false} />
       <Tooltip
-        contentStyle={{ backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #DCDFE4', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
-        itemStyle={{ color: '#172B4D' }}
+        contentStyle={{ backgroundColor: 'oklch(0.99 0.002 260)', borderRadius: '4px', border: '1px solid oklch(0.90 0.005 260)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+        itemStyle={{ color: 'oklch(0.18 0.03 260)' }}
         formatter={(value: number) => [`${value} Item`, 'Total']}
       />
       <Legend verticalAlign="bottom" height={36} />
-      <Area type="monotone" dataKey="count" stroke="#1868DB" fill="#E9F2FF" strokeWidth={3} />
+      <Area type="monotone" dataKey="count" stroke="oklch(0.46 0.17 260)" fill="oklch(0.935 0.004 260)" strokeWidth={3} />
     </RechartsAreaChart>
   );
 }
@@ -140,9 +140,9 @@ export default function DashboardMingguanPage() {
 
   if (!selectedCabang) {
     return (
-      <div className="text-center py-16 surface-card rounded-3xl p-8 space-y-3">
-        <ShieldAlert className="w-12 h-12 text-[#B38600] mx-auto" />
-        <h3 className="text-base font-bold text-[#172B4D]">Pilih Cabang Terlebih Dahulu</h3>
+      <div className="text-center py-16 card bg-base-100 border border-base-300 p-8 space-y-3">
+        <ShieldAlert className="w-12 h-12 text-warning mx-auto" />
+        <h3 className="text-base font-bold text-base-content">Pilih Cabang Terlebih Dahulu</h3>
       </div>
     );
   }
@@ -164,8 +164,8 @@ export default function DashboardMingguanPage() {
 
   if (!data) {
     return (
-      <div className="p-12 text-center surface-card">
-        <p className="text-[#44546F] text-sm">Gagal memuat data tren.</p>
+      <div className="p-12 text-center card bg-base-100 border border-base-300">
+        <p className="text-base-content/60 text-sm">Gagal memuat data tren.</p>
       </div>
     );
   }
@@ -185,7 +185,6 @@ export default function DashboardMingguanPage() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      {/* Header & Tabs */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -193,41 +192,40 @@ export default function DashboardMingguanPage() {
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-[#172B4D] flex items-center gap-2">
-            <TrendingUp className="w-6 h-6 text-[#1868DB]" />
+          <h1 className="text-xl sm:text-2xl font-semibold text-base-content flex items-center gap-2">
+            <TrendingUp className="w-6 h-6 text-primary" />
             <span>Dashboard Tren Mingguan</span>
           </h1>
-          <p className="text-[#44546F] text-sm mt-1">
-            Cabang Operasional: <span className="text-[#172B4D] font-semibold">{selectedCabang.Nama_Cabang}</span>
+          <p className="text-base-content/60 text-sm mt-1">
+            Cabang Operasional: <span className="text-base-content font-semibold">{selectedCabang.Nama_Cabang}</span>
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex bg-[#F1F2F4] rounded p-1 text-sm font-medium">
-            <Link href="/dashboard/harian" className="text-[#44546F] hover:text-[#172B4D] px-3 py-1 rounded transition-colors">
+          <div className="flex bg-base-200 rounded p-1 text-sm font-medium">
+            <Link href="/dashboard/harian" className="text-base-content/60 hover:text-base-content px-3 py-1 rounded transition-colors">
               Harian
             </Link>
-            <span className="bg-white text-[#172B4D] px-3 py-1 rounded shadow-sm">Mingguan</span>
+            <span className="bg-base-100 text-base-content px-3 py-1 rounded shadow-sm">Mingguan</span>
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-[#44546F]">
+          <div className="flex items-center gap-2 text-sm text-base-content/60">
             <input
               type="date"
               value={dari}
               onChange={(e) => setDari(e.target.value)}
-              className="bg-white border border-[#DCDFE4] rounded px-3 py-1.5 text-sm text-[#172B4D] focus:outline-none focus:border-[#1868DB] tabular-nums"
+              className="input input-bordered px-3 py-1.5 text-sm tabular-nums"
             />
-            <span className="text-[#44546F]">sampai</span>
+            <span>sampai</span>
             <input
               type="date"
               value={sampai}
               onChange={(e) => setSampai(e.target.value)}
-              className="bg-white border border-[#DCDFE4] rounded px-3 py-1.5 text-sm text-[#172B4D] focus:outline-none focus:border-[#1868DB] tabular-nums"
+              className="input input-bordered px-3 py-1.5 text-sm tabular-nums"
             />
           </div>
 
-          {/* Chart Type Toggle */}
-          <div className="flex bg-[#F1F2F4] rounded p-1">
+          <div className="flex bg-base-200 rounded p-1">
             {(['bar', 'line', 'area'] as ChartType[]).map((type) => {
               const Icon = type === 'bar' ? BarChart3Icon : type === 'line' ? LineChartIcon : AreaChartIcon;
               return (
@@ -235,9 +233,9 @@ export default function DashboardMingguanPage() {
                   key={type}
                   onClick={() => setChartType(type)}
                   className={`p-1.5 rounded transition-colors ${
-                    chartType === type 
-                      ? 'bg-white text-[#1868DB] shadow-sm' 
-                      : 'text-[#44546F] hover:text-[#172B4D]'
+                    chartType === type
+                      ? 'bg-base-100 text-primary shadow-sm'
+                      : 'text-base-content/60 hover:text-base-content'
                   }`}
                   title={`${type.charAt(0).toUpperCase() + type.slice(1)} Chart`}
                 >
@@ -249,36 +247,34 @@ export default function DashboardMingguanPage() {
         </div>
       </motion.div>
 
-      {/* Summary Card */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, delay: 0.05 }}
-        className="surface-card p-6 flex items-center justify-between"
+        className="card bg-base-100 border border-base-300 p-6 flex items-center justify-between"
       >
         <div className="space-y-1">
-          <span className="text-sm text-[#44546F] font-semibold">Total Item Terhitung pada Periode Ini</span>
-          <h2 className="text-3xl font-bold text-[#172B4D] tabular-nums">{data.totalTransaksi || 0} Transaksi</h2>
-          <p className="text-sm text-[#44546F] tabular-nums">Periode: {data.dari} hingga {data.sampai}</p>
+          <span className="text-sm text-base-content/60 font-semibold">Total Item Terhitung pada Periode Ini</span>
+          <h2 className="text-3xl font-bold text-base-content tabular-nums">{data.totalTransaksi || 0} Transaksi</h2>
+          <p className="text-sm text-base-content/60 tabular-nums">Periode: {data.dari} hingga {data.sampai}</p>
         </div>
-        <div className="p-4 bg-[#E9F2FF] text-[#1868DB] rounded">
+        <div className="p-4 bg-primary/10 text-primary rounded">
           <Activity className="w-8 h-8" />
         </div>
       </motion.div>
 
-      {/* Chart Section */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, delay: 0.1 }}
-        className="surface-card p-6"
+        className="card bg-base-100 border border-base-300 p-6"
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-[#172B4D] flex items-center gap-2">
-            <ChartIcon className="w-5 h-5 text-[#1868DB]" />
+          <h3 className="font-semibold text-base-content flex items-center gap-2">
+            <ChartIcon className="w-5 h-5 text-primary" />
             <span>Tren Aktivitas Harian</span>
           </h3>
-          <span className="text-xs font-medium text-[#44546F] bg-[#F1F2F4] px-2 py-1 rounded">
+          <span className="text-xs font-medium text-base-content/60 bg-base-200 px-2 py-1 rounded">
             {data.totalTransaksi} Total Transaksi
           </span>
         </div>
@@ -290,17 +286,16 @@ export default function DashboardMingguanPage() {
         </div>
       </motion.div>
 
-      {/* Daily Distribution Grid */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, delay: 0.15 }}
-        className="surface-card p-6 space-y-4"
+        className="card bg-base-100 border border-base-300 p-6 space-y-4"
       >
-        <h3 className="font-semibold text-sm text-[#172B4D] uppercase tracking-wider">Distribusi Aktivitas Harian</h3>
+        <h3 className="font-semibold text-sm text-base-content uppercase tracking-wider">Distribusi Aktivitas Harian</h3>
 
         {(!trendData || trendData.length === 0) ? (
-          <p className="text-[#44546F] text-sm text-center py-8">Tidak ada aktivitas pada rentang tanggal ini.</p>
+          <p className="text-base-content/60 text-sm text-center py-8">Tidak ada aktivitas pada rentang tanggal ini.</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
             {trendData.map((day, i) => (
@@ -309,14 +304,14 @@ export default function DashboardMingguanPage() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.05 * i }}
-                className="p-4 bg-[#F7F8F9] border border-[#DCDFE4] rounded text-center space-y-1"
+                className="p-4 bg-base-200 border border-base-300 rounded text-center space-y-1"
               >
-                <span className="text-xs text-[#44546F] block tabular-nums">{day.date}</span>
-                <span className="text-2xl font-bold text-[#1868DB] tabular-nums block">{day.count}</span>
-                <div className="flex items-center justify-center gap-2 text-[10px] text-[#44546F] mt-1">
-                  <span className="bg-[#FFEBE6] text-[#CA3521] px-1.5 py-0.5 rounded">{day.kritis}K</span>
-                  <span className="bg-[#FFFAE6] text-[#B38600] px-1.5 py-0.5 rounded">{day.hampirHabis}H</span>
-                  <span className="bg-[#E3FCEF] text-[#216E4E] px-1.5 py-0.5 rounded">{day.aman}A</span>
+                <span className="text-xs text-base-content/60 block tabular-nums">{day.date}</span>
+                <span className="text-2xl font-bold text-primary tabular-nums block">{day.count}</span>
+                <div className="flex items-center justify-center gap-2 text-[10px] text-base-content/60 mt-1">
+                  <span className="badge badge-error badge-xs">{day.kritis}K</span>
+                  <span className="badge badge-warning badge-xs">{day.hampirHabis}H</span>
+                  <span className="badge badge-success badge-xs">{day.aman}A</span>
                 </div>
               </motion.div>
             ))}

@@ -65,14 +65,7 @@ export function Navbar() {
   return (
     <>
       {/* Top Header - Desktop */}
-      <header
-        className="sticky top-0 z-50 w-full backdrop-blur-md"
-        style={{
-          backgroundColor: 'color-mix(in srgb, var(--color-surface) 85%, transparent)',
-          borderBottom: '1px solid var(--color-border)',
-          boxShadow: 'var(--shadow-sm)',
-        }}
-      >
+      <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-base-100/85 border-b border-base-300 shadow-sm">
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex items-center justify-between h-[60px]">
             {/* Logo */}
@@ -81,23 +74,14 @@ export function Navbar() {
               prefetch={false}
               className="flex items-center gap-2.5 group transition-opacity hover:opacity-90"
             >
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm"
-                style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-text-inverse)' }}
-              >
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm bg-primary text-primary-content">
                 S
               </div>
               <div className="flex flex-col leading-none">
-                <span
-                  className="text-sm font-bold tracking-tight"
-                  style={{ color: 'var(--color-text-primary)' }}
-                >
+                <span className="text-sm font-bold tracking-tight text-base-content">
                   STOKIS
                 </span>
-                <span
-                  className="text-[10px] font-semibold tracking-wide uppercase mt-0.5"
-                  style={{ color: 'var(--color-text-tertiary)' }}
-                >
+                <span className="text-[10px] font-semibold tracking-wide uppercase mt-0.5 text-base-content/50">
                   Operasional
                 </span>
               </div>
@@ -113,23 +97,11 @@ export function Navbar() {
                     key={item.name}
                     href={item.href}
                     prefetch={false}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-150"
-                    style={{
-                      backgroundColor: active ? 'var(--color-primary-subtle)' : 'transparent',
-                      color: active ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!active) {
-                        e.currentTarget.style.backgroundColor = 'var(--color-surface-sunken)';
-                        e.currentTarget.style.color = 'var(--color-text-primary)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!active) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = 'var(--color-text-secondary)';
-                      }
-                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-150 ${
+                      active
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-base-content/60 hover:bg-base-200 hover:text-base-content'
+                    }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
                     <span>{item.name}</span>
@@ -141,14 +113,8 @@ export function Navbar() {
             {/* Right side */}
             <div className="flex items-center gap-2">
               {/* Branch Selector */}
-              <div
-                className="flex items-center rounded-md px-2.5 py-1.5 transition-colors duration-150 max-w-[160px] sm:max-w-none"
-                style={{
-                  backgroundColor: 'var(--color-surface-sunken)',
-                  border: '1px solid var(--color-border)',
-                }}
-              >
-                <Store className="w-3.5 h-3.5 mr-1.5 flex-shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <div className="flex items-center rounded-md px-2.5 py-1.5 bg-base-200 border border-base-300 max-w-[160px] sm:max-w-none">
+                <Store className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 text-primary" />
                 <select
                   value={selectedCabang?.Cabang_ID || ""}
                   disabled={cabangList.length <= 1}
@@ -156,8 +122,7 @@ export function Navbar() {
                     const match = cabangList.find((c) => c.Cabang_ID === e.target.value);
                     if (match) setSelectedCabang(match);
                   }}
-                  className="bg-transparent text-xs font-semibold focus:outline-none pr-3 appearance-none border-none outline-none py-0 truncate cursor-pointer"
-                  style={{ color: 'var(--color-text-primary)' }}
+                  className="bg-transparent text-xs font-semibold focus:outline-none pr-3 appearance-none border-none outline-none py-0 truncate cursor-pointer text-base-content"
                 >
                   {cabangList.length === 0 ? (
                     <option value="">Pilih Cabang...</option>
@@ -170,23 +135,14 @@ export function Navbar() {
                   )}
                 </select>
                 {cabangList.length > 1 && (
-                  <ChevronDown className="w-3 h-3 pointer-events-none -ml-2" style={{ color: 'var(--color-text-tertiary)' }} />
+                  <ChevronDown className="w-3 h-3 pointer-events-none -ml-2 text-base-content/50" />
                 )}
               </div>
 
               {/* Logout */}
               <button
                 onClick={logout}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-colors duration-150"
-                style={{ color: 'var(--color-text-tertiary)' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = 'var(--color-danger)';
-                  e.currentTarget.style.backgroundColor = 'var(--color-danger-subtle)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = 'var(--color-text-tertiary)';
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-colors duration-150 text-base-content/50 hover:text-error hover:bg-error/10"
                 title="Keluar"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -198,14 +154,7 @@ export function Navbar() {
       </header>
 
       {/* Mobile Bottom Nav Bar */}
-      <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50"
-        style={{
-          backgroundColor: 'var(--color-surface)',
-          borderTop: '1px solid var(--color-border)',
-          boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.08)',
-        }}
-      >
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-base-100 border-t border-base-300 shadow-[0_-2px_8px_rgba(0,0,0,0.08)]">
         <div className="flex items-center justify-around h-16 px-1 safe-area-pb">
           {filteredBottom.map((item) => {
             const Icon = item.icon;
@@ -215,8 +164,7 @@ export function Navbar() {
               <button
                 key={item.name}
                 onClick={logout}
-                className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 transition-colors"
-                style={{ color: 'var(--color-text-tertiary)' }}
+                className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 transition-colors text-base-content/50 hover:text-error"
               >
                 <div className="p-1.5 rounded-lg">
                   <Icon className="w-5 h-5" />
@@ -228,19 +176,14 @@ export function Navbar() {
                 key={item.name}
                 href={item.href}
                 prefetch={false}
-                className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 transition-colors"
-                style={{ color: active ? 'var(--color-primary)' : 'var(--color-text-tertiary)' }}
+                className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 transition-colors ${
+                  active ? 'text-primary' : 'text-base-content/50'
+                }`}
               >
-                <div
-                  className="p-1.5 rounded-lg transition-colors"
-                  style={{ backgroundColor: active ? 'var(--color-primary-subtle)' : 'transparent' }}
-                >
+                <div className={`p-1.5 rounded-lg transition-colors ${active ? 'bg-primary/10' : ''}`}>
                   <Icon className="w-5 h-5" />
                 </div>
-                <span
-                  className="text-[10px] font-semibold"
-                  style={{ color: active ? 'var(--color-primary)' : 'var(--color-text-tertiary)' }}
-                >
+                <span className={`text-[10px] font-semibold ${active ? 'text-primary' : ''}`}>
                   {item.name}
                 </span>
               </Link>

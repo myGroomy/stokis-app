@@ -22,21 +22,20 @@ export function WATemplateModal({ isOpen, onClose, ...data }: WATemplateModalPro
   const [copied, setCopied] = React.useState(false);
 
   const templateText = `
-📊 *LAPORAN STOCK OPNAME*
-━━━━━━━━━━━━━━━━━━━━
-📍 *Cabang:* ${data.cabangNama}
-📅 *Tanggal:* ${data.tanggal}
-⏰ *Shift:* ${data.shift.toUpperCase()}
-👤 *Petugas:* ${data.petugas}
-━━━━━━━━━━━━━━━━━━━━
-📦 *Total Item:* ${data.totalItem}
-🔴 *Kritis:* ${data.jumlahKritis}
-🟡 *Hampir Habis:* ${data.jumlahHampirHabis}
-━━━━━━━━━━━━━━━━━━━━
-📄 *Laporan PDF:*
+*LAPORAN STOCK OPNAME*
+------------------------
+
+Cabang    : ${data.cabangNama}
+Tanggal   : ${data.tanggal}
+Shift     : ${data.shift.toUpperCase()}
+Petugas   : ${data.petugas}
+
+Total Item       : ${data.totalItem}
+Status Kritis    : ${data.jumlahKritis}
+Status Hampir Habis : ${data.jumlahHampirHabis}
+
+Laporan PDF:
 ${data.linkPDF}
-━━━━━━━━━━━━━━━━━━━━
-Kirim via *WhatsApp*
 `.trim();
 
   const handleCopy = () => {

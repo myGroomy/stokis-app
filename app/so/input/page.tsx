@@ -601,85 +601,76 @@ export default function InputSOPage() {
                     const total = (Number(step1Val) || 0) + (Number(step2Val) || 0);
                     const prev = previousSO[item.Nama_Barang];
 
+                    const hasPrev = Boolean(prev);
+
                     return (
                       <div
                         key={item.Item_ID}
                         className="p-4 sm:px-6 transition-colors border-b border-base-300 hover:bg-base-200"
                       >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-                          <div className="flex-1 space-y-1.5">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[11px] font-bold tabular-nums px-1.5 py-0.5 rounded bg-primary/10 text-primary">
-                                {globalIndexMap[item.Item_ID]}
+                        {/* Item header: name, satuan, threshold, status */}
+                        <div className="flex items-center gap-2 flex-wrap mb-3">
+                          <span className="text-[11px] font-bold tabular-nums px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                            {globalIndexMap[item.Item_ID]}
+                          </span>
+                          <span className="font-extrabold text-sm text-base-content">
+                            {item.Nama_Barang}
+                          </span>
+                          <span className="text-xs font-mono text-base-content/50">
+                            ({item.Satuan})
+                          </span>
+                          <span className="ml-auto flex items-center gap-3 flex-wrap">
+                            <span className="text-[11px] tabular-nums text-base-content/60">
+                              Batas Min: <span className="font-bold text-base-content">{item.Threshold}</span>
+                            </span>
+                            {getStatusBadge(total, item.Threshold)}
+                          </span>
+                        </div>
+
+                        {/* 3-column grid shared by both rows so they align vertically */}
+                        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                          {/* ── SO SEBELUMNYA (read-only, dimmed) ── */}
+                          <div className="col-span-3 grid grid-cols-3 gap-2 sm:gap-3">
+                            {/* S1 */}
+                            <div>
+                              <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-base-content/60 text-center">
+                                S1
                               </span>
-                              <span className="font-extrabold text-sm text-base-content">
-                                {item.Nama_Barang}
-                              </span>
-                              <span className="text-xs font-mono text-base-content/50">
-                                ({item.Satuan})
-                              </span>
+                              <div
+                                className="w-full h-11 sm:h-10 px-2 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-lg"
+                              >
+                                <span className="text-sm font-bold tabular-nums">{hasPrev ? prev.step1 : '–'}</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-3 flex-wrap">
-                              <span className="text-[11px] tabular-nums text-base-content/60">
-                                Batas Min: <span className="font-bold text-base-content">{item.Threshold}</span>
+                            {/* S2 */}
+                            <div>
+                              <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-base-content/60 text-center">
+                                S2
                               </span>
-                              {getStatusBadge(total, item.Threshold)}
+                              <div
+                                className="w-full h-11 sm:h-10 px-2 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-lg"
+                              >
+                                <span className="text-sm font-bold tabular-nums">{hasPrev ? prev.step2 : '–'}</span>
+                              </div>
+                            </div>
+                            {/* Prev Total */}
+                            <div>
+                              <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-base-content/60 text-center">
+                                Total
+                              </span>
+                              <div
+                                className="w-full h-11 sm:h-10 px-2 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content rounded-lg"
+                              >
+                                <span className="text-sm font-extrabold tabular-nums">{hasPrev ? prev.total : '–'}</span>
+                              </div>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 sm:gap-3 self-end sm:self-auto">
-                            {prev ? (
-                              <div className="flex-1 sm:w-32 sm:flex-none text-center">
-                                <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-base-content/60">
-                                  SO Sebelumnya
-                                </span>
-                                <div className="flex items-center gap-1 justify-center">
-                                  <div
-                                    className="w-full py-2 sm:py-1.5 text-center text-sm font-bold tabular-nums min-h-[44px] sm:min-h-0 flex flex-col items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-lg opacity-80"
-                                  >
-                                    <span className="text-[9px] uppercase text-base-content/50">S1</span>
-                                    <span className="text-sm font-bold tabular-nums leading-tight">{prev.step1}</span>
-                                  </div>
-                                  <span className="text-sm font-bold text-base-content/60">+</span>
-                                  <div
-                                    className="w-full py-2 sm:py-1.5 text-center text-sm font-bold tabular-nums min-h-[44px] sm:min-h-0 flex flex-col items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-lg opacity-80"
-                                  >
-                                    <span className="text-[9px] uppercase text-base-content/50">S2</span>
-                                    <span className="text-sm font-bold tabular-nums leading-tight">{prev.step2}</span>
-                                  </div>
-                                  <span className="text-sm font-bold text-base-content/60">=</span>
-                                  <div
-                                    className="w-full py-2 sm:py-1.5 text-center text-sm font-bold tabular-nums min-h-[44px] sm:min-h-0 flex items-center justify-center bg-base-200 border border-base-300 text-base-content rounded-lg opacity-80"
-                                  >
-                                    <span className="text-sm font-extrabold tabular-nums">{prev.total}</span>
-                                  </div>
-                                </div>
-                                <span className="text-[9px] text-base-content/50">
-                                  {prev.tanggal} ({prev.shift})
-                                </span>
-                              </div>
-                            ) : (
-                              <div className="flex-1 sm:w-32 sm:flex-none text-center">
-                                <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-base-content/60">
-                                  SO Sebelumnya
-                                </span>
-                                <div
-                                  className="w-full py-2 sm:py-1.5 text-center text-sm font-bold tabular-nums min-h-[44px] sm:min-h-0 flex items-center justify-center bg-base-200 border border-base-300 text-base-content/30 rounded-lg opacity-80"
-                                >
-                                  <span className="text-xs">Belum ada data</span>
-                                </div>
-                              </div>
-                            )}
-
-                            <span
-                              className="font-bold self-end mb-2.5 text-lg text-base-content/60"
-                            >
-                              →
-                            </span>
-                            <div className="flex-1 sm:w-24 sm:flex-none">
-                              <span
-                                className="block text-[10px] mb-1 text-center font-semibold uppercase tracking-wide text-base-content/60"
-                              >
+                          {/* ── SO SEKARANG (editable) ── */}
+                          <div className="col-span-3 grid grid-cols-3 gap-2 sm:gap-3">
+                            {/* Step 1 */}
+                            <div>
+                              <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-primary text-center">
                                 Step 1
                               </span>
                               <input
@@ -689,20 +680,12 @@ export default function InputSOPage() {
                                 placeholder="0"
                                 value={step1Val}
                                 onChange={(e) => handleCountChange(item.Item_ID, 'step1', e.target.value)}
-                                className="w-full py-2 sm:py-1.5 text-center text-sm font-bold tabular-nums min-h-[44px] sm:min-h-0 input input-bordered"
+                                className="w-full h-11 sm:h-10 px-2 text-center text-sm font-bold tabular-nums input input-bordered"
                               />
                             </div>
-
-                            <span
-                              className="font-bold self-end mb-2.5 text-lg text-base-content/60"
-                            >
-                              +
-                            </span>
-
-                            <div className="flex-1 sm:w-24 sm:flex-none">
-                              <span
-                                className="block text-[10px] mb-1 text-center font-semibold uppercase tracking-wide text-base-content/60"
-                              >
+                            {/* Step 2 */}
+                            <div>
+                              <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-primary text-center">
                                 Step 2
                               </span>
                               <input
@@ -712,28 +695,33 @@ export default function InputSOPage() {
                                 placeholder="0"
                                 value={step2Val}
                                 onChange={(e) => handleCountChange(item.Item_ID, 'step2', e.target.value)}
-                                className="w-full py-2 sm:py-1.5 text-center text-sm font-bold tabular-nums min-h-[44px] sm:min-h-0 input input-bordered"
+                                className="w-full h-11 sm:h-10 px-2 text-center text-sm font-bold tabular-nums input input-bordered"
                               />
                             </div>
-
-                            <span className="font-bold self-end mb-2.5 text-lg text-base-content/60">
-                              =
-                            </span>
-
-                            <div className="w-14 sm:w-20 text-center self-end mb-1">
-                              <span className="text-lg sm:text-base font-extrabold tabular-nums text-primary">
-                                {total}
-                              </span>
-                                <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-base-content/60">
+                            {/* Now Total */}
+                            <div>
+                              <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-base-content/60 text-center">
                                 Total
                               </span>
+                              <div
+                                className="w-full h-11 sm:h-10 px-2 text-center flex items-center justify-center bg-primary/10 border border-primary/30 rounded-lg"
+                              >
+                                <span className="text-sm font-extrabold tabular-nums text-primary">
+                                  {total}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
 
-                        {/* Keterangan (Optional Notes) */}
-                        <div className="mt-2 sm:mt-3 sm:ml-auto sm:w-[calc(100%-320px)]">
-                          <div className="relative">
+                        {/* Prev session date/shift + Keterangan (Optional Notes) */}
+                        <div className="mt-2 flex items-center gap-3 flex-wrap">
+                          {hasPrev && (
+                            <span className="text-[10px] text-base-content/50">
+                              SO Sebelumnya: {prev.tanggal} ({prev.shift})
+                            </span>
+                          )}
+                          <div className="relative flex-1 min-w-[160px]">
                             <StickyNote
                               className="absolute left-2.5 top-2 w-3.5 h-3.5 text-base-content/50"
                             />

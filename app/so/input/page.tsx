@@ -76,6 +76,14 @@ export default function InputSOPage() {
   const [items, setItems] = useState<MasterItem[]>([]);
   const [previousSO, setPreviousSO] = useState<Record<string, PreviousSO>>({});
   const [previousSOInfo, setPreviousSOInfo] = useState<{ tanggal: string; shift: string } | null>(null);
+  const [previousSOHistory, setPreviousSOHistory] = useState<Array<{
+    sesiId: string;
+    tanggal: string;
+    shift: string;
+    petugas: string;
+    items: Record<string, PreviousSO>;
+  }>>([]);
+  const [selectedPrevIndex, setSelectedPrevIndex] = useState<number>(0);
   const [loadingData, setLoadingData] = useState<boolean>(true);
 
   // Form State
@@ -127,11 +135,25 @@ export default function InputSOPage() {
         }
 
         if (dataPrevious.success && dataPrevious.data) {
-          setPreviousSO(dataPrevious.data.items || dataPrevious.data);
-          if (dataPrevious.data.latest) {
+          const history = Array.isArray(dataPrevious.data.history)
+            ? dataPrevious.data.history
+            : [];
+          setPreviousSOHistory(history);
+
+          // Default to the most recent session
+          setSelectedPrevIndex(0);
+          setPreviousSO(
+            history[0]?.items ||
+              dataPrevious.data.items ||
+              {}
+          );
+          if (history[0] || dataPrevious.data.latest) {
+            const ref = history[0]?.tanggal
+              ? history[0]
+              : dataPrevious.data.latest;
             setPreviousSOInfo({
-              tanggal: dataPrevious.data.latest.tanggal,
-              shift: dataPrevious.data.latest.shift,
+              tanggal: ref.tanggal,
+              shift: ref.shift,
             });
           }
         }
@@ -144,6 +166,16 @@ export default function InputSOPage() {
 
     fetchData();
   }, [selectedCabang]);
+
+  // Choose which previous SO session to use as reference (dropdown)
+  const handleSelectPrevious = (index: number) => {
+    const session = previousSOHistory[index];
+    if (session) {
+      setSelectedPrevIndex(index);
+      setPreviousSO(session.items || {});
+      setPreviousSOInfo({ tanggal: session.tanggal, shift: session.shift });
+    }
+  };
 
   // Extract unique areas from items
   const areas = useMemo(() => {
@@ -459,17 +491,47 @@ export default function InputSOPage() {
             </div>
           </div>
 
-          {/* Previous SO Info Banner */}
-          {previousSOInfo && (
-            <motion.div
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium bg-primary/10 border border-primary/30 text-primary"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>Data SO sebelumnya dimuat: <strong>{previousSOInfo.tanggal}</strong> · Shift <strong>{previousSOInfo.shift}</strong></span>
-            </motion.div>
-          )}
+          {/* Previous SO Reference Selector */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
+                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                <span>Acuan SO Sebelumnya</span>
+              </label>
+              <span className="text-[10px] font-medium text-base-content/40">
+                (dipakai sebagai pembanding stok)
+              </span>
+            </div>
+
+            {previousSOHistory.length > 0 ? (
+              <select
+                value={selectedPrevIndex}
+                onChange={(e) => handleSelectPrevious(Number(e.target.value))}
+                className="w-full px-3 py-2.5 text-sm font-medium cursor-pointer select select-bordered"
+                aria-label="Pilih sesi SO sebelumnya sebagai acuan"
+              >
+                {previousSOHistory.map((s, i) => (
+                  <option key={s.sesiId} value={i}>
+                    {i === 0 ? 'Terbaru' : `Sesi #${previousSOHistory.length - i}`} · {s.tanggal} · {s.shift}
+                    {s.petugas ? ` · ${s.petugas}` : ''}
+                    {i === 0 ? ' (default)' : ''}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium bg-base-200 border border-base-300 text-base-content/60">
+                <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>Belum ada data SO sebelumnya untuk cabang ini.</span>
+              </div>
+            )}
+
+            {previousSOInfo && previousSOHistory.length > 0 && (
+              <p className="text-[11px] text-base-content/50">
+                Acuan aktif: <strong>{previousSOInfo.tanggal}</strong> · Shift{' '}
+                <strong>{previousSOInfo.shift}</strong>
+              </p>
+            )}
+          </div>
         </motion.div>
 
         {/* Filter & Search Bar */}
@@ -631,10 +693,10 @@ export default function InputSOPage() {
                         <div className="grid grid-cols-3 gap-2 sm:gap-3">
                           {/* ── SO SEBELUMNYA (read-only, dimmed) ── */}
                           <div className="col-span-3 grid grid-cols-3 gap-2 sm:gap-3">
-                            {/* S1 */}
+                            {/* Step 1 (prev) */}
                             <div>
                               <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-base-content/60 text-center">
-                                S1
+                                Step 1
                               </span>
                               <div
                                 className="w-full h-11 sm:h-10 px-2 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-lg"
@@ -642,10 +704,10 @@ export default function InputSOPage() {
                                 <span className="text-sm font-bold tabular-nums">{hasPrev ? prev.step1 : '–'}</span>
                               </div>
                             </div>
-                            {/* S2 */}
+                            {/* Step 2 (prev) */}
                             <div>
                               <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-base-content/60 text-center">
-                                S2
+                                Step 2
                               </span>
                               <div
                                 className="w-full h-11 sm:h-10 px-2 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-lg"

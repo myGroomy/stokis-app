@@ -30,7 +30,8 @@ function submitSO(cabangId, payload) {
     soSheet.appendRow([
       transaksiId, timestamp, payload.tanggalOperasional, payload.shift,
       item.itemId, master['Nama_Barang'], master['Area'],
-      step1, step2, total, payload.petugas, sesiId, keterangan
+      step1, step2, total,
+      payload.petugas, sesiId, keterangan
     ]);
 
     // Look up previous SO data for this item by Nama_Barang
@@ -69,50 +70,56 @@ function calculateStatus_(total, threshold) {
 
 function getPreviousSO(cabangId) {
   const { spreadsheet } = resolveCabangSpreadsheet_(cabangId);
-  const soSheet = spreadsheet.getSheetByName('SO_Transaksi');
-  if (!soSheet || soSheet.getLastRow() < 2) return { latest: null, items: {} };
-  const soRows = sheetToObjects_(soSheet);
-  if (soRows.length === 0) return { latest: null, items: {} };
+  const soRows = sheetToObjects_(getSheetByName_(spreadsheet, 'SO_Transaksi'));
+  if (soRows.length === 0) return { latest: null, items: {}, history: [] };
 
-  // Group by Sesi_ID and pick the most recent session
-  var sessions = {};
-  soRows.forEach(function(r) {
-    var sid = r['Sesi_ID'];
-    if (!sid) return;
+  // Group by Sesi_ID
+  const sessions = {};
+  soRows.forEach(r => {
+    const sid = r['Sesi_ID'];
     if (!sessions[sid]) sessions[sid] = { rows: [], timestamp: r['Timestamp'] };
     sessions[sid].rows.push(r);
   });
 
-  var sortedSessions = Object.keys(sessions)
-    .map(function(sid) { return [sid, sessions[sid]]; })
-    .sort(function(a, b) { return new Date(b[1].timestamp) - new Date(a[1].timestamp); });
+  // Sort sessions newest -> oldest
+  const sortedSessions = Object.entries(sessions)
+    .sort((a, b) => new Date(b[1].timestamp) - new Date(a[1].timestamp));
 
-  if (sortedSessions.length === 0) return { latest: null, items: {} };
-
-  var latestSesiId = sortedSessions[0][0];
-  var latestSession = sortedSessions[0][1];
-  var latestRow = latestSession.rows[0];
-
-  var items = {};
-  latestSession.rows.forEach(function(r) {
-    items[r['Nama_Barang']] = {
-      step1: Number(r['Step1']) || 0,
-      step2: Number(r['Step2']) || 0,
-      total: Number(r['Total']) || 0,
-      tanggal: formatDate_(r['Tanggal_Operasional']),
-      shift: r['Shift'] || '',
-      petugas: r['Petugas'] || '',
-      keterangan: r['Keterangan'] || '',
+  // Build history of recent sessions (newest first)
+  const MAX_HISTORY = 8;
+  const history = sortedSessions.slice(0, MAX_HISTORY).map(([sesiId, session]) => {
+    const firstRow = session.rows[0];
+    const items = {};
+    session.rows.forEach(r => {
+      items[r['Nama_Barang']] = {
+        step1: Number(r['Step1']) || 0,
+        step2: Number(r['Step2']) || 0,
+        total: Number(r['Total']) || 0,
+        tanggal: formatDate_(r['Tanggal_Operasional']),
+        shift: r['Shift'] || '',
+        petugas: r['Petugas'] || '',
+        keterangan: r['Keterangan'] || '',
+      };
+    });
+    return {
+      sesiId,
+      tanggal: formatDate_(firstRow['Tanggal_Operasional']),
+      shift: firstRow['Shift'],
+      petugas: firstRow['Petugas'],
+      items,
     };
   });
 
+  // Keep backward-compat: latest/items = most recent session
+  const latestEntry = history[0] || null;
   return {
-    latest: {
-      sesiId: latestSesiId,
-      tanggal: formatDate_(latestRow['Tanggal_Operasional']),
-      shift: latestRow['Shift'],
-      petugas: latestRow['Petugas'],
-    },
-    items: items,
+    latest: latestEntry ? {
+      sesiId: latestEntry.sesiId,
+      tanggal: latestEntry.tanggal,
+      shift: latestEntry.shift,
+      petugas: latestEntry.petugas,
+    } : null,
+    items: latestEntry ? latestEntry.items : {},
+    history,
   };
 }

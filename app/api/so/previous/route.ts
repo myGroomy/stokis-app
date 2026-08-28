@@ -17,12 +17,13 @@ export async function GET(request: Request) {
     const result = await callAppsScript('getPreviousSO', cabangId);
 
     if (result.success) {
-      // GAS returns { latest: {...}, items: {...} }
+      // GAS returns { latest: {...}, items: {...}, history: [...] }
       return NextResponse.json({
         success: true,
         data: {
           latest: result.data?.latest || null,
           items: result.data?.items || {},
+          history: result.data?.history || [],
         },
       });
     }

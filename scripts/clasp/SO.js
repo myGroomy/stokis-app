@@ -71,9 +71,9 @@ function calculateStatus_(total, threshold) {
 function getPreviousSO(cabangId) {
   const { spreadsheet } = resolveCabangSpreadsheet_(cabangId);
   const soRows = sheetToObjects_(getSheetByName_(spreadsheet, 'SO_Transaksi'));
-  if (soRows.length === 0) return { latest: null, items: {} };
+  if (soRows.length === 0) return { latest: null, items: {}, history: [] };
 
-  // Group by Sesi_ID and pick the most recent session
+  // Group by Sesi_ID
   const sessions = {};
   soRows.forEach(r => {
     const sid = r['Sesi_ID'];
@@ -81,32 +81,45 @@ function getPreviousSO(cabangId) {
     sessions[sid].rows.push(r);
   });
 
+  // Sort sessions newest -> oldest
   const sortedSessions = Object.entries(sessions)
     .sort((a, b) => new Date(b[1].timestamp) - new Date(a[1].timestamp));
 
-  const [latestSesiId, latestSession] = sortedSessions[0];
-  const latestRow = latestSession.rows[0];
-
-  const items = {};
-  latestSession.rows.forEach(r => {
-    items[r['Nama_Barang']] = {
-      step1: Number(r['Step1']) || 0,
-      step2: Number(r['Step2']) || 0,
-      total: Number(r['Total']) || 0,
-      tanggal: formatDate_(r['Tanggal_Operasional']),
-      shift: r['Shift'] || '',
-      petugas: r['Petugas'] || '',
-      keterangan: r['Keterangan'] || '',
+  // Build history of recent sessions (newest first)
+  const MAX_HISTORY = 8;
+  const history = sortedSessions.slice(0, MAX_HISTORY).map(([sesiId, session]) => {
+    const firstRow = session.rows[0];
+    const items = {};
+    session.rows.forEach(r => {
+      items[r['Nama_Barang']] = {
+        step1: Number(r['Step1']) || 0,
+        step2: Number(r['Step2']) || 0,
+        total: Number(r['Total']) || 0,
+        tanggal: formatDate_(r['Tanggal_Operasional']),
+        shift: r['Shift'] || '',
+        petugas: r['Petugas'] || '',
+        keterangan: r['Keterangan'] || '',
+      };
+    });
+    return {
+      sesiId,
+      tanggal: formatDate_(firstRow['Tanggal_Operasional']),
+      shift: firstRow['Shift'],
+      petugas: firstRow['Petugas'],
+      items,
     };
   });
 
+  // Keep backward-compat: latest/items = most recent session
+  const latestEntry = history[0] || null;
   return {
-    latest: {
-      sesiId: latestSesiId,
-      tanggal: formatDate_(latestRow['Tanggal_Operasional']),
-      shift: latestRow['Shift'],
-      petugas: latestRow['Petugas'],
-    },
-    items,
+    latest: latestEntry ? {
+      sesiId: latestEntry.sesiId,
+      tanggal: latestEntry.tanggal,
+      shift: latestEntry.shift,
+      petugas: latestEntry.petugas,
+    } : null,
+    items: latestEntry ? latestEntry.items : {},
+    history,
   };
 }

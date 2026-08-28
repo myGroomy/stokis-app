@@ -7,43 +7,35 @@ function generatePDF_(cabangId, spreadsheet, cabang, sesiId, tanggal, shift, pet
   let jumlahKritis = 0;
   let jumlahHampirHabis = 0;
 
-  const rows = transaksiList.map(function(t) {
-    const status = calculateStatus_(t.total, t.threshold || 0);
+  const rows = transaksiList.map(t => {
+    const master = masterRows.find(m => m['Item_ID'] === t.itemId) || {};
+    const status = calculateStatus_(t.total, master['Threshold'] || 0);
     if (status === 'Kritis') jumlahKritis++;
     if (status === 'Hampir Habis') jumlahHampirHabis++;
     return {
-      transaksiId: t.transaksiId,
-      itemId: t.itemId,
-      nama: t.nama || '',
-      area: t.area || '',
-      threshold: t.threshold || 0,
-      step1: t.step1 || 0,
-      step2: t.step2 || 0,
-      total: t.total || 0,
-      keterangan: t.keterangan || '',
-      prevStep1: t.prevStep1 !== undefined ? t.prevStep1 : null,
-      prevStep2: t.prevStep2 !== undefined ? t.prevStep2 : null,
-      prevTotal: t.prevTotal !== undefined ? t.prevTotal : null,
-      status: status,
+      ...t,
+      nama: master['Nama_Barang'] || '',
+      area: master['Area'] || '',
+      threshold: master['Threshold'] || 0,
+      status,
     };
   });
 
-  // Sort: Kritis → Hampir Habis → Aman → Tidak Dipantau
-  var statusOrder = { 'Kritis': 0, 'Hampir Habis': 1, 'Aman': 2, 'Tidak Dipantau': 3 };
-  rows.sort(function(a, b) { return (statusOrder[a.status] || 3) - (statusOrder[b.status] || 3); });
+  // Sort: Kritis -> Hampir Habis -> Aman -> Tidak Dipantau
+  const statusOrder = { 'Kritis': 0, 'Hampir Habis': 1, 'Aman': 2, 'Tidak Dipantau': 3 };
+  rows.sort((a, b) => (statusOrder[a.status] || 3) - (statusOrder[b.status] || 3));
 
-  // Standardized filename: [KODE_CABANG]-[TANGGAL]-[SHIFT]
-  var kodeCabang = (cabang['Kode_Cabang'] || cabangId).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-  var tglFormatted = tanggal.replace(/-/g, '');
-  var fileName = kodeCabang + '-' + tglFormatted + '-' + shift.toUpperCase() + '.pdf';
+  const kodeCabang = (cabang['Kode_Cabang'] || cabangId).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  const tglFormatted = tanggal.replace(/-/g, '');
+  const fileName = kodeCabang + '-' + tglFormatted + '-' + shift.toUpperCase() + '.pdf';
 
-  var html = buildPdfHtml_(cabang['Nama_Cabang'], tanggal, shift, petugas, rows, sesiId, laporanId, kodeCabang, prevInfo);
-  var pdfBlob = Utilities.newBlob(html, 'text/html').getAs('application/pdf');
+  const html = buildPdfHtml_(cabang['Nama_Cabang'], tanggal, shift, petugas, rows, sesiId, laporanId, kodeCabang, prevInfo);
+  const pdfBlob = Utilities.newBlob(html, 'text/html').getAs('application/pdf');
   pdfBlob.setName(fileName);
 
-  var folder = DriveApp.getFolderById(cabang['Folder_Drive_ID']);
-  var file = folder.createFile(pdfBlob);
-  var pdfUrl = file.getUrl();
+  const folder = DriveApp.getFolderById(cabang['Folder_Drive_ID']);
+  const file = folder.createFile(pdfBlob);
+  const pdfUrl = file.getUrl();
 
   laporanSheet.appendRow([
     laporanId, sesiId, tanggal, shift, petugas,
@@ -54,6 +46,7 @@ function generatePDF_(cabangId, spreadsheet, cabang, sesiId, tanggal, shift, pet
 }
 
 function buildPdfHtml_(namaCabang, tanggal, shift, petugas, rows, sesiId, laporanId, kodeCabang, prevInfo) {
+  // Status colors (functional, kept per status)
   var statusColor = {
     'Kritis': '#CA3521',
     'Hampir Habis': '#B38600',
@@ -67,44 +60,41 @@ function buildPdfHtml_(namaCabang, tanggal, shift, petugas, rows, sesiId, lapora
     'Tidak Dipantau': '#F1F2F4'
   };
 
+  // General palette: 2 colors only
+  var primary = '#1868DB';    // header, accents
+  var neutral = '#44546F';    // borders, secondary text
+  var borderLight = '#DCDFE4';
+  var bgLight = '#F7F8F9';
+  var textDark = '#172B4D';
+
   // Count by status
   var counts = { 'Kritis': 0, 'Hampir Habis': 0, 'Aman': 0, 'Tidak Dipantau': 0 };
   rows.forEach(function(r) { if (counts[r.status] !== undefined) counts[r.status]++; });
 
   // Overview boxes
   var overviewHtml = Object.keys(counts).map(function(status) {
-    return '<div style="display:inline-block;width:22%;text-align:center;background:' + statusBg[status] +
-      ';border:1px solid ' + statusColor[status] + ';border-radius:6px;padding:8px 4px;margin:0 1%">' +
-      '<div style="font-size:22px;font-weight:900;color:' + statusColor[status] + '">' + counts[status] + '</div>' +
-      '<div style="font-size:9px;font-weight:700;color:' + statusColor[status] + ';text-transform:uppercase">' + status + '</div>' +
-      '</div>';
+    return '<td style="width:25%;text-align:center;padding:6px 2px;border:1px solid ' + borderLight + '">' +
+      '<div style="font-size:18px;font-weight:900;color:' + statusColor[status] + '">' + counts[status] + '</div>' +
+      '<div style="font-size:8px;font-weight:700;color:' + statusColor[status] + ';text-transform:uppercase">' + status + '</div>' +
+      '</td>';
   }).join('');
 
-  // Previous SO info banner
-  var prevBanner = '';
-  if (prevInfo) {
-    prevBanner = '<div style="background:#E9F2FF;border:1px solid #B3D4FF;border-radius:4px;padding:6px 12px;margin-bottom:8px;font-size:11px;color:#1868DB;font-weight:600">' +
-      'SO Sebelumnya: ' + (prevInfo.tanggal || '-') + ' &middot; Shift ' + (prevInfo.shift || '-') +
-      ' &nbsp;&nbsp;|&nbsp;&nbsp; SO Sekarang: ' + tanggal + ' &middot; Shift ' + shift +
-      '</div>';
-  }
+  var tdStyle = 'padding:3px 4px;border:1px solid ' + borderLight + ';font-size:9px;vertical-align:middle';
+  var thStyle = 'padding:3px 4px;border:1px solid ' + borderLight + ';font-size:8px;font-weight:700;text-align:left';
 
   // Comparison table rows
-  var tdStyle = 'padding:5px 6px;border:1px solid #DCDFE4;font-size:11px;vertical-align:middle';
-  var thStyle = 'padding:5px 6px;border:1px solid #B3D4FF;font-size:10px;font-weight:700;text-align:left';
-
   var tableRows = rows.map(function(r, idx) {
     var rowBg = r.status === 'Kritis' ? '#FFF5F3' :
                 r.status === 'Hampir Habis' ? '#FFFCF0' :
-                idx % 2 === 0 ? '#F7F8F9' : '#FFFFFF';
-    var prevS1 = r.prevStep1 !== null && r.prevStep1 !== undefined ? r.prevStep1 : '-';
-    var prevS2 = r.prevStep2 !== null && r.prevStep2 !== undefined ? r.prevStep2 : '-';
-    var prevT  = r.prevTotal !== null && r.prevTotal !== undefined ? r.prevTotal : '-';
-    var penggunaan = (r.prevTotal !== null && r.prevTotal !== undefined)
+                idx % 2 === 0 ? bgLight : '#FFFFFF';
+    var prevS1 = r.prevStep1 !== undefined && r.prevStep1 !== null ? r.prevStep1 : '-';
+    var prevS2 = r.prevStep2 !== undefined && r.prevStep2 !== null ? r.prevStep2 : '-';
+    var prevT  = r.prevTotal !== undefined && r.prevTotal !== null ? r.prevTotal : '-';
+    var penggunaan = (r.prevTotal !== undefined && r.prevTotal !== null)
       ? r.prevTotal - r.total
       : '-';
-    var penggunaanColor = penggunaan === '-' ? '#6B778C' :
-                           penggunaan > 0 ? '#CA3521' : '#216E4E';
+    var penggunaanColor = penggunaan === '-' ? neutral :
+                           penggunaan > 0 ? statusColor['Kritis'] : statusColor['Aman'];
     var penggunaanText = penggunaan === '-' ? '-' :
                           penggunaan > 0 ? '+' + penggunaan : String(penggunaan);
     var borderLeft = (r.status === 'Kritis' || r.status === 'Hampir Habis')
@@ -113,111 +103,91 @@ function buildPdfHtml_(namaCabang, tanggal, shift, petugas, rows, sesiId, lapora
     return '<tr style="background:' + rowBg + ';' + borderLeft + '">' +
       '<td style="' + tdStyle + '">' + (idx + 1) + '</td>' +
       '<td style="' + tdStyle + ';font-weight:600">' + r.nama + '</td>' +
-      '<td style="' + tdStyle + ';color:#6B778C;font-size:10px">' + r.area + '</td>' +
+      '<td style="' + tdStyle + ';color:' + neutral + ';font-size:8px">' + r.area + '</td>' +
       '<td style="' + tdStyle + ';text-align:right">' + prevS1 + '</td>' +
       '<td style="' + tdStyle + ';text-align:right">' + prevS2 + '</td>' +
       '<td style="' + tdStyle + ';text-align:right;font-weight:700">' + prevT + '</td>' +
-      '<td style="' + tdStyle + ';text-align:right">' + r.step1 + '</td>' +
-      '<td style="' + tdStyle + ';text-align:right">' + r.step2 + '</td>' +
+      '<td style="' + tdStyle + ';text-align:right">' + (r.step1 !== undefined ? r.step1 : 0) + '</td>' +
+      '<td style="' + tdStyle + ';text-align:right">' + (r.step2 !== undefined ? r.step2 : 0) + '</td>' +
       '<td style="' + tdStyle + ';text-align:right;font-weight:700">' + r.total + '</td>' +
       '<td style="' + tdStyle + ';text-align:right;font-weight:700;color:' + penggunaanColor + '">' + penggunaanText + '</td>' +
-      '<td style="' + tdStyle + ';color:#44546F;font-size:10px">' + (r.keterangan || '') + '</td>' +
+      '<td style="' + tdStyle + ';color:' + neutral + ';font-size:8px">' + (r.keterangan || '') + '</td>' +
       '<td style="' + tdStyle + ';font-weight:700;color:' + statusColor[r.status] + '">' + r.status + '</td>' +
       '</tr>';
   }).join('');
 
-  // Kritis detail footer
-  var kritisRows = rows.filter(function(r) { return r.status === 'Kritis'; });
-  var kritisFooter = '';
-  if (kritisRows.length > 0) {
-    kritisFooter = '<div style="margin-top:20px;border-top:2px solid #CA3521;padding-top:12px">' +
-      '<div style="font-size:12px;font-weight:700;color:#CA3521;margin-bottom:8px">&#9888; ITEM KRITIS &#8212; SEGERA RESTOK (' + kritisRows.length + ' ITEM)</div>' +
-      kritisRows.map(function(r, i) {
-        return '<div style="background:#FFEBE6;border:1px solid #FFBDAD;border-radius:4px;padding:6px 10px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">' +
-          '<span style="font-weight:600;font-size:12px">' + (i + 1) + '. ' + r.nama + ' <span style="font-weight:400;color:#44546F;font-size:11px">(' + r.area + ')</span></span>' +
-          '<span style="font-weight:700;color:#CA3521;font-size:12px">Stok: ' + r.total + ' | Min: ' + r.threshold + ' | Kekurangan: ' + (r.threshold - r.total) + '</span>' +
-          '</div>' +
-          (r.keterangan ? '<div style="font-size:10px;color:#6B778C;margin-left:16px;margin-bottom:4px">Ket: ' + r.keterangan + '</div>' : '');
-      }).join('') +
-      '</div>';
-  }
-
   return '<!DOCTYPE html>' +
     '<html><head><meta charset="utf-8">' +
     '<style>' +
-    '  @page { size: A4 landscape; margin: 10mm; }' +
-    '  body { font-family: Arial, sans-serif; padding: 16px; color: #172B4D; margin: 0; font-size: 11px; }' +
-    '  h2 { margin: 0; font-size: 18px; }' +
-    '  table { border-collapse: collapse; width: 100%; }' +
+    '@page { size: A4 portrait; margin: 8mm; }' +
+    'body { font-family: Arial, sans-serif; padding: 12px; color: ' + textDark + '; margin: 0; font-size: 9px; }' +
+    'h2 { margin: 0; font-size: 14px; }' +
+    'table { border-collapse: collapse; width: 100%; }' +
     '</style>' +
     '</head><body>' +
-
     '<!-- Header -->' +
-    '<div style="background:#1868DB;color:#fff;padding:14px 20px;border-radius:8px;margin-bottom:10px">' +
+    '<div style="background:' + primary + ';color:#fff;padding:10px 14px;border-radius:4px;margin-bottom:8px">' +
     '<h2>LAPORAN STOCK OPNAME</h2>' +
-    '<div style="font-size:12px;opacity:0.85;margin-top:4px">' + namaCabang + ' &nbsp;&middot;&nbsp; ' + tanggal + ' &nbsp;&middot;&nbsp; Shift ' + shift + '</div>' +
+    '<div style="font-size:10px;opacity:0.85;margin-top:2px">' + namaCabang + ' &middot; ' + tanggal + ' &middot; Shift ' + shift + '</div>' +
     '</div>' +
 
     '<!-- Info row -->' +
-    '<div style="display:flex;gap:8px;margin-bottom:10px">' +
-    '<div style="flex:1;background:#F7F8F9;border:1px solid #DCDFE4;border-radius:6px;padding:8px 12px">' +
-    '<div style="font-size:9px;font-weight:700;color:#44546F;text-transform:uppercase">No. Laporan</div>' +
-    '<div style="font-weight:700;font-size:13px">' + laporanId + '</div>' +
-    '</div>' +
-    '<div style="flex:1;background:#F7F8F9;border:1px solid #DCDFE4;border-radius:6px;padding:8px 12px">' +
-    '<div style="font-size:9px;font-weight:700;color:#44546F;text-transform:uppercase">Petugas</div>' +
-    '<div style="font-weight:700;font-size:13px">' + petugas + '</div>' +
-    '</div>' +
-    '<div style="flex:1;background:#F7F8F9;border:1px solid #DCDFE4;border-radius:6px;padding:8px 12px">' +
-    '<div style="font-size:9px;font-weight:700;color:#44546F;text-transform:uppercase">Kode Cabang</div>' +
-    '<div style="font-weight:700;font-size:13px">' + kodeCabang + '</div>' +
-    '</div>' +
-    '</div>' +
+    '<table style="margin-bottom:8px"><tr>' +
+    '<td style="width:33%;background:' + bgLight + ';border:1px solid ' + borderLight + ';padding:5px 8px">' +
+    '<div style="font-size:7px;font-weight:700;color:' + neutral + ';text-transform:uppercase">No. Laporan</div>' +
+    '<div style="font-weight:700;font-size:10px">' + laporanId + '</div>' +
+    '</td>' +
+    '<td style="width:33%;background:' + bgLight + ';border:1px solid ' + borderLight + ';padding:5px 8px">' +
+    '<div style="font-size:7px;font-weight:700;color:' + neutral + ';text-transform:uppercase">Petugas</div>' +
+    '<div style="font-weight:700;font-size:10px">' + petugas + '</div>' +
+    '</td>' +
+    '<td style="width:34%;background:' + bgLight + ';border:1px solid ' + borderLight + ';padding:5px 8px">' +
+    '<div style="font-size:7px;font-weight:700;color:' + neutral + ';text-transform:uppercase">Kode Cabang</div>' +
+    '<div style="font-weight:700;font-size:10px">' + kodeCabang + '</div>' +
+    '</td>' +
+    '</tr></table>' +
 
     '<!-- Status Overview -->' +
-    '<div style="margin-bottom:12px;text-align:center">' +
+    '<table style="margin-bottom:8px"><tr>' +
     overviewHtml +
-    '</div>' +
-
-    '<!-- Previous SO Info Banner -->' +
-    prevBanner +
-
-    '<!-- Comparison Table Title -->' +
-    '<div style="font-size:11px;font-weight:700;color:#172B4D;margin-bottom:4px;text-transform:uppercase">' +
-    'Perbandingan Stok &#8212; Kritis Lebih Dulu' +
-    '</div>' +
+    '</tr></table>' +
 
     '<!-- Comparison Table -->' +
+    '<div style="font-size:9px;font-weight:700;color:' + textDark + ';margin-bottom:4px;text-transform:uppercase">' +
+    'Perbandingan Stok - Kritis Lebih Dulu' +
+    '</div>' +
+    (prevInfo ?
+    '<div style="background:' + primary + '11;border:1px solid ' + primary + '33;border-radius:3px;padding:4px 8px;margin-bottom:6px;font-size:9px;color:' + primary + ';font-weight:600">' +
+    'SO Sebelumnya: ' + (prevInfo.tanggal || '-') + ' Shift ' + (prevInfo.shift || '') +
+    ' | SO Sekarang: ' + tanggal + ' Shift ' + shift +
+    '</div>' : '') +
     '<table>' +
-    '<tr style="background:#172B4D;color:#fff">' +
-    '<th style="' + thStyle + ';color:#fff;border-color:#172B4D" colspan="3"></th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:center;border-color:#172B4D" colspan="3">SO Sebelumnya</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:center;border-color:#172B4D" colspan="3">SO Sekarang</th>' +
-    '<th style="' + thStyle + ';color:#fff;border-color:#172B4D" colspan="3"></th>' +
+    '<tr style="background:' + textDark + ';color:#fff">' +
+    '<th style="' + thStyle + ';color:#fff;border-color:' + textDark + '" colspan="3"></th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:center;border-color:' + textDark + '" colspan="3">SO Sebelumnya</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:center;border-color:' + textDark + '" colspan="3">SO Sekarang</th>' +
+    '<th style="' + thStyle + ';color:#fff;border-color:' + textDark + '" colspan="3"></th>' +
     '</tr>' +
-    '<tr style="background:#44546F;color:#fff">' +
-    '<th style="' + thStyle + ';color:#fff;width:28px">No</th>' +
-    '<th style="' + thStyle + ';color:#fff;width:140px">Nama Barang</th>' +
-    '<th style="' + thStyle + ';color:#fff;width:70px">Area</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:32px">S1</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:32px">S2</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:36px">Tot</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:32px">S1</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:32px">S2</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:36px">Tot</th>' +
-    '<th style="' + thStyle + ';color:#fff;text-align:right;width:44px">Pemakaian</th>' +
-    '<th style="' + thStyle + ';color:#fff;width:90px">Keterangan</th>' +
-    '<th style="' + thStyle + ';color:#fff;width:55px">Status</th>' +
+    '<tr style="background:' + neutral + ';color:#fff">' +
+    '<th style="' + thStyle + ';color:#fff;width:22px">No</th>' +
+    '<th style="' + thStyle + ';color:#fff;width:105px">Nama Barang</th>' +
+    '<th style="' + thStyle + ';color:#fff;width:52px">Area</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:26px">S1</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:26px">S2</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:30px">Tot</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:26px">S1</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:26px">S2</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:30px">Tot</th>' +
+    '<th style="' + thStyle + ';color:#fff;text-align:right;width:38px">Pemk</th>' +
+    '<th style="' + thStyle + ';color:#fff;width:65px">Ket</th>' +
+    '<th style="' + thStyle + ';color:#fff;width:48px">Status</th>' +
     '</tr>' +
     tableRows +
     '</table>' +
 
-    '<!-- Kritis detail footer -->' +
-    kritisFooter +
-
     '<!-- Footer -->' +
-    '<div style="margin-top:16px;font-size:9px;color:#B3BAC5;text-align:center;border-top:1px solid #DCDFE4;padding-top:8px">' +
-    kodeCabang + '-' + tanggal.replace(/-/g, '') + '-' + shift.toUpperCase() + '.pdf &nbsp;&middot;&nbsp; Sistem Stokis &nbsp;&middot;&nbsp; ' + new Date().toLocaleString('id-ID') +
+    '<div style="margin-top:12px;font-size:7px;color:#B3BAC5;text-align:center;border-top:1px solid ' + borderLight + ';padding-top:5px">' +
+    kodeCabang + '-' + tanggal.replace(/-/g,'') + '-' + shift.toUpperCase() + '.pdf &middot; Sistem Stokis &middot; ' + new Date().toLocaleString('id-ID') +
     '</div>' +
     '</body></html>';
 }

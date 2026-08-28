@@ -163,6 +163,12 @@ export default function InputSOPage() {
     });
   }, [items, selectedArea, searchQuery]);
 
+  const globalIndexMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    filteredItems.forEach((item, idx) => { map[item.Item_ID] = idx + 1; });
+    return map;
+  }, [filteredItems]);
+
   if (cabangLoading || loadingData) {
     return <QuantumLoaderFull text="Menyiapkan formulir SO" />;
   }
@@ -715,7 +721,16 @@ export default function InputSOPage() {
                           <div className="flex-1 space-y-1.5">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span
-                                className="font-semibold text-sm"
+                                className="text-[11px] font-bold tabular-nums px-1.5 py-0.5 rounded"
+                                style={{
+                                  backgroundColor: 'var(--color-primary-subtle)',
+                                  color: 'var(--color-primary)',
+                                }}
+                              >
+                                {globalIndexMap[item.Item_ID]}
+                              </span>
+                              <span
+                                className="font-extrabold text-sm"
                                 style={{ color: 'var(--color-text-primary)' }}
                               >
                                 {item.Nama_Barang}

@@ -21,11 +21,10 @@ function generatePDF_(cabangId, spreadsheet, cabang, sesiId, tanggal, shift, pet
     };
   });
 
-  // Sort: Kritis → Hampir Habis → Aman → Tidak Dipantau
+  // Sort: Kritis -> Hampir Habis -> Aman -> Tidak Dipantau
   const statusOrder = { 'Kritis': 0, 'Hampir Habis': 1, 'Aman': 2, 'Tidak Dipantau': 3 };
   rows.sort((a, b) => (statusOrder[a.status] || 3) - (statusOrder[b.status] || 3));
 
-  // Standardized filename: [KODE_CABANG]-[TANGGAL]-[SHIFT]
   const kodeCabang = (cabang['Kode_Cabang'] || cabangId).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
   const tglFormatted = tanggal.replace(/-/g, '');
   const fileName = kodeCabang + '-' + tglFormatted + '-' + shift.toUpperCase() + '.pdf';
@@ -47,53 +46,64 @@ function generatePDF_(cabangId, spreadsheet, cabang, sesiId, tanggal, shift, pet
 }
 
 function buildPdfHtml_(namaCabang, tanggal, shift, petugas, rows, sesiId, laporanId, kodeCabang, prevInfo) {
-  const statusColor = {
+  // Status colors (functional, kept per status)
+  var statusColor = {
     'Kritis': '#CA3521',
     'Hampir Habis': '#B38600',
     'Aman': '#216E4E',
     'Tidak Dipantau': '#6B778C'
   };
-  const statusBg = {
+  var statusBg = {
     'Kritis': '#FFEBE6',
     'Hampir Habis': '#FFFAE6',
     'Aman': '#E3FCEF',
     'Tidak Dipantau': '#F1F2F4'
   };
 
+  // General palette: 2 colors only
+  var primary = '#1868DB';    // header, accents
+  var neutral = '#44546F';    // borders, secondary text
+  var borderLight = '#DCDFE4';
+  var bgLight = '#F7F8F9';
+  var textDark = '#172B4D';
+
   // Count by status
-  const counts = { 'Kritis': 0, 'Hampir Habis': 0, 'Aman': 0, 'Tidak Dipantau': 0 };
-  rows.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+  var counts = { 'Kritis': 0, 'Hampir Habis': 0, 'Aman': 0, 'Tidak Dipantau': 0 };
+  rows.forEach(function(r) { if (counts[r.status] !== undefined) counts[r.status]++; });
 
   // Overview boxes
-  const overviewHtml = Object.entries(counts).map(([status, count]) => `
-    <div style="display:inline-block;width:22%;text-align:center;background:${statusBg[status]};
-      border:1px solid ${statusColor[status]};border-radius:6px;padding:8px 4px;margin:0 1%;">
-      <div style="font-size:22px;font-weight:900;color:${statusColor[status]}">${count}</div>
-      <div style="font-size:9px;font-weight:700;color:${statusColor[status]};text-transform:uppercase">${status}</div>
-    </div>`).join('');
+  var overviewHtml = Object.keys(counts).map(function(status) {
+    return '<td style="width:25%;text-align:center;padding:6px 2px;border:1px solid ' + borderLight + '">' +
+      '<div style="font-size:18px;font-weight:900;color:' + statusColor[status] + '">' + counts[status] + '</div>' +
+      '<div style="font-size:8px;font-weight:700;color:' + statusColor[status] + ';text-transform:uppercase">' + status + '</div>' +
+      '</td>';
+  }).join('');
+
+  var tdStyle = 'padding:3px 4px;border:1px solid ' + borderLight + ';font-size:9px;vertical-align:middle';
+  var thStyle = 'padding:3px 4px;border:1px solid ' + borderLight + ';font-size:8px;font-weight:700;text-align:left';
 
   // Comparison table rows
-  const tableRows = rows.map((r, idx) => {
-    const rowBg = r.status === 'Kritis' ? '#FFF5F3' :
-                  r.status === 'Hampir Habis' ? '#FFFCF0' :
-                  idx % 2 === 0 ? '#F7F8F9' : '#FFFFFF';
-    const prevS1 = r.prevStep1 !== undefined && r.prevStep1 !== null ? r.prevStep1 : '-';
-    const prevS2 = r.prevStep2 !== undefined && r.prevStep2 !== null ? r.prevStep2 : '-';
-    const prevT  = r.prevTotal !== undefined && r.prevTotal !== null ? r.prevTotal : '-';
-    const penggunaan = (r.prevTotal !== undefined && r.prevTotal !== null)
+  var tableRows = rows.map(function(r, idx) {
+    var rowBg = r.status === 'Kritis' ? '#FFF5F3' :
+                r.status === 'Hampir Habis' ? '#FFFCF0' :
+                idx % 2 === 0 ? bgLight : '#FFFFFF';
+    var prevS1 = r.prevStep1 !== undefined && r.prevStep1 !== null ? r.prevStep1 : '-';
+    var prevS2 = r.prevStep2 !== undefined && r.prevStep2 !== null ? r.prevStep2 : '-';
+    var prevT  = r.prevTotal !== undefined && r.prevTotal !== null ? r.prevTotal : '-';
+    var penggunaan = (r.prevTotal !== undefined && r.prevTotal !== null)
       ? r.prevTotal - r.total
       : '-';
-    const penggunaanColor = penggunaan === '-' ? '#6B778C' :
-                             penggunaan > 0 ? '#CA3521' : '#216E4E';
-    const penggunaanText = penggunaan === '-' ? '-' :
-                            penggunaan > 0 ? '+' + penggunaan : String(penggunaan);
-    const borderLeft = (r.status === 'Kritis' || r.status === 'Hampir Habis')
+    var penggunaanColor = penggunaan === '-' ? neutral :
+                           penggunaan > 0 ? statusColor['Kritis'] : statusColor['Aman'];
+    var penggunaanText = penggunaan === '-' ? '-' :
+                          penggunaan > 0 ? '+' + penggunaan : String(penggunaan);
+    var borderLeft = (r.status === 'Kritis' || r.status === 'Hampir Habis')
       ? 'border-left:3px solid ' + statusColor[r.status] + ';' : '';
 
     return '<tr style="background:' + rowBg + ';' + borderLeft + '">' +
       '<td style="' + tdStyle + '">' + (idx + 1) + '</td>' +
       '<td style="' + tdStyle + ';font-weight:600">' + r.nama + '</td>' +
-      '<td style="' + tdStyle + ';color:#6B778C;font-size:10px">' + r.area + '</td>' +
+      '<td style="' + tdStyle + ';color:' + neutral + ';font-size:8px">' + r.area + '</td>' +
       '<td style="' + tdStyle + ';text-align:right">' + prevS1 + '</td>' +
       '<td style="' + tdStyle + ';text-align:right">' + prevS2 + '</td>' +
       '<td style="' + tdStyle + ';text-align:right;font-weight:700">' + prevT + '</td>' +
@@ -101,98 +111,83 @@ function buildPdfHtml_(namaCabang, tanggal, shift, petugas, rows, sesiId, lapora
       '<td style="' + tdStyle + ';text-align:right">' + (r.step2 !== undefined ? r.step2 : 0) + '</td>' +
       '<td style="' + tdStyle + ';text-align:right;font-weight:700">' + r.total + '</td>' +
       '<td style="' + tdStyle + ';text-align:right;font-weight:700;color:' + penggunaanColor + '">' + penggunaanText + '</td>' +
-      '<td style="' + tdStyle + ';color:#44546F;font-size:10px">' + (r.keterangan || '') + '</td>' +
+      '<td style="' + tdStyle + ';color:' + neutral + ';font-size:8px">' + (r.keterangan || '') + '</td>' +
       '<td style="' + tdStyle + ';font-weight:700;color:' + statusColor[r.status] + '">' + r.status + '</td>' +
       '</tr>';
   }).join('');
 
-  const tdStyle = 'padding:5px 6px;border:1px solid #DCDFE4;font-size:11px;vertical-align:middle';
-  const thStyle = 'padding:5px 6px;border:1px solid #B3D4FF;font-size:10px;font-weight:700;text-align:left';
-
   return '<!DOCTYPE html>' +
     '<html><head><meta charset="utf-8">' +
     '<style>' +
-    '  body { font-family: Arial, sans-serif; padding: 24px; color: #172B4D; margin: 0; }' +
-    '  h2 { margin: 0; font-size: 18px; }' +
-    '  table { border-collapse: collapse; width: 100%; }' +
+    '@page { size: A4 portrait; margin: 8mm; }' +
+    'body { font-family: Arial, sans-serif; padding: 12px; color: ' + textDark + '; margin: 0; font-size: 9px; }' +
+    'h2 { margin: 0; font-size: 14px; }' +
+    'table { border-collapse: collapse; width: 100%; }' +
     '</style>' +
     '</head><body>' +
     '<!-- Header -->' +
-    '<div style="background:#1868DB;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:12px">' +
+    '<div style="background:' + primary + ';color:#fff;padding:10px 14px;border-radius:4px;margin-bottom:8px">' +
     '<h2>LAPORAN STOCK OPNAME</h2>' +
-    '<div style="font-size:13px;opacity:0.85;margin-top:4px">' + namaCabang + ' &nbsp;·&nbsp; ' + tanggal + ' &nbsp;·&nbsp; Shift ' + shift + '</div>' +
+    '<div style="font-size:10px;opacity:0.85;margin-top:2px">' + namaCabang + ' &middot; ' + tanggal + ' &middot; Shift ' + shift + '</div>' +
     '</div>' +
 
     '<!-- Info row -->' +
-    '<div style="display:flex;gap:8px;margin-bottom:12px">' +
-    '<div style="flex:1;background:#F7F8F9;border:1px solid #DCDFE4;border-radius:6px;padding:8px 12px">' +
-    '<div style="font-size:9px;font-weight:700;color:#44546F;text-transform:uppercase">No. Laporan</div>' +
-    '<div style="font-weight:700;font-size:13px">' + laporanId + '</div>' +
-    '</div>' +
-    '<div style="flex:1;background:#F7F8F9;border:1px solid #DCDFE4;border-radius:6px;padding:8px 12px">' +
-    '<div style="font-size:9px;font-weight:700;color:#44546F;text-transform:uppercase">Petugas</div>' +
-    '<div style="font-weight:700;font-size:13px">' + petugas + '</div>' +
-    '</div>' +
-    '<div style="flex:1;background:#F7F8F9;border:1px solid #DCDFE4;border-radius:6px;padding:8px 12px">' +
-    '<div style="font-size:9px;font-weight:700;color:#44546F;text-transform:uppercase">Kode Cabang</div>' +
-    '<div style="font-weight:700;font-size:13px">' + kodeCabang + '</div>' +
-    '</div>' +
-    '</div>' +
+    '<table style="margin-bottom:8px"><tr>' +
+    '<td style="width:33%;background:' + bgLight + ';border:1px solid ' + borderLight + ';padding:5px 8px">' +
+    '<div style="font-size:7px;font-weight:700;color:' + neutral + ';text-transform:uppercase">No. Laporan</div>' +
+    '<div style="font-weight:700;font-size:10px">' + laporanId + '</div>' +
+    '</td>' +
+    '<td style="width:33%;background:' + bgLight + ';border:1px solid ' + borderLight + ';padding:5px 8px">' +
+    '<div style="font-size:7px;font-weight:700;color:' + neutral + ';text-transform:uppercase">Petugas</div>' +
+    '<div style="font-weight:700;font-size:10px">' + petugas + '</div>' +
+    '</td>' +
+    '<td style="width:34%;background:' + bgLight + ';border:1px solid ' + borderLight + ';padding:5px 8px">' +
+    '<div style="font-size:7px;font-weight:700;color:' + neutral + ';text-transform:uppercase">Kode Cabang</div>' +
+    '<div style="font-weight:700;font-size:10px">' + kodeCabang + '</div>' +
+    '</td>' +
+    '</tr></table>' +
 
     '<!-- Status Overview -->' +
-    '<div style="margin-bottom:16px;text-align:center">' +
+    '<table style="margin-bottom:8px"><tr>' +
     overviewHtml +
-    '</div>' +
+    '</tr></table>' +
 
     '<!-- Comparison Table -->' +
-    '<div style="font-size:11px;font-weight:700;color:#172B4D;margin-bottom:6px;text-transform:uppercase">' +
-    'Perbandingan Stok — Kritis Lebih Dulu' +
+    '<div style="font-size:9px;font-weight:700;color:' + textDark + ';margin-bottom:4px;text-transform:uppercase">' +
+    'Perbandingan Stok - Kritis Lebih Dulu' +
     '</div>' +
     (prevInfo ?
-    '<div style="background:#E9F2FF;border:1px solid #B3D4FF;border-radius:4px;padding:6px 12px;margin-bottom:8px;font-size:11px;color:#1868DB;font-weight:600">' +
-    'SO Sebelumnya: ' + (prevInfo.tanggal || '-') + ' · Shift ' + (prevInfo.shift || '-') +
-    ' &nbsp;&nbsp;|&nbsp;&nbsp; SO Sekarang: ' + tanggal + ' · Shift ' + shift +
+    '<div style="background:' + primary + '11;border:1px solid ' + primary + '33;border-radius:3px;padding:4px 8px;margin-bottom:6px;font-size:9px;color:' + primary + ';font-weight:600">' +
+    'SO Sebelumnya: ' + (prevInfo.tanggal || '-') + ' Shift ' + (prevInfo.shift || '') +
+    ' | SO Sekarang: ' + tanggal + ' Shift ' + shift +
     '</div>' : '') +
     '<table>' +
-    '<tr style="background:#172B4D;color:#fff">' +
-    '<th style="' + thStyle + ';color:#fff;border-color:#172B4D" colspan="3"></th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:center;border-color:#172B4D" colspan="3">SO Sebelumnya</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:center;border-color:#172B4D" colspan="3">SO Sekarang</th>' +
-    '<th style="' + thStyle + ';color:#fff;border-color:#172B4D" colspan="3"></th>' +
+    '<tr style="background:' + textDark + ';color:#fff">' +
+    '<th style="' + thStyle + ';color:#fff;border-color:' + textDark + '" colspan="3"></th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:center;border-color:' + textDark + '" colspan="3">SO Sebelumnya</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:center;border-color:' + textDark + '" colspan="3">SO Sekarang</th>' +
+    '<th style="' + thStyle + ';color:#fff;border-color:' + textDark + '" colspan="3"></th>' +
     '</tr>' +
-    '<tr style="background:#44546F;color:#fff">' +
-    '<th style="' + thStyle + ';color:#fff;width:28px">No</th>' +
-    '<th style="' + thStyle + ';color:#fff;width:140px">Nama Barang</th>' +
-    '<th style="' + thStyle + ';color:#fff;width:70px">Area</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:32px">S1</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:32px">S2</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:36px">Tot</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:32px">S1</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:32px">S2</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:36px">Tot</th>' +
-    '<th style="' + thStyle + ';color:#fff;text-align:right;width:44px">Pemakaian</th>' +
-    '<th style="' + thStyle + ';color:#fff;width:90px">Keterangan</th>' +
-    '<th style="' + thStyle + ';color:#fff;width:55px">Status</th>' +
+    '<tr style="background:' + neutral + ';color:#fff">' +
+    '<th style="' + thStyle + ';color:#fff;width:22px">No</th>' +
+    '<th style="' + thStyle + ';color:#fff;width:105px">Nama Barang</th>' +
+    '<th style="' + thStyle + ';color:#fff;width:52px">Area</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:26px">S1</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:26px">S2</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:30px">Tot</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:26px">S1</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:26px">S2</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:30px">Tot</th>' +
+    '<th style="' + thStyle + ';color:#fff;text-align:right;width:38px">Pemk</th>' +
+    '<th style="' + thStyle + ';color:#fff;width:65px">Ket</th>' +
+    '<th style="' + thStyle + ';color:#fff;width:48px">Status</th>' +
     '</tr>' +
     tableRows +
     '</table>' +
 
-    '<!-- Kritis detail footer -->' +
-    (rows.filter(function(r) { return r.status === 'Kritis'; }).length > 0 ?
-      '<div style="margin-top:20px;border-top:2px solid #CA3521;padding-top:12px">' +
-      '<div style="font-size:12px;font-weight:700;color:#CA3521;margin-bottom:8px">⚠ ITEM KRITIS — SEGERA RESTOK</div>' +
-      rows.filter(function(r) { return r.status === 'Kritis'; }).map(function(r, i) {
-        return '<div style="background:#FFEBE6;border:1px solid #FFBDAD;border-radius:4px;padding:6px 10px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">' +
-          '<span style="font-weight:600;font-size:12px">' + (i + 1) + '. ' + r.nama + ' <span style="font-weight:400;color:#44546F;font-size:11px">(' + r.area + ')</span></span>' +
-          '<span style="font-weight:700;color:#CA3521;font-size:12px">Stok: ' + r.total + ' | Min: ' + r.threshold + ' | Kekurangan: ' + (r.threshold - r.total) + '</span>' +
-          '</div>' +
-          (r.keterangan ? '<div style="font-size:10px;color:#6B778C;margin-left:16px;margin-bottom:4px">Ket: ' + r.keterangan + '</div>' : '');
-      }).join('') +
-      '</div>' : '') +
-
     '<!-- Footer -->' +
-    '<div style="margin-top:24px;font-size:9px;color:#B3BAC5;text-align:center;border-top:1px solid #DCDFE4;padding-top:8px">' +
-    kodeCabang + '-' + tanggal.replace(/-/g,'') + '-' + shift.toUpperCase() + '.pdf &nbsp;·&nbsp; Sistem Stokis &nbsp;·&nbsp; ' + new Date().toLocaleString('id-ID') +
+    '<div style="margin-top:12px;font-size:7px;color:#B3BAC5;text-align:center;border-top:1px solid ' + borderLight + ';padding-top:5px">' +
+    kodeCabang + '-' + tanggal.replace(/-/g,'') + '-' + shift.toUpperCase() + '.pdf &middot; Sistem Stokis &middot; ' + new Date().toLocaleString('id-ID') +
     '</div>' +
     '</body></html>';
 }

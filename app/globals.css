@@ -55,29 +55,6 @@
 }
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-/* =============================================
-   QUANTUM PULSE LOADER (kept as-is)
-   ============================================= */
-
-@keyframes generating-loader-letter-anim {
-  0% { opacity: 0; transform: translateY(20px) rotateX(-90deg); text-shadow: 0 0 0px rgba(24, 104, 219, 0); }
-  10% { opacity: 1; transform: translateY(0) rotateX(0deg); text-shadow: 0 0 10px rgba(24, 104, 219, 0.7); }
-  30% { opacity: 1; transform: translateY(0) rotateX(0deg); text-shadow: 0 0 10px rgba(24, 104, 219, 0.7); }
-  50% { opacity: 0; transform: translateY(-20px) rotateX(90deg); text-shadow: 0 0 0px rgba(24, 104, 219, 0); }
-  100% { opacity: 0; }
-}
-
-@keyframes generating-loader-bar-anim {
-  0% { left: -100%; }
-  50% { left: 100%; }
-  100% { left: -100%; }
-}
-
-@keyframes quantum-mini-pulse {
-  0%, 100% { transform: scale(0.6); opacity: 0.35; }
-  50% { transform: scale(1); opacity: 1; }
-}
-
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -87,70 +64,6 @@
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
-.generating-loader-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  perspective: 400px;
-}
-
-.generating-loader-text {
-  display: flex;
-  gap: 2px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-}
-
-.generating-loader-letter {
-  display: inline-block;
-  animation: generating-loader-letter-anim 1.8s infinite;
-  animation-fill-mode: both;
-}
-
-.generating-loader-bar {
-  position: relative;
-  width: 80px;
-  height: 2px;
-  background: oklch(0.935 0.004 260);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.generating-loader-bar::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 60%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
-  border-radius: 999px;
-  animation: generating-loader-bar-anim 1.8s infinite ease-in-out;
-}
-
-.quantum-mini-loader {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.quantum-mini-loader span {
-  display: block;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-  animation: quantum-mini-pulse 1s ease-in-out infinite;
-}
-
-.quantum-mini-loader span:nth-child(1) { animation-delay: 0s; }
-.quantum-mini-loader span:nth-child(2) { animation-delay: 0.15s; }
-.quantum-mini-loader span:nth-child(3) { animation-delay: 0.3s; }
 
 /* =============================================
    BASE STYLES

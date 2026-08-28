@@ -198,31 +198,59 @@ export default function InputSOPage() {
   const getStatusBadge = (total: number, threshold: number) => {
     if (!threshold || threshold <= 0) {
       return (
-        <span className="text-[11px] font-medium text-[#44546F] bg-[#F1F2F4] px-2 py-0.5 rounded border border-[#DCDFE4] inline-flex items-center gap-1">
-          <HelpCircle className="w-3 h-3 text-[#44546F]" />
+        <span
+          className="text-[11px] font-medium px-2 py-0.5 rounded-md inline-flex items-center gap-1"
+          style={{
+            backgroundColor: 'var(--color-surface-sunken)',
+            color: 'var(--color-text-secondary)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <HelpCircle className="w-3 h-3" />
           <span>Tidak Dipantau</span>
         </span>
       );
     }
     if (total <= threshold) {
       return (
-        <span className="text-[11px] font-bold text-[#CA3521] bg-[#FFEBE6] border border-[#FFBDAD] px-2 py-0.5 rounded inline-flex items-center gap-1">
-          <AlertCircle className="w-3 h-3 text-[#CA3521]" />
+        <span
+          className="text-[11px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1"
+          style={{
+            backgroundColor: 'var(--color-danger-subtle)',
+            color: 'var(--color-danger)',
+            border: '1px solid var(--color-danger-border)',
+          }}
+        >
+          <AlertCircle className="w-3 h-3" />
           <span>Kritis</span>
         </span>
       );
     }
     if (total <= threshold * 2) {
       return (
-        <span className="text-[11px] font-bold text-[#B38600] bg-[#FFFAE6] border border-[#F8E6A0] px-2 py-0.5 rounded inline-flex items-center gap-1">
-          <AlertCircle className="w-3 h-3 text-[#B38600]" />
+        <span
+          className="text-[11px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1"
+          style={{
+            backgroundColor: 'var(--color-warning-subtle)',
+            color: 'var(--color-warning)',
+            border: '1px solid var(--color-warning-border)',
+          }}
+        >
+          <AlertCircle className="w-3 h-3" />
           <span>Hampir Habis</span>
         </span>
       );
     }
     return (
-      <span className="text-[11px] font-bold text-[#216E4E] bg-[#E3FCEF] border border-[#BAF3DB] px-2 py-0.5 rounded inline-flex items-center gap-1">
-        <CheckCircle2 className="w-3 h-3 text-[#216E4E]" />
+      <span
+        className="text-[11px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1"
+        style={{
+          backgroundColor: 'var(--color-success-subtle)',
+          color: 'var(--color-success)',
+          border: '1px solid var(--color-success-border)',
+        }}
+      >
+        <CheckCircle2 className="w-3 h-3" />
         <span>Aman</span>
       </span>
     );
@@ -313,6 +341,40 @@ export default function InputSOPage() {
           // PDF generation is non-critical
         }
 
+        // Generate Spreadsheet
+        try {
+          const xlsRes = await fetch(`/api/so/${laporanId}/spreadsheet`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              items: formState.items,
+              cabangNama: formState.cabangNama,
+              cabangKode: formState.cabangKode,
+              tanggalOperasional: formState.tanggalOperasional,
+              shift: formState.shift,
+              petugas: formState.petugas,
+              previousSOInfo,
+            }),
+          });
+
+          if (xlsRes.ok) {
+            const blob = await xlsRes.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const kode = (formState.cabangKode || 'CBG').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+            const tgl = (formState.tanggalOperasional || '').replace(/-/g, '');
+            const shiftLabel = (formState.shift || 'SO').toUpperCase();
+            a.download = `${kode}-${tgl}-${shiftLabel}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }
+        } catch {
+          // Spreadsheet generation is non-critical
+        }
+
         router.push(`/so/konfirmasi/${laporanId}`);
       } else {
         setErrorMsg(result.error?.message || 'Gagal menyimpan data stock opname');
@@ -336,20 +398,35 @@ export default function InputSOPage() {
           transition={{ duration: 0.25 }}
           className="surface-card p-6 space-y-5"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#DCDFE4]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4" style={{ borderBottom: '1px solid var(--color-border)' }}>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded bg-[#E9F2FF] text-[#1868DB]">
+              <div
+                className="p-2 rounded-lg"
+                style={{ backgroundColor: 'var(--color-primary-subtle)', color: 'var(--color-primary)' }}
+              >
                 <ClipboardCheck className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-[#172B4D] tracking-tight">Formulir Input Stock Opname</h1>
-                <p className="text-sm text-[#44546F]">
-                  Lokasi Cabang: <span className="font-semibold text-[#172B4D]">{selectedCabang.Nama_Cabang}</span>
+                <h1
+                  className="text-lg font-semibold tracking-tight"
+                  style={{ color: 'var(--color-text-primary)' }}
+                >
+                  Formulir Input Stock Opname
+                </h1>
+                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  Lokasi Cabang: <span className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>{selectedCabang.Nama_Cabang}</span>
                 </p>
               </div>
             </div>
 
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#F1F2F4] rounded border border-[#DCDFE4] text-xs text-[#44546F] font-semibold">
+            <div
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold"
+              style={{
+                backgroundColor: 'var(--color-surface-sunken)',
+                color: 'var(--color-text-secondary)',
+                border: '1px solid var(--color-border)',
+              }}
+            >
               <Hash className="w-3.5 h-3.5" />
               <span>{filteredItems.length} / {items.length} Item</span>
             </div>
@@ -361,7 +438,12 @@ export default function InputSOPage() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="p-4 bg-[#FFEBE6] border border-[#FFBDAD] rounded text-[#CA3521] text-sm flex items-center gap-2"
+                className="rounded-lg px-4 py-3 text-sm flex items-center gap-2"
+                style={{
+                  backgroundColor: 'var(--color-danger-subtle)',
+                  border: '1px solid var(--color-danger-border)',
+                  color: 'var(--color-danger)',
+                }}
               >
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{errorMsg}</span>
@@ -371,9 +453,12 @@ export default function InputSOPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Tanggal Operasional */}
-            <div className="space-y-1">
-              <label className="text-sm font-semibold text-[#44546F] flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-[#1868DB]" />
+            <div className="space-y-1.5">
+              <label
+                className="text-xs font-semibold flex items-center gap-1.5"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                <Calendar className="w-3.5 h-3.5" style={{ color: 'var(--color-primary)' }} />
                 <span>Tanggal Operasional</span>
               </label>
               <input
@@ -381,20 +466,23 @@ export default function InputSOPage() {
                 value={tanggalOperasional}
                 onChange={(e) => setTanggalOperasional(e.target.value)}
                 required
-                className="w-full px-3 py-2 text-sm font-medium tabular-nums"
+                className="w-full px-3 py-2.5 text-sm font-medium tabular-nums"
               />
             </div>
 
             {/* Shift */}
-            <div className="space-y-1">
-              <label className="text-sm font-semibold text-[#44546F] flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-[#1868DB]" />
+            <div className="space-y-1.5">
+              <label
+                className="text-xs font-semibold flex items-center gap-1.5"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                <Clock className="w-3.5 h-3.5" style={{ color: 'var(--color-primary)' }} />
                 <span>Shift Kerja</span>
               </label>
               <select
                 value={shift}
                 onChange={(e) => setShift(e.target.value)}
-                className="w-full px-3 py-2 text-sm font-medium cursor-pointer"
+                className="w-full px-3 py-2.5 text-sm font-medium cursor-pointer"
               >
                 <option value="Opening">Opening</option>
                 <option value="Closing">Closing</option>
@@ -402,15 +490,34 @@ export default function InputSOPage() {
             </div>
 
             {/* Petugas — dari login, read-only */}
-            <div className="space-y-1">
-              <label className="text-sm font-semibold text-[#44546F] flex items-center gap-1.5">
-                <User className="w-4 h-4 text-[#1868DB]" />
+            <div className="space-y-1.5">
+              <label
+                className="text-xs font-semibold flex items-center gap-1.5"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                <User className="w-3.5 h-3.5" style={{ color: 'var(--color-primary)' }} />
                 <span>Petugas</span>
               </label>
-              <div className="w-full px-3 py-2 text-sm font-semibold text-[#172B4D] bg-[#F7F8F9] border border-[#DCDFE4] rounded flex items-center gap-2 min-h-[38px]">
-                <BadgeCheck className="w-4 h-4 text-[#216E4E] flex-shrink-0" />
+              <div
+                className="w-full px-3 py-2.5 text-sm font-semibold flex items-center gap-2 min-h-[42px]"
+                style={{
+                  backgroundColor: 'var(--color-surface-sunken)',
+                  border: '1px solid var(--color-border)',
+                  color: 'var(--color-text-primary)',
+                }}
+              >
+                <BadgeCheck className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-success)' }} />
                 <span>{petugas}</span>
-                <span className="ml-auto text-[10px] font-normal text-[#44546F] bg-[#E3FCEF] border border-[#BAF3DB] px-1.5 py-0.5 rounded-full">Login</span>
+                <span
+                  className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
+                  style={{
+                    backgroundColor: 'var(--color-success-subtle)',
+                    color: 'var(--color-success)',
+                    border: '1px solid var(--color-success-border)',
+                  }}
+                >
+                  Login
+                </span>
               </div>
             </div>
           </div>
@@ -420,7 +527,12 @@ export default function InputSOPage() {
             <motion.div
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 px-3 py-2 bg-[#E9F2FF] border border-[#B3D4FF] rounded text-xs text-[#1868DB] font-medium"
+              className="flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium"
+              style={{
+                backgroundColor: 'var(--color-primary-subtle)',
+                border: '1px solid var(--color-primary-muted)',
+                color: 'var(--color-primary)',
+              }}
             >
               <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
               <span>Data SO sebelumnya dimuat: <strong>{previousSOInfo.tanggal}</strong> · Shift <strong>{previousSOInfo.shift}</strong></span>
@@ -438,13 +550,13 @@ export default function InputSOPage() {
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Search */}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B778C]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--color-text-tertiary)' }} />
               <input
                 type="text"
                 placeholder="Cari nama barang atau kode item..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 text-sm border border-[#DCDFE4] rounded-[4px] focus:border-[#1868DB] focus:ring-1 focus:ring-[#1868DB] outline-none transition-colors bg-[#FAFBFC] min-h-[40px]"
+                className="w-full pl-9 pr-8 py-2.5 text-sm min-h-[42px]"
               />
               <AnimatePresence>
                 {searchQuery && (
@@ -454,7 +566,10 @@ export default function InputSOPage() {
                     exit={{ opacity: 0, scale: 0.7 }}
                     type="button"
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#6B778C] hover:text-[#172B4D] transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 transition-colors"
+                    style={{ color: 'var(--color-text-tertiary)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text-primary)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
                   >
                     <X className="w-3.5 h-3.5" />
                   </motion.button>
@@ -464,11 +579,11 @@ export default function InputSOPage() {
 
             {/* Area Filter */}
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B778C] pointer-events-none" />
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--color-text-tertiary)' }} />
               <select
                 value={selectedArea}
                 onChange={(e) => setSelectedArea(e.target.value)}
-                className="pl-9 pr-8 py-2 text-sm font-medium border border-[#DCDFE4] rounded-[4px] focus:border-[#1868DB] focus:ring-1 focus:ring-[#1868DB] outline-none transition-colors bg-[#FAFBFC] cursor-pointer appearance-none min-h-[40px]"
+                className="pl-9 pr-8 py-2.5 text-sm font-medium cursor-pointer min-h-[42px]"
               >
                 <option value="Semua">Semua Area</option>
                 {areas.map(area => (
@@ -487,21 +602,35 @@ export default function InputSOPage() {
                 exit={{ opacity: 0, height: 0 }}
                 className="flex items-center gap-2 flex-wrap"
               >
-                <span className="text-[11px] text-[#44546F] font-semibold">Filter aktif:</span>
+                <span className="text-[11px] font-semibold" style={{ color: 'var(--color-text-secondary)' }}>Filter aktif:</span>
                 {selectedArea !== 'Semua' && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#E9F2FF] text-[#1868DB] text-[11px] font-semibold rounded-full border border-[#B3D4FF]">
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold rounded-md"
+                    style={{
+                      backgroundColor: 'var(--color-primary-subtle)',
+                      color: 'var(--color-primary)',
+                      border: '1px solid var(--color-primary-muted)',
+                    }}
+                  >
                     <Layers className="w-3 h-3" />
                     {selectedArea}
-                    <button type="button" onClick={() => setSelectedArea('Semua')} className="hover:text-[#1557B0]">
+                    <button type="button" onClick={() => setSelectedArea('Semua')}>
                       <X className="w-3 h-3" />
                     </button>
                   </span>
                 )}
                 {searchQuery && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#E9F2FF] text-[#1868DB] text-[11px] font-semibold rounded-full border border-[#B3D4FF]">
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold rounded-md"
+                    style={{
+                      backgroundColor: 'var(--color-primary-subtle)',
+                      color: 'var(--color-primary)',
+                      border: '1px solid var(--color-primary-muted)',
+                    }}
+                  >
                     <Search className="w-3 h-3" />
                     &quot;{searchQuery}&quot;
-                    <button type="button" onClick={() => setSearchQuery('')} className="hover:text-[#1557B0]">
+                    <button type="button" onClick={() => setSearchQuery('')}>
                       <X className="w-3 h-3" />
                     </button>
                   </span>
@@ -509,7 +638,8 @@ export default function InputSOPage() {
                 <button
                   type="button"
                   onClick={() => { setSelectedArea('Semua'); setSearchQuery(''); }}
-                  className="text-[11px] text-[#6B778C] hover:text-[#CA3521] font-medium underline"
+                  className="text-[11px] font-medium underline"
+                  style={{ color: 'var(--color-text-tertiary)' }}
                 >
                   Hapus semua
                 </button>
@@ -520,8 +650,11 @@ export default function InputSOPage() {
 
         {/* Items Section by Area */}
         {Object.keys(groupedItems).length === 0 ? (
-          <div className="text-center py-12 surface-card p-6">
-            <p className="text-[#44546F] text-sm">
+          <div
+            className="text-center py-12 surface-card p-6"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            <p className="text-sm">
               {items.length === 0
                 ? 'Belum ada item terdaftar pada master barang cabang ini.'
                 : 'Tidak ada item yang cocok dengan filter atau pencarian.'
@@ -537,15 +670,28 @@ export default function InputSOPage() {
           >
             {Object.entries(groupedItems).map(([area, areaItems]) => (
               <motion.div key={area} variants={staggerItem} className="surface-card overflow-hidden">
-                <div className="bg-[#F7F8F9] px-5 py-3 border-b border-[#DCDFE4] flex items-center justify-between">
+                <div
+                  className="px-5 py-3 flex items-center justify-between"
+                  style={{
+                    backgroundColor: 'var(--color-surface-sunken)',
+                    borderBottom: '1px solid var(--color-border)',
+                  }}
+                >
                   <div className="flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-[#1868DB]" />
-                    <h3 className="font-semibold text-sm text-[#172B4D] uppercase tracking-wider">{area}</h3>
+                    <Layers className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+                    <h3
+                      className="font-semibold text-sm uppercase tracking-wider"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
+                      {area}
+                    </h3>
                   </div>
-                  <span className="text-xs font-semibold text-[#44546F] tabular-nums">{areaItems.length} Item</span>
+                  <span className="text-xs font-semibold tabular-nums" style={{ color: 'var(--color-text-secondary)' }}>
+                    {areaItems.length} Item
+                  </span>
                 </div>
 
-                <div className="divide-y divide-[#DCDFE4]">
+                <div style={{ borderTop: '1px solid var(--color-border)' }}>
                   {areaItems.map((item) => {
                     const step1Val = counts[item.Item_ID]?.step1 || '';
                     const step2Val = counts[item.Item_ID]?.step2 || '';
@@ -554,16 +700,36 @@ export default function InputSOPage() {
                     const prev = previousSO[item.Nama_Barang];
 
                     return (
-                      <div key={item.Item_ID} className="p-4 sm:px-6 hover:bg-[#F7F8F9] transition-colors">
+                      <div
+                        key={item.Item_ID}
+                        className="p-4 sm:px-6 transition-colors"
+                        style={{ borderBottom: '1px solid var(--color-border)' }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'var(--color-surface-sunken)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                           <div className="flex-1 space-y-1.5">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold text-[#172B4D] text-sm">{item.Nama_Barang}</span>
-                              <span className="text-xs text-[#44546F] font-mono">({item.Satuan})</span>
+                              <span
+                                className="font-semibold text-sm"
+                                style={{ color: 'var(--color-text-primary)' }}
+                              >
+                                {item.Nama_Barang}
+                              </span>
+                              <span
+                                className="text-xs font-mono"
+                                style={{ color: 'var(--color-text-tertiary)' }}
+                              >
+                                ({item.Satuan})
+                              </span>
                             </div>
                             <div className="flex items-center gap-3 flex-wrap">
-                              <span className="text-[11px] text-[#44546F] tabular-nums">
-                                Batas Min: <span className="font-bold text-[#172B4D]">{item.Threshold}</span>
+                              <span className="text-[11px] tabular-nums" style={{ color: 'var(--color-text-secondary)' }}>
+                                Batas Min: <span className="font-bold" style={{ color: 'var(--color-text-primary)' }}>{item.Threshold}</span>
                               </span>
                               {getStatusBadge(total, item.Threshold)}
                             </div>
@@ -572,36 +738,94 @@ export default function InputSOPage() {
                           <div className="flex items-center gap-2 sm:gap-3 self-end sm:self-auto">
                             {prev ? (
                               <div className="flex-1 sm:w-32 sm:flex-none text-center">
-                                <span className="block text-[10px] text-[#44546F] mb-1 font-semibold uppercase tracking-wide">SO Sebelumnya</span>
+                                <span
+                                  className="block text-[10px] mb-1 font-semibold uppercase tracking-wide"
+                                  style={{ color: 'var(--color-text-secondary)' }}
+                                >
+                                  SO Sebelumnya
+                                </span>
                                 <div className="flex items-center gap-1 justify-center">
-                                  <div className="px-1.5 py-1 sm:py-0.5 bg-[#F1F2F4] border border-[#DCDFE4] rounded text-center min-h-[28px] flex flex-col items-center justify-center">
-                                    <span className="text-[9px] text-[#6B778C] uppercase">S1</span>
-                                    <span className="text-xs font-bold text-[#44546F] tabular-nums leading-tight">{prev.step1}</span>
+                                  <div
+                                    className="px-1.5 py-1 sm:py-0.5 rounded text-center min-h-[28px] flex flex-col items-center justify-center"
+                                    style={{
+                                      backgroundColor: 'var(--color-surface-sunken)',
+                                      border: '1px solid var(--color-border)',
+                                    }}
+                                  >
+                                    <span className="text-[9px] uppercase" style={{ color: 'var(--color-text-tertiary)' }}>S1</span>
+                                    <span
+                                      className="text-xs font-bold tabular-nums leading-tight"
+                                      style={{ color: 'var(--color-text-secondary)' }}
+                                    >
+                                      {prev.step1}
+                                    </span>
                                   </div>
-                                  <span className="text-[#B3BAC5] text-xs">+</span>
-                                  <div className="px-1.5 py-1 sm:py-0.5 bg-[#F1F2F4] border border-[#DCDFE4] rounded text-center min-h-[28px] flex flex-col items-center justify-center">
-                                    <span className="text-[9px] text-[#6B778C] uppercase">S2</span>
-                                    <span className="text-xs font-bold text-[#44546F] tabular-nums leading-tight">{prev.step2}</span>
+                                  <span className="text-xs" style={{ color: 'var(--color-border-strong)' }}>+</span>
+                                  <div
+                                    className="px-1.5 py-1 sm:py-0.5 rounded text-center min-h-[28px] flex flex-col items-center justify-center"
+                                    style={{
+                                      backgroundColor: 'var(--color-surface-sunken)',
+                                      border: '1px solid var(--color-border)',
+                                    }}
+                                  >
+                                    <span className="text-[9px] uppercase" style={{ color: 'var(--color-text-tertiary)' }}>S2</span>
+                                    <span
+                                      className="text-xs font-bold tabular-nums leading-tight"
+                                      style={{ color: 'var(--color-text-secondary)' }}
+                                    >
+                                      {prev.step2}
+                                    </span>
                                   </div>
-                                  <span className="text-[#B3BAC5] text-xs">=</span>
-                                  <div className="px-1.5 py-1 sm:py-0.5 bg-[#DCDFE4] border border-[#C1C7D0] rounded text-center min-h-[28px] flex items-center justify-center">
-                                    <span className="text-xs font-extrabold text-[#172B4D] tabular-nums">{prev.total}</span>
+                                  <span className="text-xs" style={{ color: 'var(--color-border-strong)' }}>=</span>
+                                  <div
+                                    className="px-1.5 py-1 sm:py-0.5 rounded text-center min-h-[28px] flex items-center justify-center"
+                                    style={{
+                                      backgroundColor: 'var(--color-border-subtle)',
+                                      border: '1px solid var(--color-border)',
+                                    }}
+                                  >
+                                    <span className="text-xs font-extrabold tabular-nums" style={{ color: 'var(--color-text-primary)' }}>
+                                      {prev.total}
+                                    </span>
                                   </div>
                                 </div>
-                                <span className="text-[9px] text-[#6B778C]">{prev.tanggal} ({prev.shift})</span>
+                                <span className="text-[9px]" style={{ color: 'var(--color-text-tertiary)' }}>
+                                  {prev.tanggal} ({prev.shift})
+                                </span>
                               </div>
                             ) : (
                               <div className="flex-1 sm:w-32 sm:flex-none text-center">
-                                <span className="block text-[10px] text-[#44546F] mb-1 font-semibold uppercase tracking-wide">SO Sebelumnya</span>
-                                <div className="px-2 py-1.5 sm:py-1 bg-[#F7F8F9] border border-[#DCDFE4] rounded text-center min-h-[32px] flex items-center justify-center">
-                                  <span className="text-xs text-[#B3BAC5]">Belum ada data</span>
+                                <span
+                                  className="block text-[10px] mb-1 font-semibold uppercase tracking-wide"
+                                  style={{ color: 'var(--color-text-secondary)' }}
+                                >
+                                  SO Sebelumnya
+                                </span>
+                                <div
+                                  className="px-2 py-1.5 sm:py-1 rounded text-center min-h-[32px] flex items-center justify-center"
+                                  style={{
+                                    backgroundColor: 'var(--color-surface-sunken)',
+                                    border: '1px solid var(--color-border)',
+                                  }}
+                                >
+                                  <span className="text-xs" style={{ color: 'var(--color-text-disabled)' }}>Belum ada data</span>
                                 </div>
                               </div>
                             )}
 
-                            <span className="text-[#44546F] font-bold self-end mb-2.5 text-lg">→</span>
+                            <span
+                              className="font-bold self-end mb-2.5 text-lg"
+                              style={{ color: 'var(--color-text-secondary)' }}
+                            >
+                              →
+                            </span>
                             <div className="flex-1 sm:w-24 sm:flex-none">
-                              <span className="block text-[10px] text-[#44546F] mb-1 text-center font-semibold uppercase tracking-wide">Step 1</span>
+                              <span
+                                className="block text-[10px] mb-1 text-center font-semibold uppercase tracking-wide"
+                                style={{ color: 'var(--color-text-secondary)' }}
+                              >
+                                Step 1
+                              </span>
                               <input
                                 type="number"
                                 step="any"
@@ -613,10 +837,20 @@ export default function InputSOPage() {
                               />
                             </div>
 
-                            <span className="text-[#44546F] font-bold self-end mb-2.5 text-lg">+</span>
+                            <span
+                              className="font-bold self-end mb-2.5 text-lg"
+                              style={{ color: 'var(--color-text-secondary)' }}
+                            >
+                              +
+                            </span>
 
                             <div className="flex-1 sm:w-24 sm:flex-none">
-                              <span className="block text-[10px] text-[#44546F] mb-1 text-center font-semibold uppercase tracking-wide">Step 2</span>
+                              <span
+                                className="block text-[10px] mb-1 text-center font-semibold uppercase tracking-wide"
+                                style={{ color: 'var(--color-text-secondary)' }}
+                              >
+                                Step 2
+                              </span>
                               <input
                                 type="number"
                                 step="any"
@@ -628,11 +862,26 @@ export default function InputSOPage() {
                               />
                             </div>
 
-                            <span className="text-[#44546F] font-bold self-end mb-2.5 text-lg">=</span>
+                            <span
+                              className="font-bold self-end mb-2.5 text-lg"
+                              style={{ color: 'var(--color-text-secondary)' }}
+                            >
+                              =
+                            </span>
 
                             <div className="w-14 sm:w-20 text-center self-end mb-1">
-                              <span className="text-lg sm:text-base font-extrabold text-[#1868DB] tabular-nums">{total}</span>
-                              <span className="block text-[9px] uppercase tracking-wider text-[#44546F] font-bold">Total</span>
+                              <span
+                                className="text-lg sm:text-base font-extrabold tabular-nums"
+                                style={{ color: 'var(--color-primary)' }}
+                              >
+                                {total}
+                              </span>
+                              <span
+                                className="block text-[9px] uppercase tracking-wider font-bold"
+                                style={{ color: 'var(--color-text-secondary)' }}
+                              >
+                                Total
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -640,13 +889,16 @@ export default function InputSOPage() {
                         {/* Keterangan (Optional Notes) */}
                         <div className="mt-2 sm:mt-3 sm:ml-auto sm:w-[calc(100%-320px)]">
                           <div className="relative">
-                            <StickyNote className="absolute left-2.5 top-2 w-3.5 h-3.5 text-[#6B778C]" />
+                            <StickyNote
+                              className="absolute left-2.5 top-2 w-3.5 h-3.5"
+                              style={{ color: 'var(--color-text-tertiary)' }}
+                            />
                             <input
                               type="text"
                               placeholder="Keterangan (opsional)..."
                               value={keteranganVal}
                               onChange={(e) => handleCountChange(item.Item_ID, 'keterangan', e.target.value)}
-                              className="w-full pl-8 pr-3 py-1.5 text-xs border border-[#DCDFE4] rounded-[4px] focus:border-[#1868DB] focus:ring-1 focus:ring-[#1868DB] outline-none transition-colors bg-[#FAFBFC]"
+                              className="w-full pl-8 pr-3 py-1.5 text-xs"
                             />
                           </div>
                         </div>
@@ -660,16 +912,26 @@ export default function InputSOPage() {
         )}
 
         {/* Floating Action Bar */}
-        <div className="sticky bottom-4 z-40 surface-card p-3 sm:p-4 shadow-sm border border-[#DCDFE4] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div
+          className="sticky bottom-4 z-40 surface-card p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+          style={{
+            boxShadow: 'var(--shadow-md)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
           <div className="space-y-0.5">
-            <span className="text-xs text-[#44546F] font-medium">Selesaikan sesi pencatatan</span>
-            <p className="text-sm font-semibold text-[#172B4D]">Laporan PDF akan otomatis disimpan ke Google Drive</p>
+            <span className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+              Selesaikan sesi pencatatan
+            </span>
+            <p className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+              Laporan PDF & Excel akan otomatis diunduh
+            </p>
           </div>
 
           <button
             type="submit"
             disabled={submitting}
-            className="btn-primary px-6 py-3 flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto min-h-[44px]"
+            className="btn-primary px-6 py-3 flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px]"
           >
             {submitting ? (
               <>

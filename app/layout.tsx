@@ -20,12 +20,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id">
-      <body className="min-h-screen flex flex-col font-sans antialiased bg-[#F7F8F9] text-[#172B4D]">
+      <body className="min-h-screen flex flex-col font-sans antialiased" style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-text-primary)' }}>
         <AuthProvider>
           <CabangProvider>
             <AuthGuard>
               <Navbar />
-              <main className="flex-1 w-full max-w-6xl mx-auto px-4 pt-4 pb-20 md:py-8 overflow-x-hidden">
+              <main className="flex-1 w-full max-w-6xl mx-auto px-4 pt-4 pb-24 md:py-8 overflow-x-hidden">
                 {children}
               </main>
             </AuthGuard>

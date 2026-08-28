@@ -57,6 +57,7 @@ function routeAction_(action, cabangId, payload, params) {
     case 'setPetugasActive':     return jsonResponse_({ success: true, data: setPetugasActive(cabangId, payload.petugasId, payload.aktif) });
     // SO
     case 'submitSO':             return jsonResponse_({ success: true, data: submitSO(cabangId, payload) });
+    case 'getPreviousSO':        return jsonResponse_({ success: true, data: getPreviousSO(cabangId) });
     // Laporan
     case 'searchLaporan':        return jsonResponse_({ success: true, data: searchLaporan(cabangId, params) });
     case 'getShareWhatsAppLink': return jsonResponse_({ success: true, data: getShareWhatsAppLink(cabangId, payload.laporanId) });

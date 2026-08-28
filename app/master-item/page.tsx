@@ -207,11 +207,14 @@ export default function MasterItemPage() {
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-[#172B4D] flex items-center gap-2">
-            <Package className="w-6 h-6 text-[#1868DB]" />
+          <h1
+            className="text-xl sm:text-2xl font-semibold flex items-center gap-2"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            <Package className="w-6 h-6" style={{ color: 'var(--color-primary)' }} />
             <span>Master Item dan Threshold Minimum</span>
           </h1>
-          <p className="text-[#44546F] text-sm mt-1">
+          <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
             Pengaturan batas minimum stok untuk cabang: <span className="font-semibold">{selectedCabang.Nama_Cabang}</span>
           </p>
         </div>
@@ -235,13 +238,13 @@ export default function MasterItemPage() {
         <div className="flex flex-col sm:flex-row gap-3">
           {/* Search */}
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B778C]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--color-text-tertiary)' }} />
             <input
               type="text"
               placeholder="Cari nama barang, area, atau ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 text-sm border border-[#DCDFE4] rounded-[4px] focus:border-[#1868DB] focus:ring-1 focus:ring-[#1868DB] outline-none transition-colors bg-[#FAFBFC] min-h-[40px]"
+              className="w-full pl-9 pr-8 py-2.5 text-sm min-h-[42px]"
             />
             <AnimatePresence>
               {searchQuery && (
@@ -251,7 +254,8 @@ export default function MasterItemPage() {
                   exit={{ opacity: 0, scale: 0.7 }}
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#6B778C] hover:text-[#172B4D] transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 transition-colors"
+                  style={{ color: 'var(--color-text-tertiary)' }}
                 >
                   <X className="w-3.5 h-3.5" />
                 </motion.button>
@@ -261,11 +265,11 @@ export default function MasterItemPage() {
 
           {/* Area Filter */}
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B778C] pointer-events-none" />
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--color-text-tertiary)' }} />
             <select
               value={selectedArea}
               onChange={(e) => setSelectedArea(e.target.value)}
-              className="pl-9 pr-8 py-2 text-sm font-medium border border-[#DCDFE4] rounded-[4px] focus:border-[#1868DB] focus:ring-1 focus:ring-[#1868DB] outline-none transition-colors bg-[#FAFBFC] cursor-pointer appearance-none min-h-[40px]"
+              className="pl-9 pr-8 py-2.5 text-sm font-medium cursor-pointer min-h-[42px]"
             >
               <option value="Semua">Semua Area</option>
               {areas.map(area => (
@@ -284,21 +288,35 @@ export default function MasterItemPage() {
               exit={{ opacity: 0, height: 0 }}
               className="flex items-center gap-2 flex-wrap"
             >
-              <span className="text-[11px] text-[#44546F] font-semibold">Filter aktif:</span>
+              <span className="text-[11px] font-semibold" style={{ color: 'var(--color-text-secondary)' }}>Filter aktif:</span>
               {selectedArea !== 'Semua' && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#E9F2FF] text-[#1868DB] text-[11px] font-semibold rounded-full border border-[#B3D4FF]">
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold rounded-md"
+                  style={{
+                    backgroundColor: 'var(--color-primary-subtle)',
+                    color: 'var(--color-primary)',
+                    border: '1px solid var(--color-primary-muted)',
+                  }}
+                >
                   <Layers className="w-3 h-3" />
                   {selectedArea}
-                  <button type="button" onClick={() => setSelectedArea('Semua')} className="hover:text-[#1557B0]">
+                  <button type="button" onClick={() => setSelectedArea('Semua')}>
                     <X className="w-3 h-3" />
                   </button>
                 </span>
               )}
               {searchQuery && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#E9F2FF] text-[#1868DB] text-[11px] font-semibold rounded-full border border-[#B3D4FF]">
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold rounded-md"
+                  style={{
+                    backgroundColor: 'var(--color-primary-subtle)',
+                    color: 'var(--color-primary)',
+                    border: '1px solid var(--color-primary-muted)',
+                  }}
+                >
                   <Search className="w-3 h-3" />
                   &quot;{searchQuery}&quot;
-                  <button type="button" onClick={() => setSearchQuery('')} className="hover:text-[#1557B0]">
+                  <button type="button" onClick={() => setSearchQuery('')}>
                     <X className="w-3 h-3" />
                   </button>
                 </span>
@@ -306,7 +324,8 @@ export default function MasterItemPage() {
               <button
                 type="button"
                 onClick={() => { setSelectedArea('Semua'); setSearchQuery(''); }}
-                className="text-[11px] text-[#6B778C] hover:text-[#CA3521] font-medium underline"
+                className="text-[11px] font-medium underline"
+                style={{ color: 'var(--color-text-tertiary)' }}
               >
                 Hapus semua
               </button>
@@ -324,18 +343,18 @@ export default function MasterItemPage() {
       >
         {loading ? (
           <div className="p-16 text-center">
-            <Loader2 className="w-8 h-8 text-[#1868DB] animate-spin mx-auto mb-2" />
-            <p className="text-[#44546F] text-sm">Memuat data barang...</p>
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" style={{ color: 'var(--color-primary)' }} />
+            <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Memuat data barang...</p>
           </div>
         ) : filteredItems.length === 0 ? (
           <div className="p-16 text-center space-y-2">
-            <Package className="w-12 h-12 text-[#44546F] mx-auto" />
-            <h3 className="text-sm font-semibold text-[#172B4D]">
+            <Package className="w-12 h-12 mx-auto" style={{ color: 'var(--color-text-disabled)' }} />
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
               {items.length === 0 
                 ? 'Belum Ada Item Terdaftar di Cabang Ini' 
                 : 'Tidak ada item yang cocok dengan filter.'}
             </h3>
-            <p className="text-[#44546F] text-sm">
+            <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
               {items.length === 0 
                 ? 'Tambahkan master barang untuk memulai pencatatan SO.' 
                 : 'Coba ubah filter atau kata kunci pencarian.'}
@@ -344,8 +363,8 @@ export default function MasterItemPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm mobile-card-table">
-              <thead className="bg-[#F7F8F9] text-[#44546F] font-semibold border-b border-[#DCDFE4]">
-                <tr>
+              <thead style={{ backgroundColor: 'var(--color-surface-sunken)', borderBottom: '1px solid var(--color-border)' }}>
+                <tr className="font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
                   <th className="px-5 py-3">ID Item</th>
                   <th className="px-5 py-3">Nama Barang</th>
                   <th className="px-5 py-3">Area Penempatan</th>
@@ -355,7 +374,7 @@ export default function MasterItemPage() {
                   <th className="px-5 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y sm:divide-y-0 divide-[#DCDFE4] text-[#172B4D]">
+              <tbody style={{ color: 'var(--color-text-primary)' }}>
                 <AnimatePresence initial={false}>
                   {filteredItems.map((item) => (
                     <motion.tr
@@ -364,16 +383,30 @@ export default function MasterItemPage() {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 8 }}
                       transition={{ duration: 0.15 }}
-                      className="hover:bg-[#F7F8F9] transition-colors"
+                      className="transition-colors"
+                      style={{ borderBottom: '1px solid var(--color-border)' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--color-surface-sunken)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
                     >
-                      <td className="px-5 py-4 font-mono text-[#44546F]" data-label="ID">{item.Item_ID}</td>
+                      <td className="px-5 py-4 font-mono" style={{ color: 'var(--color-text-secondary)' }} data-label="ID">{item.Item_ID}</td>
                       <td className="px-5 py-4 font-semibold" data-label="Nama">{item.Nama_Barang}</td>
                       <td className="px-5 py-4" data-label="Area">
-                        <span className="bg-[#F1F2F4] text-[#44546F] px-2 py-1 rounded border border-[#DCDFE4] font-medium text-xs">
+                        <span
+                          className="px-2 py-1 rounded-md font-medium text-xs"
+                          style={{
+                            backgroundColor: 'var(--color-surface-sunken)',
+                            color: 'var(--color-text-secondary)',
+                            border: '1px solid var(--color-border)',
+                          }}
+                        >
                           {item.Area}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-[#44546F] font-mono" data-label="Satuan">{item.Satuan}</td>
+                      <td className="px-5 py-4 font-mono" style={{ color: 'var(--color-text-secondary)' }} data-label="Satuan">{item.Satuan}</td>
                       <td className="px-5 py-4 text-center" data-label="Threshold">
                         {editingThreshold === item.Item_ID ? (
                           <div className="inline-flex items-center gap-1.5">
@@ -385,13 +418,22 @@ export default function MasterItemPage() {
                             />
                             <button
                               onClick={() => handleSaveThreshold(item.Item_ID)}
-                              className="p-1.5 bg-[#1868DB] text-white hover:bg-[#0055CC] rounded"
+                              className="p-1.5 rounded-md"
+                              style={{
+                                backgroundColor: 'var(--color-primary)',
+                                color: 'var(--color-text-inverse)',
+                              }}
                             >
                               <Check className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => setEditingThreshold(null)}
-                              className="p-1.5 bg-[#F1F2F4] text-[#44546F] hover:bg-[#DCDFE4] rounded"
+                              className="p-1.5 rounded-md"
+                              style={{
+                                backgroundColor: 'var(--color-surface-sunken)',
+                                color: 'var(--color-text-secondary)',
+                                border: '1px solid var(--color-border)',
+                              }}
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -402,25 +444,56 @@ export default function MasterItemPage() {
                               setEditingThreshold(item.Item_ID);
                               setTempThreshold(item.Threshold);
                             }}
-                            className="inline-flex items-center gap-2 cursor-pointer group px-2 py-1 rounded hover:bg-[#F1F2F4]"
+                            className="inline-flex items-center gap-2 cursor-pointer group px-2 py-1 rounded-md transition-colors"
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = 'var(--color-surface-sunken)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
                           >
-                            <span className="font-semibold text-[#172B4D] tabular-nums">{item.Threshold}</span>
-                            <Edit3 className="w-3.5 h-3.5 text-[#44546F] group-hover:text-[#1868DB] transition-colors" />
+                            <span className="font-semibold tabular-nums">{item.Threshold}</span>
+                            <Edit3 className="w-3.5 h-3.5 transition-colors" style={{ color: 'var(--color-text-tertiary)' }} />
                           </div>
                         )}
                       </td>
                       <td className="px-5 py-4 text-center" data-label="Status">
                         {item.Aktif ? (
-                          <span className="lozenge lozenge-success">Aktif</span>
+                          <span
+                            className="lozenge"
+                            style={{
+                              backgroundColor: 'var(--color-success-subtle)',
+                              color: 'var(--color-success)',
+                              border: '1px solid var(--color-success-border)',
+                            }}
+                          >
+                            Aktif
+                          </span>
                         ) : (
-                          <span className="lozenge lozenge-default">Nonaktif</span>
+                          <span
+                            className="lozenge"
+                            style={{
+                              backgroundColor: 'var(--color-surface-sunken)',
+                              color: 'var(--color-text-secondary)',
+                              border: '1px solid var(--color-border)',
+                            }}
+                          >
+                            Nonaktif
+                          </span>
                         )}
                       </td>
                       <td className="px-5 py-4 text-right" data-label="Aksi">
                         <button
                           onClick={() => handleToggleActive(item.Item_ID, item.Aktif)}
                           title={item.Aktif ? "Nonaktifkan item dari form SO" : "Aktifkan item"}
-                          className="text-xs text-[#CA3521] hover:text-[#AE2A19] font-medium px-2 py-1 hover:bg-[#FFEBE6] rounded transition-colors"
+                          className="text-xs font-medium px-2 py-1 rounded-md transition-colors"
+                          style={{ color: 'var(--color-danger)' }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--color-danger-subtle)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
                         >
                           {item.Aktif ? "Nonaktifkan" : "Aktifkan"}
                         </button>

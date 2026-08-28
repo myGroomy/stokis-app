@@ -9,6 +9,11 @@ function submitSO(cabangId, payload) {
   const timestamp = new Date();
   const transaksiList = [];
 
+  // Fetch previous SO data for comparison in PDF
+  const prevData = getPreviousSO(cabangId);
+  const prevItems = prevData && prevData.items ? prevData.items : {};
+  const prevInfo = prevData && prevData.latest ? prevData.latest : null;
+
   const items = payload.items || [];
   items.forEach(item => {
     const master = masterRows.find(m => m['Item_ID'] === item.itemId);
@@ -29,13 +34,29 @@ function submitSO(cabangId, payload) {
       payload.petugas, sesiId, keterangan
     ]);
 
-    transaksiList.push({ transaksiId, itemId: item.itemId, total, keterangan });
+    // Look up previous SO data for this item by Nama_Barang
+    const prev = prevItems[master['Nama_Barang']] || null;
+
+    transaksiList.push({
+      transaksiId,
+      itemId: item.itemId,
+      nama: master['Nama_Barang'],
+      area: master['Area'],
+      threshold: master['Threshold'] || 0,
+      step1: step1,
+      step2: step2,
+      total: total,
+      keterangan: keterangan,
+      prevStep1: prev ? prev.step1 : null,
+      prevStep2: prev ? prev.step2 : null,
+      prevTotal: prev ? prev.total : null,
+    });
   });
 
   const laporanId = generatePDF_(
     cabangId, spreadsheet, cabang, sesiId,
     payload.tanggalOperasional, payload.shift, payload.petugas,
-    transaksiList, masterRows
+    transaksiList, masterRows, prevInfo
   );
   return { sesiId, laporanId };
 }

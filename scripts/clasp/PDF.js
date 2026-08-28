@@ -1,6 +1,6 @@
 // PDF.js
 
-function generatePDF_(cabangId, spreadsheet, cabang, sesiId, tanggal, shift, petugas, transaksiList, masterRows) {
+function generatePDF_(cabangId, spreadsheet, cabang, sesiId, tanggal, shift, petugas, transaksiList, masterRows, prevInfo) {
   const laporanSheet = getSheetByName_(spreadsheet, 'Laporan_PDF');
   const laporanId = 'RPT' + String(laporanSheet.getLastRow()).padStart(5, '0');
 
@@ -30,7 +30,7 @@ function generatePDF_(cabangId, spreadsheet, cabang, sesiId, tanggal, shift, pet
   const tglFormatted = tanggal.replace(/-/g, '');
   const fileName = kodeCabang + '-' + tglFormatted + '-' + shift.toUpperCase() + '.pdf';
 
-  const html = buildPdfHtml_(cabang['Nama_Cabang'], tanggal, shift, petugas, rows, sesiId, laporanId, kodeCabang);
+  const html = buildPdfHtml_(cabang['Nama_Cabang'], tanggal, shift, petugas, rows, sesiId, laporanId, kodeCabang, prevInfo);
   const pdfBlob = Utilities.newBlob(html, 'text/html').getAs('application/pdf');
   pdfBlob.setName(fileName);
 
@@ -46,7 +46,7 @@ function generatePDF_(cabangId, spreadsheet, cabang, sesiId, tanggal, shift, pet
   return laporanId;
 }
 
-function buildPdfHtml_(namaCabang, tanggal, shift, petugas, rows, sesiId, laporanId, kodeCabang) {
+function buildPdfHtml_(namaCabang, tanggal, shift, petugas, rows, sesiId, laporanId, kodeCabang, prevInfo) {
   const statusColor = {
     'Kritis': '#CA3521',
     'Hampir Habis': '#B38600',
@@ -148,6 +148,11 @@ function buildPdfHtml_(namaCabang, tanggal, shift, petugas, rows, sesiId, lapora
     '<div style="font-size:11px;font-weight:700;color:#172B4D;margin-bottom:6px;text-transform:uppercase">' +
     'Perbandingan Stok — Kritis Lebih Dulu' +
     '</div>' +
+    (prevInfo ?
+    '<div style="background:#E9F2FF;border:1px solid #B3D4FF;border-radius:4px;padding:6px 12px;margin-bottom:8px;font-size:11px;color:#1868DB;font-weight:600">' +
+    'SO Sebelumnya: ' + (prevInfo.tanggal || '-') + ' · Shift ' + (prevInfo.shift || '-') +
+    ' &nbsp;&nbsp;|&nbsp;&nbsp; SO Sekarang: ' + tanggal + ' · Shift ' + shift +
+    '</div>' : '') +
     '<table>' +
     '<tr style="background:#172B4D;color:#fff">' +
     '<th style="' + thStyle + ';color:#fff;border-color:#172B4D" colspan="3"></th>' +

@@ -41,6 +41,16 @@
   50% { transform: scale(1); opacity: 1; }
 }
 
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .generating-loader-wrapper {
   display: flex;
   flex-direction: column;
@@ -56,7 +66,7 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #1868db;
+  color: var(--color-primary);
 }
 
 .generating-loader-letter {
@@ -69,7 +79,7 @@
   position: relative;
   width: 80px;
   height: 2px;
-  background: #e9f2ff;
+  background: var(--color-primary-subtle);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -81,12 +91,12 @@
   left: -100%;
   width: 60%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, #1868db, transparent);
+  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
   border-radius: 999px;
   animation: generating-loader-bar-anim 1.8s infinite ease-in-out;
 }
 
-/* Mini 3-dot loader (replaces Loader2 in buttons) */
+/* Mini 3-dot loader */
 .quantum-mini-loader {
   display: inline-flex;
   align-items: center;
@@ -106,219 +116,389 @@
 .quantum-mini-loader span:nth-child(2) { animation-delay: 0.15s; }
 .quantum-mini-loader span:nth-child(3) { animation-delay: 0.3s; }
 
+/* =============================================
+   DESIGN TOKENS (Light Mode)
+   ============================================= */
 :root {
+  /* Primary */
   --color-primary: #1868db;
   --color-primary-hover: #0055cc;
   --color-primary-active: #09326c;
+  --color-primary-subtle: #e9f2ff;
+  --color-primary-muted: #b3d4ff;
+
+  /* Surfaces */
   --color-surface: #ffffff;
-  --color-background: #f7f8f9;
+  --color-surface-sunken: #f7f8f9;
+  --color-surface-overlay: #ffffff;
+  --color-background: #f4f5f7;
+
+  /* Borders */
   --color-border: #dcdfe4;
+  --color-border-subtle: #ebecf0;
+  --color-border-strong: #c1c7d0;
+
+  /* Text */
   --color-text-primary: #172b4d;
   --color-text-secondary: #44546f;
+  --color-text-tertiary: #6b778c;
+  --color-text-disabled: #97a0af;
   --color-text-inverse: #ffffff;
-  --color-success: #216e4e;
+
+  /* Status */
+  --color-success: #00875a;
   --color-success-subtle: #e3fcef;
-  --color-warning: #7f5f01;
+  --color-success-border: #57d9a3;
+  --color-warning: #ff991f;
   --color-warning-subtle: #fffae6;
-  --color-danger: #ca3521;
+  --color-warning-border: #ffe380;
+  --color-danger: #de350b;
   --color-danger-subtle: #ffebe6;
-  --color-discovery: #5243aa;
+  --color-danger-border: #ffbdad;
+  --color-discovery: #6554c0;
   --color-discovery-subtle: #eae6ff;
-  --color-info: #165561;
+  --color-info: #00b8d9;
   --color-info-subtle: #e6fcff;
-  --spacing-space-100: 8px;
-  --spacing-space-200: 16px;
-  --spacing-space-300: 24px;
-  --spacing-space-400: 32px;
-  --rounded-sm: 3px;
-  --rounded-md: 4px;
-  --rounded-lg: 8px;
-  --rounded-xl: 12px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 1px rgba(9, 30, 66, 0.25), 0 0 1px 1px rgba(9, 30, 66, 0.08);
+  --shadow-sm: 0 1px 2px rgba(9, 30, 66, 0.08), 0 0 1px 1px rgba(9, 30, 66, 0.08);
+  --shadow-md: 0 4px 8px -2px rgba(9, 30, 66, 0.25), 0 0 1px rgba(9, 30, 66, 0.31);
+  --shadow-lg: 0 8px 16px -4px rgba(9, 30, 66, 0.25), 0 0 1px rgba(9, 30, 66, 0.31);
+
+  /* Radius */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Transitions */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+
+  color-scheme: light;
 }
 
+/* =============================================
+   DARK MODE
+   ============================================= */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #4c9aff;
+    --color-primary-hover: #2684ff;
+    --color-primary-active: #0055cc;
+    --color-primary-subtle: #082540;
+    --color-primary-muted: #0747a6;
+
+    --color-surface: #1b2638;
+    --color-surface-sunken: #172032;
+    --color-surface-overlay: #222d3f;
+    --color-background: #0d1117;
+
+    --color-border: #344563;
+    --color-border-subtle: #283449;
+    --color-border-strong: #44546f;
+
+    --color-text-primary: #e6e8eb;
+    --color-text-secondary: #9fadbc;
+    --color-text-tertiary: #6b778c;
+    --color-text-disabled: #44546f;
+    --color-text-inverse: #172b4d;
+
+    --color-success: #36b37e;
+    --color-success-subtle: #0d3323;
+    --color-success-border: #00875a;
+    --color-warning: #ffab00;
+    --color-warning-subtle: #332d00;
+    --color-warning-border: #ff991f;
+    --color-danger: #ff5630;
+    --color-danger-subtle: #331a15;
+    --color-danger-border: #de350b;
+    --color-discovery: #8777d9;
+    --color-discovery-subtle: #1a1540;
+    --color-info: #00c7e6;
+    --color-info-subtle: #003344;
+
+    --shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.3), 0 0 1px 1px rgba(0, 0, 0, 0.2);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 1px 1px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.4), 0 0 1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 16px -4px rgba(0, 0, 0, 0.4), 0 0 1px rgba(0, 0, 0, 0.3);
+
+    color-scheme: dark;
+  }
+}
+
+/* =============================================
+   BASE STYLES
+   ============================================= */
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    color-scheme: light;
     scroll-behavior: smooth;
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    background-color: #f7f8f9;
-    color: #172b4d;
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Ubuntu, "Helvetica Neue", sans-serif;
     overflow-x: hidden;
     position: relative;
+    line-height: 1.5;
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    color: #172b4d;
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--color-text-primary);
     text-wrap: balance;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
   }
 
-  p,
-  span,
-  label {
+  p, span, label {
     text-wrap: pretty;
+  }
+
+  * {
+    border-color: var(--color-border);
   }
 }
 
-/* Atlassian Card styling */
+/* =============================================
+   SURFACE CARDS
+   ============================================= */
 .surface-card {
-  background-color: #ffffff;
-  border: 1px solid #dcdfe4;
-  border-radius: 8px;
-  box-shadow: 0 1px 1px rgba(9, 30, 66, 0.25), 0 0 1px 1px rgba(9, 30, 66, 0.13);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base), background-color var(--transition-base);
 }
 
 .surface-card:hover {
-  border-color: #091e4224;
+  border-color: var(--color-border-strong);
 }
 
 .surface-card-interactive {
-  background-color: #ffffff;
-  border: 1px solid #dcdfe4;
-  border-radius: 8px;
-  box-shadow: 0 1px 1px rgba(9, 30, 66, 0.25), 0 0 1px 1px rgba(9, 30, 66, 0.13);
-  transition: all 0.2s ease;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  transition: all var(--transition-base);
 }
 
 .surface-card-interactive:hover {
-  background-color: #f7f8f9;
-  border-color: #1868db;
-  box-shadow: 0 4px 8px -2px rgba(9, 30, 66, 0.25), 0 0 1px rgba(9, 30, 66, 0.31);
+  background-color: var(--color-surface-sunken);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
 }
 
-/* Atlassian Buttons */
+/* =============================================
+   BUTTONS
+   ============================================= */
 .btn-primary {
-  background-color: #1868db;
-  color: #ffffff;
-  font-weight: 500;
-  border-radius: 3px;
-  transition: background-color 0.15s ease;
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+  border: 1px solid transparent;
 }
 
 .btn-primary:hover {
-  background-color: #0055cc;
+  background-color: var(--color-primary-hover);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:active {
-  background-color: #09326c;
+  background-color: var(--color-primary-active);
+  transform: translateY(0.5px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-default {
-  background-color: #f1f2f4;
-  color: #172b4d;
+  background-color: var(--color-surface-sunken);
+  color: var(--color-text-primary);
   font-weight: 500;
-  border-radius: 3px;
-  border: 1px solid #dcdfe4;
-  transition: background-color 0.15s ease;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .btn-default:hover {
-  background-color: #e9eaec;
+  background-color: var(--color-border-subtle);
+  border-color: var(--color-border-strong);
 }
 
-/* Atlassian Form Controls */
+.btn-default:active {
+  background-color: var(--color-border);
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.btn-ghost:hover {
+  background-color: var(--color-surface-sunken);
+  color: var(--color-text-primary);
+}
+
+/* =============================================
+   FORM CONTROLS
+   ============================================= */
 input[type="text"],
 input[type="number"],
+input[type="email"],
+input[type="password"],
 input[type="date"],
 select,
 textarea {
-  background-color: #ffffff !important;
-  border: 1px solid #dcdfe4 !important;
-  color: #172b4d !important;
-  border-radius: 4px !important;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  background-color: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  color: var(--color-text-primary) !important;
+  border-radius: var(--radius-md) !important;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-base);
+  font-size: 14px;
 }
 
 input[type="text"]:focus,
 input[type="number"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
 input[type="date"]:focus,
 select:focus,
 textarea:focus {
-  border-color: #1868db !important;
-  box-shadow: 0 0 0 2px rgba(24, 104, 219, 0.25) !important;
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 2px var(--color-primary-subtle) !important;
   outline: none !important;
-  background-color: #ffffff !important;
+  background-color: var(--color-surface) !important;
 }
 
-/* Atlassian Badges & Lozenges */
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-disabled);
+}
+
+/* =============================================
+   BADGES & LOZENGES
+   ============================================= */
 .lozenge {
   display: inline-flex;
   align-items: center;
   font-size: 11px;
   font-weight: 700;
   line-height: 16px;
-  padding: 2px 6px;
-  border-radius: 3px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
   text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .lozenge-default {
-  background-color: #f1f2f4;
-  color: #44546f;
-  border: 1px solid #dcdfe4;
+  background-color: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
 }
 
 .lozenge-success {
-  background-color: #e3fcef;
-  color: #216e4e;
-  border: 1px solid #baf3db;
+  background-color: var(--color-success-subtle);
+  color: var(--color-success);
+  border: 1px solid var(--color-success-border);
 }
 
 .lozenge-warning {
-  background-color: #fffae6;
-  color: #7f5f01;
-  border: 1px solid #ffe380;
+  background-color: var(--color-warning-subtle);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning-border);
 }
 
 .lozenge-danger {
-  background-color: #ffebe6;
-  color: #ca3521;
-  border: 1px solid #ffbdad;
+  background-color: var(--color-danger-subtle);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger-border);
 }
 
 .lozenge-discovery {
-  background-color: #eae6ff;
-  color: #5243aa;
-  border: 1px solid #c0b6f2;
+  background-color: var(--color-discovery-subtle);
+  color: var(--color-discovery);
 }
 
 .lozenge-info {
-  background-color: #e6fcff;
-  color: #165561;
-  border: 1px solid #b3f5ff;
+  background-color: var(--color-info-subtle);
+  color: var(--color-info);
 }
 
-/* Scrollbar */
+/* =============================================
+   SCROLLBAR
+   ============================================= */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f7f8f9;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #dcdfe4;
+  background: var(--color-border-strong);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a6c5e2;
+  background: var(--color-text-tertiary);
 }
 
-/* Mobile card layout for tables */
+/* =============================================
+   UTILITY ANIMATIONS
+   ============================================= */
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out both;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out both;
+}
+
+/* Staggered fade-in for lists */
+.stagger-item {
+  animation: fade-in 0.3s ease-out both;
+}
+.stagger-item:nth-child(1) { animation-delay: 0ms; }
+.stagger-item:nth-child(2) { animation-delay: 50ms; }
+.stagger-item:nth-child(3) { animation-delay: 100ms; }
+.stagger-item:nth-child(4) { animation-delay: 150ms; }
+.stagger-item:nth-child(5) { animation-delay: 200ms; }
+.stagger-item:nth-child(6) { animation-delay: 250ms; }
+.stagger-item:nth-child(7) { animation-delay: 300ms; }
+.stagger-item:nth-child(8) { animation-delay: 350ms; }
+
+/* =============================================
+   TABLE (Mobile Card Layout)
+   ============================================= */
 @media (max-width: 639px) {
   .mobile-card-table thead {
     display: none;
@@ -334,9 +514,9 @@ textarea:focus {
   .mobile-card-table tr {
     display: flex;
     flex-direction: column;
-    background: #ffffff;
-    border: 1px solid #dcdfe4;
-    border-radius: 8px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
     padding: 12px;
     gap: 6px;
   }
@@ -353,7 +533,7 @@ textarea:focus {
   .mobile-card-table td::before {
     content: attr(data-label);
     font-weight: 600;
-    color: #44546f;
+    color: var(--color-text-secondary);
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -363,11 +543,13 @@ textarea:focus {
   .mobile-card-table td:last-child {
     justify-content: flex-end;
     padding-top: 6px;
-    border-top: 1px solid #dcdfe4;
+    border-top: 1px solid var(--color-border);
   }
 }
 
-/* Touch-friendly targets */
+/* =============================================
+   TOUCH TARGETS
+   ============================================= */
 @media (max-width: 639px) {
   .touch-target {
     min-height: 44px;
@@ -381,12 +563,12 @@ textarea:focus {
     align-items: center;
     justify-content: center;
   }
-}
 
-/* Mobile input sizing */
-@media (max-width: 639px) {
+  /* Prevent zoom on iOS inputs */
   input[type="text"],
   input[type="number"],
+  input[type="email"],
+  input[type="password"],
   input[type="date"],
   select,
   textarea {
@@ -394,3 +576,33 @@ textarea:focus {
   }
 }
 
+/* =============================================
+   FOCUS VISIBLE (Accessibility)
+   ============================================= */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* =============================================
+   REDUCED MOTION
+   ============================================= */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

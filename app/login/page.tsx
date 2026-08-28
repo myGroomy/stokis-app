@@ -85,32 +85,41 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center">
+    <div className="min-h-[80vh] flex items-center justify-center px-4">
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         className="w-full max-w-sm"
       >
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
-          className="bg-white border border-[#DCDFE4] rounded-[4px] p-8 shadow-sm"
+        <div
+          className="p-8 rounded-xl"
+          style={{
+            backgroundColor: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            boxShadow: 'var(--shadow-md)',
+          }}
         >
-          <div className="flex flex-col items-center mb-6">
-            <motion.img
+          <div className="flex flex-col items-center mb-8">
+            <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              src="/favicon.jpg"
-              alt="Stokis"
-              className="w-14 h-14 rounded-lg shadow-sm object-cover mb-3"
-            />
-            <h1 className="text-lg font-bold text-[#172B4D]">
+              transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-xl mb-4"
+              style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-text-inverse)' }}
+            >
+              S
+            </motion.div>
+            <h1
+              className="text-xl font-bold"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
               Masuk ke Stokis
             </h1>
-            <p className="text-xs text-[#6B778C] mt-1">
+            <p
+              className="text-sm mt-1"
+              style={{ color: 'var(--color-text-tertiary)' }}
+            >
               Masukkan username dan PIN Anda
             </p>
           </div>
@@ -119,9 +128,12 @@ export default function LoginPage() {
             <motion.div
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.2, delay: 0.1 }}
+              transition={{ duration: 0.3, delay: 0.15 }}
             >
-              <label className="block text-xs font-semibold text-[#44546F] mb-1.5">
+              <label
+                className="block text-xs font-semibold mb-1.5"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 Username
               </label>
               <input
@@ -130,16 +142,19 @@ export default function LoginPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Masukkan username"
                 autoComplete="username"
-                className="w-full px-3 py-2 min-h-[40px] text-sm border border-[#DCDFE4] rounded-[4px] focus:border-[#1868DB] focus:ring-1 focus:ring-[#1868DB] outline-none transition-colors bg-[#FAFBFC]"
+                className="w-full px-3 py-2.5 min-h-[42px] text-sm"
               />
             </motion.div>
 
             <motion.div
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.2, delay: 0.15 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
             >
-              <label className="block text-xs font-semibold text-[#44546F] mb-2">
+              <label
+                className="block text-xs font-semibold mb-2"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 PIN (6 Digit)
               </label>
               <div
@@ -156,7 +171,7 @@ export default function LoginPage() {
                     value={d}
                     onChange={(e) => handleDigitChange(i, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(i, e)}
-                    className="w-11 h-12 text-center text-lg font-bold font-mono border border-[#DCDFE4] rounded-[4px] focus:border-[#1868DB] focus:ring-1 focus:ring-[#1868DB] outline-none transition-colors bg-[#FAFBFC] tabular-nums"
+                    className="w-12 h-13 text-center text-lg font-bold font-mono tabular-nums"
                   />
                 ))}
               </div>
@@ -168,9 +183,13 @@ export default function LoginPage() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="bg-[#FFEBE6] border border-[#FF8F73] rounded-[4px] px-3 py-2"
+                  className="rounded-lg px-4 py-3"
+                  style={{
+                    backgroundColor: 'var(--color-danger-subtle)',
+                    border: '1px solid var(--color-danger-border)',
+                  }}
                 >
-                  <p className="text-xs font-medium text-[#BF2600]">{error}</p>
+                  <p className="text-xs font-medium" style={{ color: 'var(--color-danger)' }}>{error}</p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -179,8 +198,8 @@ export default function LoginPage() {
               type="submit"
               disabled={submitting || loading}
               whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              className="w-full flex items-center justify-center gap-2 bg-[#1868DB] hover:bg-[#1557B0] text-white font-semibold text-sm px-4 py-2 min-h-[40px] rounded-[4px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              whileTap={{ scale: 0.98 }}
+              className="w-full flex items-center justify-center gap-2 btn-primary px-4 py-2.5 min-h-[42px] text-sm"
             >
               {submitting ? (
                 <>
@@ -195,15 +214,16 @@ export default function LoginPage() {
               )}
             </motion.button>
           </form>
-        </motion.div>
+        </div>
 
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-          className="text-center text-[10px] text-[#6B778C] mt-4"
+          transition={{ duration: 0.3, delay: 0.3 }}
+          className="text-center text-[11px] mt-5"
+          style={{ color: 'var(--color-text-disabled)' }}
         >
-          Stokis v1.0 - Sistem Stock Opname
+          Stokis v1.0 &middot; Sistem Stock Opname
         </motion.p>
       </motion.div>
     </div>

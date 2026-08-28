@@ -746,47 +746,44 @@ export default function InputSOPage() {
                                 </span>
                                 <div className="flex items-center gap-1 justify-center">
                                   <div
-                                    className="px-1.5 py-1 sm:py-0.5 rounded text-center min-h-[28px] flex flex-col items-center justify-center"
+                                    className="w-full py-2 sm:py-1.5 text-center text-sm font-bold tabular-nums min-h-[44px] sm:min-h-0 flex flex-col items-center justify-center"
                                     style={{
                                       backgroundColor: 'var(--color-surface-sunken)',
                                       border: '1px solid var(--color-border)',
+                                      color: 'var(--color-text-secondary)',
+                                      borderRadius: 'var(--radius-md)',
+                                      opacity: 0.8,
                                     }}
                                   >
                                     <span className="text-[9px] uppercase" style={{ color: 'var(--color-text-tertiary)' }}>S1</span>
-                                    <span
-                                      className="text-xs font-bold tabular-nums leading-tight"
-                                      style={{ color: 'var(--color-text-secondary)' }}
-                                    >
-                                      {prev.step1}
-                                    </span>
+                                    <span className="text-sm font-bold tabular-nums leading-tight">{prev.step1}</span>
                                   </div>
-                                  <span className="text-xs" style={{ color: 'var(--color-border-strong)' }}>+</span>
+                                  <span className="text-sm font-bold" style={{ color: 'var(--color-text-secondary)' }}>+</span>
                                   <div
-                                    className="px-1.5 py-1 sm:py-0.5 rounded text-center min-h-[28px] flex flex-col items-center justify-center"
+                                    className="w-full py-2 sm:py-1.5 text-center text-sm font-bold tabular-nums min-h-[44px] sm:min-h-0 flex flex-col items-center justify-center"
                                     style={{
                                       backgroundColor: 'var(--color-surface-sunken)',
                                       border: '1px solid var(--color-border)',
+                                      color: 'var(--color-text-secondary)',
+                                      borderRadius: 'var(--radius-md)',
+                                      opacity: 0.8,
                                     }}
                                   >
                                     <span className="text-[9px] uppercase" style={{ color: 'var(--color-text-tertiary)' }}>S2</span>
-                                    <span
-                                      className="text-xs font-bold tabular-nums leading-tight"
-                                      style={{ color: 'var(--color-text-secondary)' }}
-                                    >
-                                      {prev.step2}
-                                    </span>
+                                    <span className="text-sm font-bold tabular-nums leading-tight">{prev.step2}</span>
                                   </div>
-                                  <span className="text-xs" style={{ color: 'var(--color-border-strong)' }}>=</span>
+                                  <span className="text-sm font-bold" style={{ color: 'var(--color-text-secondary)' }}>=</span>
                                   <div
-                                    className="px-1.5 py-1 sm:py-0.5 rounded text-center min-h-[28px] flex items-center justify-center"
+                                    className="w-full py-2 sm:py-1.5 text-center text-sm font-bold tabular-nums min-h-[44px] sm:min-h-0 flex items-center justify-center"
                                     style={{
                                       backgroundColor: 'var(--color-border-subtle)',
                                       border: '1px solid var(--color-border)',
+                                      color: 'var(--color-text-primary)',
+                                      borderRadius: 'var(--radius-md)',
+                                      opacity: 0.8,
                                     }}
                                   >
-                                    <span className="text-xs font-extrabold tabular-nums" style={{ color: 'var(--color-text-primary)' }}>
-                                      {prev.total}
-                                    </span>
+                                    <span className="text-sm font-extrabold tabular-nums">{prev.total}</span>
                                   </div>
                                 </div>
                                 <span className="text-[9px]" style={{ color: 'var(--color-text-tertiary)' }}>
@@ -802,13 +799,16 @@ export default function InputSOPage() {
                                   SO Sebelumnya
                                 </span>
                                 <div
-                                  className="px-2 py-1.5 sm:py-1 rounded text-center min-h-[32px] flex items-center justify-center"
+                                  className="w-full py-2 sm:py-1.5 text-center text-sm font-bold tabular-nums min-h-[44px] sm:min-h-0 flex items-center justify-center"
                                   style={{
                                     backgroundColor: 'var(--color-surface-sunken)',
                                     border: '1px solid var(--color-border)',
+                                    color: 'var(--color-text-disabled)',
+                                    borderRadius: 'var(--radius-md)',
+                                    opacity: 0.8,
                                   }}
                                 >
-                                  <span className="text-xs" style={{ color: 'var(--color-text-disabled)' }}>Belum ada data</span>
+                                  <span className="text-xs">Belum ada data</span>
                                 </div>
                               </div>
                             )}

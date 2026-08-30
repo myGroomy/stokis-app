@@ -16,7 +16,8 @@ export const metadata: Metadata = {
   title: 'Stokis - Sistem Stock Opname Multi Cabang',
   description: 'Sistem Stock Opname Multi Cabang dengan isolasi database Google Sheets dan laporan otomatis PDF & WhatsApp',
   icons: {
-    icon: '/favicon.jpg',
+    icon: '/icon.png',
+    apple: '/icon.png',
   },
 };
 

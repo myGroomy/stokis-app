@@ -94,14 +94,14 @@ export default function LoginPage() {
       >
         <div className="card bg-base-100 border border-base-300 shadow-md p-8">
           <div className="flex flex-col items-center mb-8">
-            <motion.div
+            <motion.img
+              src="/logo.jpg"
+              alt="Stokis"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-xl mb-4 bg-primary text-primary-content"
-            >
-              S
-            </motion.div>
+              className="w-16 h-16 rounded-2xl object-cover shadow-sm mb-4"
+            />
             <h1 className="text-xl font-bold text-base-content">
               Masuk ke Stokis
             </h1>

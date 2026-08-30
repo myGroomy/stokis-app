@@ -74,9 +74,11 @@ export function Navbar() {
               prefetch={false}
               className="flex items-center gap-2.5 group transition-opacity hover:opacity-90"
             >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm bg-primary text-primary-content">
-                S
-              </div>
+              <img
+                src="/logo.jpg"
+                alt="Stokis"
+                className="w-8 h-8 rounded-lg object-cover shadow-sm"
+              />
               <div className="flex flex-col leading-none">
                 <span className="text-sm font-bold tracking-tight text-base-content">
                   STOKIS

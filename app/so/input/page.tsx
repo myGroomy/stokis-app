@@ -983,116 +983,98 @@ export default function InputSOPage() {
                       <div
                         key={item.Item_ID}
                         data-item-id={item.Item_ID}
-                        className="p-4 sm:px-6 transition-colors border-b border-base-300 hover:bg-base-200"
+                        className="px-3 sm:px-4 py-2 transition-colors border-b border-base-300 hover:bg-base-200"
                       >
                         {/* Item header: name, satuan, threshold, status */}
-                        <div className="flex items-center gap-2 flex-wrap mb-3">
-                          <span className="text-[11px] font-bold tabular-nums px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="text-[9px] font-bold tabular-nums px-1.5 py-0.5 rounded bg-primary/10 text-primary">
                             {globalIndexMap[item.Item_ID]}
                           </span>
-                          <span className="font-extrabold text-sm text-base-content">
+                          <span className="font-extrabold text-[13px] text-base-content">
                             {item.Nama_Barang}
                           </span>
-                          <span className="text-xs font-mono text-base-content/50">
+                          <span className="text-[10px] font-mono text-base-content/50">
                             ({item.Satuan})
                           </span>
                           <span className="ml-auto flex items-center gap-3 flex-wrap">
-                            <span className="text-[11px] tabular-nums text-base-content/60">
+                            <span className="text-[10px] tabular-nums text-base-content/60">
                               Batas Min: <span className="font-bold text-base-content">{item.Threshold}</span>
                             </span>
                             {getStatusBadge(total, item.Threshold)}
                           </span>
                         </div>
 
-                        {/* 3-column grid shared by both rows so they align vertically */}
-                        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                          {/* ── SO SEBELUMNYA (read-only, dimmed) ── */}
-                          <div className="col-span-3 grid grid-cols-3 gap-2 sm:gap-3">
-                            {/* Step 1 (prev) */}
-                            <div>
-                              <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-base-content/60 text-center">
-                                Step 1
-                              </span>
-                              <div
-                                className="w-full h-11 sm:h-10 px-2 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-lg"
-                              >
-                                <span className="text-sm font-bold tabular-nums">{hasPrev ? prev.step1 : '–'}</span>
-                              </div>
+                        {/* Compact input: 6-col on sm+ (prev | now), stacked on mobile */}
+                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1">
+                          {/* ── SO SEBELUMNYA (read-only) ── */}
+                          <div>
+                            <span className="block text-[7px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
+                              S1
+                            </span>
+                            <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-md">
+                              <span className="text-[11px] font-bold tabular-nums">{hasPrev ? prev.step1 : '–'}</span>
                             </div>
-                            {/* Step 2 (prev) */}
-                            <div>
-                              <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-base-content/60 text-center">
-                                Step 2
-                              </span>
-                              <div
-                                className="w-full h-11 sm:h-10 px-2 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-lg"
-                              >
-                                <span className="text-sm font-bold tabular-nums">{hasPrev ? prev.step2 : '–'}</span>
-                              </div>
+                          </div>
+                          <div>
+                            <span className="block text-[7px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
+                              S2
+                            </span>
+                            <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-md">
+                              <span className="text-[11px] font-bold tabular-nums">{hasPrev ? prev.step2 : '–'}</span>
                             </div>
-                            {/* Prev Total */}
-                            <div>
-                              <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-base-content/60 text-center">
-                                Total
-                              </span>
-                              <div
-                                className="w-full h-11 sm:h-10 px-2 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content rounded-lg"
-                              >
-                                <span className="text-sm font-extrabold tabular-nums">{hasPrev ? prev.total : '–'}</span>
-                              </div>
+                          </div>
+                          <div>
+                            <span className="block text-[7px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
+                              Tot
+                            </span>
+                            <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content rounded-md">
+                              <span className="text-[11px] font-extrabold tabular-nums">{hasPrev ? prev.total : '–'}</span>
                             </div>
                           </div>
 
                           {/* ── SO SEKARANG (editable) ── */}
-                          <div className="col-span-3 grid grid-cols-3 gap-2 sm:gap-3">
-                            {/* Step 1 */}
-                            <div>
-                              <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-primary text-center">
-                                Step 1
+                          <div>
+                            <span className="block text-[7px] mb-0 font-semibold uppercase tracking-wide text-primary text-center">
+                              S1
+                            </span>
+                            <input
+                              type="number"
+                              step="any"
+                              min="0"
+                              placeholder="0"
+                              value={step1Val}
+                              onChange={(e) => handleCountChange(item.Item_ID, 'step1', e.target.value)}
+                              className="w-full h-8 px-1 text-center text-[11px] font-bold tabular-nums input input-bordered rounded-md"
+                            />
+                          </div>
+                          <div>
+                            <span className="block text-[7px] mb-0 font-semibold uppercase tracking-wide text-primary text-center">
+                              S2
+                            </span>
+                            <input
+                              type="number"
+                              step="any"
+                              min="0"
+                              placeholder="0"
+                              value={step2Val}
+                              onChange={(e) => handleCountChange(item.Item_ID, 'step2', e.target.value)}
+                              className="w-full h-8 px-1 text-center text-[11px] font-bold tabular-nums input input-bordered rounded-md"
+                            />
+                          </div>
+                          <div>
+                            <span className="block text-[7px] mb-0 font-semibold uppercase tracking-wide text-base-content/60 text-center">
+                              Tot
+                            </span>
+                            <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-primary/10 border border-primary/30 rounded-md">
+                              <span className="text-[11px] font-extrabold tabular-nums text-primary">
+                                {total}
                               </span>
-                              <input
-                                type="number"
-                                step="any"
-                                min="0"
-                                placeholder="0"
-                                value={step1Val}
-                                onChange={(e) => handleCountChange(item.Item_ID, 'step1', e.target.value)}
-                                className="w-full h-11 sm:h-10 px-2 text-center text-sm font-bold tabular-nums input input-bordered"
-                              />
-                            </div>
-                            {/* Step 2 */}
-                            <div>
-                              <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-primary text-center">
-                                Step 2
-                              </span>
-                              <input
-                                type="number"
-                                step="any"
-                                min="0"
-                                placeholder="0"
-                                value={step2Val}
-                                onChange={(e) => handleCountChange(item.Item_ID, 'step2', e.target.value)}
-                                className="w-full h-11 sm:h-10 px-2 text-center text-sm font-bold tabular-nums input input-bordered"
-                              />
-                            </div>
-                            {/* Now Total */}
-                            <div>
-                              <span className="block text-[10px] mb-1 font-semibold uppercase tracking-wide text-base-content/60 text-center">
-                                Total
-                              </span>
-                              <div
-                                className="w-full h-11 sm:h-10 px-2 text-center flex items-center justify-center bg-primary/10 border border-primary/30 rounded-lg"
-                              >
-                                <span className="text-sm font-extrabold tabular-nums text-primary">
-                                  {total}
-                                </span>
-                              </div>
                             </div>
                           </div>
                         </div>
 
                         {/* Prev session date/shift + Keterangan (Optional Notes) */}
-                        <div className="mt-2 flex items-center gap-3 flex-wrap">
+                        <div className="mt-1 flex items-center gap-3 flex-wrap">
                           {hasPrev && (
                             <span className="text-[10px] text-base-content/50">
                               SO Sebelumnya: {prev.tanggal} ({prev.shift})
@@ -1100,7 +1082,7 @@ export default function InputSOPage() {
                           )}
                           <div className="relative flex-1 min-w-[160px]">
                             <StickyNote
-                              className="absolute left-2.5 top-2 w-3.5 h-3.5 text-base-content/50"
+                              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-base-content/50"
                             />
                             <input
                               type="text"

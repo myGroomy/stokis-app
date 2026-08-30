@@ -17,7 +17,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex items-center justify-center bg-[#F7F8F9]">
         <div className="flex flex-col items-center gap-3">
           <img
-            src="/favicon.jpg"
+            src="/logo.jpg"
             alt="Stokis"
             className="w-12 h-12 rounded-lg shadow-sm object-cover animate-pulse"
           />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCabang } from '@/lib/CabangContext';
@@ -22,6 +22,9 @@ import {
   StickyNote,
   X,
   BadgeCheck,
+  ArrowUp,
+  ArrowDown,
+  Pencil,
 } from 'lucide-react';
 import { QuantumLoaderFull, QuantumLoaderMini } from '@/components/ui/QuantumLoader';
 import { staggerContainer, staggerItem } from '@/components/PageTransition';
@@ -60,12 +63,57 @@ export interface SOItemPayload {
 }
 
 export interface SOFormState {
+  sesiId: string;
   tanggalOperasional: string;
   shift: string;
   petugas: string;
   items: SOItemPayload[];
   cabangNama: string;
   cabangKode: string;
+}
+
+function generateSesiId(): string {
+  const rand = Math.random().toString(36).slice(2, 10).toUpperCase();
+  const time = Date.now().toString(36).toUpperCase();
+  return `SES_${time}${rand}`;
+}
+
+export interface SubmitSOResult {
+  status?: string;
+  sesiId?: string;
+  laporanId?: string | null;
+  rows_written?: number;
+}
+
+export interface ApiResult<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: { code?: string; message?: string };
+}
+
+async function postWithRetry<T = SubmitSOResult>(
+  url: string,
+  body: unknown,
+  attempts: number,
+): Promise<{ result: ApiResult<T> }> {
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const json = (await res.json()) as ApiResult<T>;
+      return { result: json };
+    } catch (err) {
+      lastErr = err;
+      if (attempt < attempts - 1) {
+        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+      }
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
 export default function InputSOPage() {
@@ -96,6 +144,13 @@ export default function InputSOPage() {
   const [counts, setCounts] = useState<Record<string, { step1: string; step2: string; keterangan: string }>>({});
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
+  const [submitResult, setSubmitResult] = useState<string>('');
+
+  const sesiIdRef = useRef<string>('');
+  const submittingRef = useRef<boolean>(false);
+  const itemsSectionRef = useRef<HTMLDivElement>(null);
+
+  const [lastEditedItemId, setLastEditedItemId] = useState<string | null>(null);
 
   // Filter & Search State
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -157,8 +212,8 @@ export default function InputSOPage() {
             });
           }
         }
-      } catch (err: any) {
-        setErrorMsg('Gagal memuat data: ' + err.message);
+      } catch (err) {
+        setErrorMsg('Gagal memuat data: ' + (err instanceof Error ? err.message : String(err)));
       } finally {
         setLoadingData(false);
       }
@@ -231,6 +286,10 @@ export default function InputSOPage() {
         [field]: value,
       },
     }));
+    if (field !== 'keterangan') {
+      setLastEditedItemId(itemId);
+    }
+    if (errorMsg) setErrorMsg('');
   };
 
   const getStatusBadge = (total: number, threshold: number) => {
@@ -291,8 +350,35 @@ export default function InputSOPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validasi wajib isi (Google Form style): semua kolom isian harus terisi.
+    // Jika ada kolom kosong, arahkan langsung ke item tsb.
+    const missing = filteredItems.find((item) => {
+      const c = counts[item.Item_ID] || { step1: '', step2: '', keterangan: '' };
+      return !(String(c.step1).trim() !== '' && String(c.step2).trim() !== '');
+    });
+
+    if (missing) {
+      setErrorMsg(
+        `Item "${missing.Nama_Barang}" belum lengkap. Isi kolom Step 1 dan Step 2 pada semua item terlebih dahulu.`,
+      );
+      requestAnimationFrame(() => {
+        const container = itemsSectionRef.current;
+        if (!container) return;
+        const el = container.querySelector<HTMLElement>(`[data-item-id="${missing.Item_ID}"]`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const firstEmpty = el?.querySelector<HTMLInputElement>('input[type="number"]');
+        firstEmpty?.focus();
+      });
+      return;
+    }
+
+    if (!sesiIdRef.current) {
+      sesiIdRef.current = generateSesiId();
+    }
+
     const payloadItems = buildPayloadItems();
     const formState: SOFormState = {
+      sesiId: sesiIdRef.current,
       tanggalOperasional,
       shift,
       petugas,
@@ -305,98 +391,147 @@ export default function InputSOPage() {
   };
 
   const handleConfirmedSubmit = async (formState: SOFormState) => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     try {
       setSubmitting(true);
       setShowSummary(false);
       setErrorMsg('');
+      setSubmitResult('');
 
-      const res = await fetch('/api/so', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cabangId: selectedCabang.Cabang_ID,
-          tanggalOperasional: formState.tanggalOperasional,
-          shift: formState.shift,
-          petugas: formState.petugas,
-          items: formState.items,
-        }),
-      });
+      const body = {
+        cabangId: selectedCabang.Cabang_ID,
+        sesiId: formState.sesiId,
+        tanggalOperasional: formState.tanggalOperasional,
+        shift: formState.shift,
+        petugas: formState.petugas,
+        items: formState.items,
+      };
 
-      const result = await res.json();
-      if (result.success && result.data?.laporanId) {
-        const laporanId = result.data.laporanId;
+      // Retry aman: payload memakai sesiId yang sama → idempotent di backend
+      const { result } = await postWithRetry('/api/so', body, 3);
 
-        // Generate PDF
-        try {
-          const pdfRes = await fetch(`/api/so/${laporanId}/pdf`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              items: formState.items,
-              cabangNama: formState.cabangNama,
-              cabangKode: formState.cabangKode,
-              tanggalOperasional: formState.tanggalOperasional,
-              shift: formState.shift,
-              petugas: formState.petugas,
-              previousSOInfo,
-            }),
-          });
-
-          if (pdfRes.ok) {
-            const blob = await pdfRes.blob();
-            const url = URL.createObjectURL(blob);
-            window.open(url, '_blank');
-          }
-        } catch {
-          // PDF generation is non-critical
-        }
-
-        // Generate Spreadsheet
-        try {
-          const xlsRes = await fetch(`/api/so/${laporanId}/spreadsheet`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              items: formState.items,
-              cabangNama: formState.cabangNama,
-              cabangKode: formState.cabangKode,
-              tanggalOperasional: formState.tanggalOperasional,
-              shift: formState.shift,
-              petugas: formState.petugas,
-              previousSOInfo,
-            }),
-          });
-
-          if (xlsRes.ok) {
-            const blob = await xlsRes.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            const kode = (formState.cabangKode || 'CBG').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-            const tgl = (formState.tanggalOperasional || '').replace(/-/g, '');
-            const shiftLabel = (formState.shift || 'SO').toUpperCase();
-            a.download = `${kode}-${tgl}-${shiftLabel}.xlsx`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-          }
-        } catch {
-          // Spreadsheet generation is non-critical
-        }
-
-        router.push(`/so/konfirmasi/${laporanId}`);
-      } else {
-        setErrorMsg(result.error?.message || 'Gagal menyimpan data stock opname');
+      if (result.error) {
+        setErrorMsg(result.error.message || 'Gagal menyimpan data stock opname');
+        return;
       }
-    } catch (err: any) {
-      setErrorMsg('Terjadi kendala jaringan: ' + err.message);
+      if (!result.success) {
+        setErrorMsg('Gagal menyimpan data stock opname');
+        return;
+      }
+
+      const data = result.data;
+      const alreadyProcessed = data?.status === 'already_processed';
+      const rowsWritten: number =
+        typeof data?.rows_written === 'number' ? data.rows_written : formState.items.length;
+
+      setSubmitResult(
+        alreadyProcessed
+          ? `Sesi ${formState.sesiId} sudah pernah diproses (${rowsWritten} item). Tidak ada data ganda yang dibuat.`
+          : `${rowsWritten} item berhasil disimpan.`
+      );
+
+      const laporanId = data?.laporanId || null;
+
+      // Generate PDF (non-critical)
+      try {
+        const pdfRes = await fetch(`/api/so/${laporanId || formState.sesiId}/pdf`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: formState.items,
+            cabangNama: formState.cabangNama,
+            cabangKode: formState.cabangKode,
+            tanggalOperasional: formState.tanggalOperasional,
+            shift: formState.shift,
+            petugas: formState.petugas,
+            previousSOInfo,
+          }),
+        });
+
+        if (pdfRes.ok) {
+          const blob = await pdfRes.blob();
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+        }
+      } catch {
+        // PDF generation is non-critical
+      }
+
+      // Generate Spreadsheet (non-critical)
+      try {
+        const xlsRes = await fetch(`/api/so/${laporanId || formState.sesiId}/spreadsheet`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: formState.items,
+            cabangNama: formState.cabangNama,
+            cabangKode: formState.cabangKode,
+            tanggalOperasional: formState.tanggalOperasional,
+            shift: formState.shift,
+            petugas: formState.petugas,
+            previousSOInfo,
+          }),
+        });
+
+        if (xlsRes.ok) {
+          const blob = await xlsRes.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          const kode = (formState.cabangKode || 'CBG').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+          const tgl = (formState.tanggalOperasional || '').replace(/-/g, '');
+          const shiftLabel = (formState.shift || 'SO').toUpperCase();
+          a.download = `${kode}-${tgl}-${shiftLabel}.xlsx`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+      } catch {
+        // Spreadsheet generation is non-critical
+      }
+
+      router.push(`/so/konfirmasi/${laporanId || formState.sesiId}`);
+    } catch (err) {
+      setErrorMsg(
+        'Terjadi kendala jaringan setelah beberapa percobaan: ' +
+          (err instanceof Error ? err.message : String(err)),
+      );
     } finally {
       setSubmitting(false);
+      submittingRef.current = false;
     }
   };
 
   const activeFilterCount = (selectedArea !== 'Semua' ? 1 : 0) + (searchQuery ? 1 : 0);
+
+  const scrollTo = (selector: string) => {
+    const container = itemsSectionRef.current;
+    if (!container) return;
+    const el = container.querySelector<HTMLElement>(selector);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const scrollToFirstItem = () => {
+    scrollTo('[data-item-id]');
+  };
+
+  const scrollToLastEditedItem = () => {
+    if (!lastEditedItemId) {
+      setErrorMsg('Belum ada item yang diisi. Isi minimal satu kolom terlebih dahulu.');
+      return;
+    }
+    scrollTo(`[data-item-id="${lastEditedItemId}"]`);
+  };
+
+  const scrollToLastItem = () => {
+    const container = itemsSectionRef.current;
+    if (!container) return;
+    const itemEls = Array.from(container.querySelectorAll<HTMLElement>('[data-item-id]'));
+    const last = itemEls[itemEls.length - 1];
+    if (last) last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
   return (
     <>
@@ -439,6 +574,17 @@ export default function InputSOPage() {
               >
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{errorMsg}</span>
+              </motion.div>
+            )}
+            {submitResult && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="rounded-lg px-4 py-3 text-sm flex items-center gap-2 bg-success/10 border border-success/30 text-success"
+              >
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                <span>{submitResult}</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -636,6 +782,7 @@ export default function InputSOPage() {
           </div>
         ) : (
           <motion.div
+            ref={itemsSectionRef}
             variants={staggerContainer}
             initial="hidden"
             animate="show"
@@ -668,6 +815,7 @@ export default function InputSOPage() {
                     return (
                       <div
                         key={item.Item_ID}
+                        data-item-id={item.Item_ID}
                         className="p-4 sm:px-6 transition-colors border-b border-base-300 hover:bg-base-200"
                       >
                         {/* Item header: name, satuan, threshold, status */}
@@ -835,6 +983,37 @@ export default function InputSOPage() {
           </button>
         </div>
       </form>
+
+      {/* Floating navigation rail - always visible on the right */}
+      <div className="fixed right-3 sm:right-4 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={scrollToFirstItem}
+          className="btn btn-circle btn-sm btn-primary shadow-lg border border-primary/40"
+          title="Ke item paling atas"
+          aria-label="Ke item paling atas"
+        >
+          <ArrowUp className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={scrollToLastEditedItem}
+          className={`btn btn-circle btn-sm shadow-lg border ${lastEditedItemId ? 'btn-warning border-warning/50' : 'btn-neutral border-base-300'}`}
+          title="Ke item terakhir yang diisi"
+          aria-label="Ke item terakhir yang diisi"
+        >
+          <Pencil className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={scrollToLastItem}
+          className="btn btn-circle btn-sm btn-primary shadow-lg border border-primary/40"
+          title="Ke item paling bawah"
+          aria-label="Ke item paling bawah"
+        >
+          <ArrowDown className="w-4 h-4" />
+        </button>
+      </div>
 
       {/* Summary Modal rendered separately */}
       <AnimatePresence>

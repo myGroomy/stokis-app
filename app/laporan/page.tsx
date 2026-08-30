@@ -31,6 +31,19 @@ interface LaporanItem {
   Status_Kirim_WA: string;
 }
 
+function formatWaktuDibuat(value: string): string {
+  if (!value) return '-';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return String(value);
+  return d.toLocaleString('id-ID', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export default function LaporanPage() {
   const { selectedCabang } = useCabang();
 
@@ -98,14 +111,13 @@ export default function LaporanPage() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key="header"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-        >
+      <motion.div
+        key="header"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold flex items-center gap-2 text-base-content">
               <FileText className="w-6 h-6 text-primary" />
@@ -191,6 +203,7 @@ export default function LaporanPage() {
                   <tr className="font-semibold text-base-content/60">
                     <th className="px-5 py-3">ID Laporan</th>
                     <th className="px-5 py-3">Tanggal dan Shift</th>
+                    <th className="px-5 py-3">Waktu Dibuat</th>
                     <th className="px-5 py-3">Petugas</th>
                     <th className="px-5 py-3 text-center">Kritis</th>
                     <th className="px-5 py-3 text-center">Hampir Habis</th>
@@ -216,6 +229,9 @@ export default function LaporanPage() {
                         <span className="ml-2 font-medium text-xs px-2 py-0.5 rounded-md bg-base-200 text-base-content/60 border border-base-300">
                           {row.Shift}
                         </span>
+                      </td>
+                      <td className="px-5 py-4 tabular-nums text-base-content/70" data-label="Waktu Dibuat">
+                        {formatWaktuDibuat(row.Waktu_Dibuat)}
                       </td>
                       <td className="px-5 py-4 font-medium text-base-content" data-label="Petugas">
                         {row.Petugas}
@@ -270,11 +286,11 @@ export default function LaporanPage() {
             </div>
           )}
         </motion.div>
-      </AnimatePresence>
 
       <AnimatePresence>
         {showWATemplate && selectedLaporan && (
           <WATemplateModal
+            key={selectedLaporan.Laporan_ID}
             isOpen={showWATemplate}
             onClose={() => setShowWATemplate(false)}
             cabangNama={selectedCabang.Nama_Cabang}

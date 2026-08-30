@@ -159,8 +159,10 @@ export async function POST(
   const statusKeys: StatusType[] = ['Kritis', 'Hampir Habis', 'Aman', 'Tidak Dipantau'];
   const statusCellRanges = ['A4:B4', 'C4:D4', 'E4:F4', 'G4:H4'];
   statusKeys.forEach((status, i) => {
-    const cellAddr = statusCellRanges[i].split(':')[0];
-    const cell = statusRow.getCell(cellAddr);
+    // statusRow is already row 4, so we only need the COLUMN letter from each range.
+    // row.getCell() expects a column reference, NOT a full cell address like 'A4'.
+    const colLetter = statusCellRanges[i].split(':')[0].replace(/\d/g, '');
+    const cell = statusRow.getCell(colLetter);
     cell.font = { bold: true, size: 9, color: { argb: 'FF' + STATUS_COLOR_HEX[status] } };
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + STATUS_BG_HEX[status] } };
     cell.alignment = { horizontal: 'center' };

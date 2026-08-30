@@ -2,7 +2,7 @@
 
 function generatePDF_(cabangId, spreadsheet, cabang, sesiId, tanggal, shift, petugas, transaksiList, masterRows, prevInfo) {
   const laporanSheet = getSheetByName_(spreadsheet, 'Laporan_PDF');
-  const laporanId = 'RPT' + String(laporanSheet.getLastRow()).padStart(5, '0');
+  const laporanId = buildLaporanId_(tanggal, newRandomToken_(8));
 
   let jumlahKritis = 0;
   let jumlahHampirHabis = 0;

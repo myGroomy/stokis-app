@@ -17,24 +17,40 @@ function handleRequest_(e) {
     body = {};
   }
 
-  // 1. Validasi API Key
+  const requestId = newRandomToken_(8);
+  const action = body.action || (e.parameter && e.parameter.action);
+  const cabangId = body.cabangId || (e.parameter && e.parameter.cabangId);
+  const t0 = Date.now();
+
+  // 1. Validasi API Key (constant-time compare; tidak ada fallback hardcoded)
   const apiKey = PropertiesService.getScriptProperties().getProperty(API_KEY_PROP);
   const incomingKey = body['x-api-key'] || (e.parameter && e.parameter['x-api-key']);
-
-  if (!incomingKey || incomingKey !== apiKey) {
+  if (!incomingKey || !secureKeyEqual_(incomingKey, apiKey)) {
+    Logger.log('SO_LOG ' + JSON.stringify({
+      requestId, action, cabangId, ts: new Date().toISOString(),
+      status: 'unauthorized', elapsed_ms: Date.now() - t0,
+    }));
     return jsonResponse_({ success: false, error: { code: 'UNAUTHORIZED', message: 'API key tidak valid' } });
   }
 
-  // 2. Route Action
-  const action = body.action || (e.parameter && e.parameter.action);
-  const cabangId = body.cabangId || (e.parameter && e.parameter.cabangId);
   const payload = body.payload || {};
 
+  // 2. Route Action
   try {
-    return routeAction_(action, cabangId, payload, e.parameter || {});
+    const result = routeAction_(action, cabangId, payload, e.parameter || {});
+    Logger.log('SO_LOG ' + JSON.stringify({
+      requestId, action, cabangId, ts: new Date().toISOString(),
+      status: 'success', elapsed_ms: Date.now() - t0,
+    }));
+    return result;
   } catch (err) {
-    Logger.log('ERROR [%s] cabang=%s : %s', action, cabangId, err.message);
-    return jsonResponse_({ success: false, error: { code: 'INTERNAL_ERROR', message: err.message } });
+    const code = (err && err.code) || 'server_error';
+    const message = (err && err.message) ? err.message : 'Terjadi kesalahan internal';
+    Logger.log('SO_LOG ' + JSON.stringify({
+      requestId, action, cabangId, ts: new Date().toISOString(),
+      status: 'error', code, message, elapsed_ms: Date.now() - t0,
+    }));
+    return jsonResponse_({ success: false, error: { code, message } });
   }
 }
 
@@ -55,6 +71,12 @@ function routeAction_(action, cabangId, payload, params) {
     case 'addPetugas':           return jsonResponse_({ success: true, data: addPetugas(cabangId, payload) });
     case 'updatePetugas':        return jsonResponse_({ success: true, data: updatePetugas(cabangId, payload.petugasId, payload) });
     case 'setPetugasActive':     return jsonResponse_({ success: true, data: setPetugasActive(cabangId, payload.petugasId, payload.aktif) });
+    // Users (autentikasi)
+    case 'login':                return jsonResponse_({ success: true, data: login(payload) });
+    case 'getUsers':             return jsonResponse_({ success: true, data: getUsers(cabangId) });
+    case 'addUser':              return jsonResponse_({ success: true, data: addUser(payload) });
+    case 'updateUser':           return jsonResponse_({ success: true, data: updateUser(payload.userId, payload) });
+    case 'setUserActive':        return jsonResponse_({ success: true, data: setUserActive(payload.userId, payload.aktif) });
     // SO
     case 'submitSO':             return jsonResponse_({ success: true, data: submitSO(cabangId, payload) });
     case 'getPreviousSO':        return jsonResponse_({ success: true, data: getPreviousSO(cabangId) });
@@ -67,8 +89,19 @@ function routeAction_(action, cabangId, payload, params) {
     case 'getDashboardMingguan': return jsonResponse_({ success: true, data: getDashboardMingguan(cabangId, params.dari, params.sampai) });
 
     default:
-      return jsonResponse_({ success: false, error: { code: 'ACTION_TIDAK_DIKENAL', message: 'Action tidak dikenal: ' + action } });
+      throw ApiError_('invalid_action', 'Action tidak dikenal: ' + action);
   }
+}
+
+// Constant-time string comparison via digest.
+function secureKeyEqual_(a, b) {
+  const ha = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(a || ''), Utilities.Charset.UTF_8);
+  const hb = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(b || ''), Utilities.Charset.UTF_8);
+  if (ha.length !== hb.length) return false;
+  for (let i = 0; i < ha.length; i++) {
+    if (ha[i] !== hb[i]) return false;
+  }
+  return true;
 }
 
 function jsonResponse_(obj) {

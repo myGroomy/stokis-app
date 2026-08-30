@@ -25,6 +25,7 @@ import {
   ArrowUp,
   ArrowDown,
   Pencil,
+  AlertTriangle,
 } from 'lucide-react';
 import { QuantumLoaderFull, QuantumLoaderMini } from '@/components/ui/QuantumLoader';
 import { staggerContainer, staggerItem } from '@/components/PageTransition';
@@ -116,6 +117,63 @@ async function postWithRetry<T = SubmitSOResult>(
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
+// ─── Draft persistence (save sementara agar tinggal lanjutkan setelah refresh) ───
+const DRAFT_PREFIX = 'stokis_so_draft_';
+
+interface SODraft {
+  counts: Record<string, { step1: string; step2: string; keterangan: string }>;
+  sesiId: string;
+  tanggalOperasional: string;
+  shift: string;
+  updatedAt: number;
+}
+
+function getDraftKey(cabangId: string): string {
+  return DRAFT_PREFIX + cabangId;
+}
+
+function countFilled(
+  counts: Record<string, { step1: string; step2: string; keterangan: string }>,
+): number {
+  return Object.keys(counts).reduce((n, k) => {
+    const v = counts[k];
+    const hasCount =
+      String(v?.step1 ?? '').trim() !== '' || String(v?.step2 ?? '').trim() !== '';
+    return n + (hasCount ? 1 : 0);
+  }, 0);
+}
+
+function loadDraft(cabangId: string): SODraft | null {
+  try {
+    const raw = localStorage.getItem(getDraftKey(cabangId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SODraft;
+    if (!parsed || typeof parsed !== 'object' || !parsed.counts) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveDraft(cabangId: string, draft: SODraft): void {
+  try {
+    localStorage.setItem(
+      getDraftKey(cabangId),
+      JSON.stringify({ ...draft, updatedAt: Date.now() }),
+    );
+  } catch {
+    // Abaikan: mode privat / quota penuh tidak menghalangi input
+  }
+}
+
+function clearDraft(cabangId: string): void {
+  try {
+    localStorage.removeItem(getDraftKey(cabangId));
+  } catch {
+    // abai
+  }
+}
+
 export default function InputSOPage() {
   const router = useRouter();
   const { selectedCabang, loading: cabangLoading } = useCabang();
@@ -160,6 +218,10 @@ export default function InputSOPage() {
   const [showSummary, setShowSummary] = useState<boolean>(false);
   const [pendingPayload, setPendingPayload] = useState<SOFormState | null>(null);
 
+  // Draft (save sementara) state
+  const [pendingDraft, setPendingDraft] = useState<SODraft | null>(null);
+  const draftTimer = useRef<number | null>(null);
+
   // Petugas = logged-in user name
   const petugas = user?.nama || 'Tidak diketahui';
 
@@ -187,6 +249,11 @@ export default function InputSOPage() {
             initialCounts[item.Item_ID] = { step1: '', step2: '', keterangan: '' };
           });
           setCounts(initialCounts);
+
+          const cached = loadDraft(selectedCabang.Cabang_ID);
+          if (cached && countFilled(cached.counts) > 0) {
+            setPendingDraft(cached);
+          }
         }
 
         if (dataPrevious.success && dataPrevious.data) {
@@ -221,6 +288,36 @@ export default function InputSOPage() {
 
     fetchData();
   }, [selectedCabang]);
+
+  // Autosave draft (save sementara) ke localStorage, di-debounce
+  const cabangId = selectedCabang?.Cabang_ID || null;
+  useEffect(() => {
+    if (!cabangId) return;
+    // Jangan sentuh draft sebelum items dimuat atau sambil menunggu keputusan restore
+    if (items.length === 0 || pendingDraft) return;
+
+    if (draftTimer.current) window.clearTimeout(draftTimer.current);
+    draftTimer.current = window.setTimeout(() => {
+      if (countFilled(counts) > 0) {
+        saveDraft(cabangId, {
+          counts,
+          sesiId: sesiIdRef.current,
+          tanggalOperasional,
+          shift,
+          updatedAt: Date.now(),
+        });
+      } else {
+        clearDraft(cabangId);
+      }
+    }, 400);
+  }, [counts, tanggalOperasional, shift, cabangId, items.length, pendingDraft]);
+
+  // Bersihkan timer saat unmount
+  useEffect(() => {
+    return () => {
+      if (draftTimer.current) window.clearTimeout(draftTimer.current);
+    };
+  }, []);
 
   // Choose which previous SO session to use as reference (dropdown)
   const handleSelectPrevious = (index: number) => {
@@ -290,6 +387,33 @@ export default function InputSOPage() {
       setLastEditedItemId(itemId);
     }
     if (errorMsg) setErrorMsg('');
+  };
+
+  const handleRestoreDraft = (draft: SODraft) => {
+    if (draft.sesiId) sesiIdRef.current = draft.sesiId;
+    if (draft.tanggalOperasional) setTanggalOperasional(draft.tanggalOperasional);
+    if (draft.shift) setShift(draft.shift);
+    setCounts((prev) => {
+      const merged = { ...prev };
+      Object.keys(draft.counts).forEach((k) => {
+        const dc = draft.counts[k];
+        if (
+          dc &&
+          (String(dc.step1).trim() !== '' ||
+            String(dc.step2).trim() !== '' ||
+            String(dc.keterangan).trim() !== '')
+        ) {
+          merged[k] = { ...dc };
+        }
+      });
+      return merged;
+    });
+    setPendingDraft(null);
+  };
+
+  const handleDiscardDraft = () => {
+    if (selectedCabang) clearDraft(selectedCabang.Cabang_ID);
+    setPendingDraft(null);
   };
 
   const getStatusBadge = (total: number, threshold: number) => {
@@ -492,6 +616,12 @@ export default function InputSOPage() {
         // Spreadsheet generation is non-critical
       }
 
+      // Submit sukses → hapus draft sementara
+      if (selectedCabang) {
+        clearDraft(selectedCabang.Cabang_ID);
+        setPendingDraft(null);
+      }
+
       router.push(`/so/konfirmasi/${laporanId || formState.sesiId}`);
     } catch (err) {
       setErrorMsg(
@@ -536,6 +666,43 @@ export default function InputSOPage() {
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-6 max-w-5xl mx-auto pb-16">
+        {/* Draft restore banner */}
+        {pendingDraft && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="alert alert-warning shadow-lg"
+          >
+            <AlertTriangle className="w-5 h-5 shrink-0" />
+            <div className="flex-1">
+              <h3 className="font-bold text-sm">Ada draft tersimpan yang belum di-submit</h3>
+              <p className="text-xs">
+                {countFilled(pendingDraft.counts)} item sudah diisi{' '}
+                {pendingDraft.updatedAt
+                  ? `pada ${new Date(pendingDraft.updatedAt).toLocaleString('id-ID')}. `
+                  : ''}
+                Lanjutkan dari posisi terakhir?
+              </p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleRestoreDraft(pendingDraft)}
+                className="btn btn-sm btn-primary"
+              >
+                Lanjutkan
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardDraft}
+                className="btn btn-sm btn-ghost"
+              >
+                Buang & Mulai Baru
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {/* Session Metadata Card */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}

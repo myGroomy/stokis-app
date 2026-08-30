@@ -3,6 +3,7 @@
 
 const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL || '';
 const API_KEY = process.env.STOKIS_API_KEY || '';
+const REQUEST_TIMEOUT_MS = 120_000; // GAS cold start + write batch bisa lambat
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -40,7 +41,8 @@ export async function callAppsScript<T = any>(
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
     const text = await res.text();

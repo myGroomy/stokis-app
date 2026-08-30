@@ -8,7 +8,7 @@ function getMasterItems(cabangId) {
 function addItem(cabangId, payload) {
   const { spreadsheet } = resolveCabangSpreadsheet_(cabangId);
   const sheet = getSheetByName_(spreadsheet, 'Master_Item');
-  const itemId = 'ITM' + String(sheet.getLastRow()).padStart(5, '0');
+  const itemId = buildItemId_(newRandomToken_(6));
   sheet.appendRow([
     itemId, payload.Nama_Barang, payload.Area, payload.Satuan,
     payload.Konversi_Isi || '', payload.Konversi_Keterangan || '',

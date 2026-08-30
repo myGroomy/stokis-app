@@ -23,11 +23,11 @@ function createCabang(payload) {
   const pdfFolder = parentFolder.createFolder('PDF_' + Nama_Cabang);
   const pdfFolderId = pdfFolder.getId();
 
-  // 5. Generate Cabang_ID
-  const daftarSheet = getSheetByName_(registry, 'Daftar_Cabang');
-  const cabangId = 'CBG' + String(daftarSheet.getLastRow()).padStart(3, '0');
+  // 5. Generate Cabang_ID (unik lintas create, bukan berbasis getLastRow)
+  const cabangId = buildCabangId_(newRandomToken_(6));
 
   // 6. Tulis ke Registry
+  const daftarSheet = getSheetByName_(registry, 'Daftar_Cabang');
   daftarSheet.appendRow([
     cabangId, Nama_Cabang, Alamat || '', newSpreadsheetId, pdfFolderId,
     PIC_Nama || '', Nomor_WA_Cabang || '', true, new Date()
@@ -43,12 +43,15 @@ function updateCabang(cabangId, payload) {
   const rows = sheet.getDataRange().getValues();
   const rowIdx = rows.findIndex((r, i) => i > 0 && r[0] === cabangId);
   if (rowIdx === -1) throw new Error('Cabang ' + cabangId + ' tidak ditemukan');
-  
-  // Kolom: B=Nama(2), C=Alamat(3), F=PIC(6), G=WA(7)
-  const map = { Nama_Cabang: 2, Alamat: 3, PIC_Nama: 6, Nomor_WA_Cabang: 7 };
-  Object.entries(map).forEach(([key, col]) => {
-    if (payload[key] !== undefined) sheet.getRange(rowIdx + 1, col).setValue(payload[key]);
-  });
+
+  // Baca-modifikasi-tulis utuh satu baris → 1 read + 1 batch write,
+  // bukan 1 write per kolom.
+  const updated = rows[rowIdx].slice();
+  if (payload.Nama_Cabang !== undefined) updated[1] = payload.Nama_Cabang;
+  if (payload.Alamat !== undefined) updated[2] = payload.Alamat;
+  if (payload.PIC_Nama !== undefined) updated[5] = payload.PIC_Nama;
+  if (payload.Nomor_WA_Cabang !== undefined) updated[6] = payload.Nomor_WA_Cabang;
+  sheet.getRange(rowIdx + 1, 1, 1, updated.length).setValues([updated]);
   return { updated: cabangId };
 }
 

@@ -33,7 +33,7 @@ export default function RootLayout({
           <CabangProvider>
             <AuthGuard>
               <Navbar />
-              <main className="flex-1 w-full max-w-6xl mx-auto px-4 pt-4 pb-24 md:py-8 overflow-x-hidden">
+              <main className="flex-1 w-full overflow-x-hidden">
                 {children}
               </main>
             </AuthGuard>

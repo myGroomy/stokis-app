@@ -1,449 +1,367 @@
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import {
   ClipboardCheck,
-  Package,
-  Users,
   FileText,
-  ArrowRight,
-  Store,
+  Building2,
   BarChart3,
   ShieldCheck,
-  Database,
-  Key,
-  HelpCircle,
   Smartphone,
-  Clock,
-  TrendingUp,
   Zap,
+  ArrowRight,
+  CheckCircle2,
 } from "lucide-react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-gsap.registerPlugin(ScrollTrigger);
+const features = [
+  {
+    icon: ClipboardCheck,
+    title: "Input Cepat",
+    desc: "Formulir ringkas seperti Google Form. Isi stok S1/S2 per item, langsung terhitung otomatis.",
+  },
+  {
+    icon: FileText,
+    title: "Laporan PDF & Excel",
+    desc: "Generate laporan instan dengan status Kritis/Hampir Habis/Aman. Sortir otomatis, siap kirim ke WhatsApp.",
+  },
+  {
+    icon: Building2,
+    title: "Multi Cabang",
+    desc: "Setiap cabang punya database terisolasi. Satu akun admin bisa akses semua cabang.",
+  },
+  {
+    icon: BarChart3,
+    title: "Dashboard Real-time",
+    desc: "Pantau stok harian dan mingguan. Threshold otomatis tandai item kritis.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Aman & Terkontrol",
+    desc: "PIN terenkripsi, sesi aman, validasi role. Petugas hanya bisa akses cabang sendiri.",
+  },
+  {
+    icon: Smartphone,
+    title: "Mobile Friendly",
+    desc: "Operasional dari HP langsung. Tidak perlu install aplikasi, cukup buka browser.",
+  },
+];
 
-export default function HomePage() {
-  const { user } = useAuth();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const featuresRef = useRef<HTMLDivElement>(null);
-  const workflowRef = useRef<HTMLDivElement>(null);
-  const statsRef = useRef<HTMLDivElement>(null);
+const steps = [
+  {
+    num: "01",
+    title: "Setup Cabang",
+    desc: "Daftarkan cabang Anda. Setiap cabang punya item dan threshold sendiri.",
+  },
+  {
+    num: "02",
+    title: "Isi Stock Opname",
+    desc: "Petugas masukkan jumlah stok aktual per item. Formulir ringkas, tidak ribet.",
+  },
+  {
+    num: "03",
+    title: "Laporan Otomatis",
+    desc: "PDF dan Excel langsung jadi. Kirim ke WhatsApp atau simpan untuk audit.",
+  },
+];
+
+export default function LandingPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    if (user) return;
+    if (!loading && user) {
+      router.replace("/so/input");
+    }
+  }, [user, loading, router]);
 
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        ".hero-anim",
-        { y: 30, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8, stagger: 0.15, ease: "power3.out" },
-      );
-
-      if (featuresRef.current) {
-        gsap.fromTo(
-          ".feature-card",
-          { y: 40, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.6,
-            stagger: 0.12,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: featuresRef.current,
-              start: "top 80%",
-              toggleActions: "play none none none",
-            },
-          },
-        );
-      }
-
-      if (workflowRef.current) {
-        gsap.fromTo(
-          ".workflow-step",
-          { y: 30, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.5,
-            stagger: 0.15,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: workflowRef.current,
-              start: "top 80%",
-              toggleActions: "play none none none",
-            },
-          },
-        );
-      }
-
-      if (statsRef.current) {
-        gsap.fromTo(
-          ".stat-card",
-          { scale: 0.9, opacity: 0 },
-          {
-            scale: 1,
-            opacity: 1,
-            duration: 0.5,
-            stagger: 0.1,
-            ease: "back.out(1.2)",
-            scrollTrigger: {
-              trigger: statsRef.current,
-              start: "top 85%",
-              toggleActions: "play none none none",
-            },
-          },
-        );
-      }
-    }, containerRef);
-
-    return () => ctx.revert();
-  }, [user]);
-
-  if (!user) {
+  if (loading) {
     return (
-      <main ref={containerRef} className="overflow-x-hidden w-full bg-base-200">
-        {/* HERO */}
-        <section className="relative min-h-[85vh] flex flex-col items-center justify-center text-center py-20 md:py-28 bg-base-100 border-b border-base-300 overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none opacity-30 bg-gradient-to-br from-primary/10 via-transparent to-success/10" />
-          <div className="absolute inset-0 pointer-events-none opacity-20 bg-[url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1600&q=80')] bg-cover bg-center" />
-          <div className="absolute inset-0 bg-base-100/80 backdrop-blur-sm" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
-          <div className="relative z-10 space-y-6 max-w-4xl px-4 flex flex-col items-center">
-            <div className="hero-anim inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Multi-Branch Stock Opname System</span>
+  if (user) return null;
+
+  return (
+    <div className="min-h-screen bg-base-100">
+      {/* Nav */}
+      <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-base-100/85 border-b border-base-300">
+        <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <img
+              src="/logo.jpg"
+              alt="Stokis"
+              className="w-8 h-8 rounded-lg object-cover shadow-sm"
+            />
+            <span className="text-sm font-bold tracking-tight text-base-content">
+              STOKIS
+            </span>
+          </Link>
+          <Link
+            href="/login"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-content text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
+          >
+            Masuk
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div className="max-w-6xl mx-auto px-4 pt-16 pb-20 md:pt-24 md:pb-28">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-6">
+              <Zap className="w-3 h-3" />
+              Stock Opname Modern
             </div>
-
-            <h1 className="hero-anim text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight leading-[1.1] max-w-3xl text-base-content">
-              Akurasi Stok Cabang{' '}
-              <br className="hidden sm:inline" />
-              Real-time ke{' '}
-              <span className="text-primary">Google Sheets</span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-base-content leading-[1.1]">
+              Kelola Stok
+              <br />
+              <span className="text-primary">Lebih Cepat</span>
             </h1>
-
-            <p className="hero-anim text-base sm:text-lg max-w-xl leading-relaxed text-base-content/60">
-              Verifikasi stok fisik harian di gudang dan cabang dengan mudah.
-              Laporan otomatis terkirim via PDF dan WhatsApp.
+            <p className="mt-5 text-base md:text-lg text-base-content/60 leading-relaxed max-w-lg">
+              Sistem stock opname multi cabang. Input dari HP, laporan PDF otomatis, threshold alert. Tidak ribet, tidak mahal.
             </p>
-
-            <div className="hero-anim pt-4 flex flex-col sm:flex-row gap-3">
+            <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/login"
-                prefetch={false}
-                className="btn btn-primary gap-2 px-8 py-3.5 text-sm font-semibold shadow-md hover:shadow-lg transition-shadow"
-              >
-                <span>Masuk ke Aplikasi</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <a
-                href="#fitur"
-                className="btn btn-ghost gap-2 px-8 py-3.5 text-sm font-semibold"
-              >
-                Pelajari Lebih Lanjut
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* STATS */}
-        <section ref={statsRef} className="max-w-6xl mx-auto px-4 py-12 w-full">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="stat-card card bg-base-100 border border-base-300 p-5 text-center space-y-1">
-              <p className="text-2xl md:text-3xl font-bold text-primary">100%</p>
-              <p className="text-xs font-medium text-base-content/60">Digital & Paperless</p>
-            </div>
-            <div className="stat-card card bg-base-100 border border-base-300 p-5 text-center space-y-1">
-              <p className="text-2xl md:text-3xl font-bold text-success">&lt; 5m</p>
-              <p className="text-xs font-medium text-base-content/60">Waktu per Laporan</p>
-            </div>
-            <div className="stat-card card bg-base-100 border border-base-300 p-5 text-center space-y-1">
-              <p className="text-2xl md:text-3xl font-bold text-warning">Multi</p>
-              <p className="text-xs font-medium text-base-content/60">Cabang Terisolasi</p>
-            </div>
-            <div className="stat-card card bg-base-100 border border-base-300 p-5 text-center space-y-1">
-              <p className="text-2xl md:text-3xl font-bold text-error">Real-time</p>
-              <p className="text-xs font-medium text-base-content/60">Sinkronisasi Data</p>
-            </div>
-          </div>
-        </section>
-
-        {/* FEATURES */}
-        <section id="fitur" ref={featuresRef} className="max-w-6xl mx-auto px-4 py-16 w-full space-y-12">
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl md:text-3xl font-bold text-base-content">Kenapa STOKIS?</h2>
-            <p className="text-sm text-base-content/60 max-w-lg mx-auto">
-              Solusi lengkap untuk mengelola stock opname multi-cabang dengan efisien dan akurat.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="feature-card card bg-base-100 border border-base-300 overflow-hidden">
-              <div className="h-40 bg-[url('https://images.unsplash.com/photo-1553413077-190dd305871c?w=600&q=80')] bg-cover bg-center" />
-              <div className="p-6 space-y-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10 text-primary">
-                  <Database className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-bold text-base-content">Isolasi Data Cabang</h3>
-                <p className="text-xs leading-relaxed text-base-content/60">
-                  Setiap cabang memiliki database Google Sheets sendiri yang terisolasi dan aman
-                  untuk menjamin keandalan data antar lokasi.
-                </p>
-              </div>
-            </div>
-
-            <div className="feature-card card bg-base-100 border border-base-300 overflow-hidden">
-              <div className="h-40 bg-[url('https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80')] bg-cover bg-center" />
-              <div className="p-6 space-y-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-success/10 text-success">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-bold text-base-content">Laporan PDF & Excel Instan</h3>
-                <p className="text-xs leading-relaxed text-base-content/60">
-                  Selesai melakukan Stock Opname, laporan ringkasan dalam format PDF dan Excel
-                  yang rapi langsung digenerate secara otomatis.
-                </p>
-              </div>
-            </div>
-
-            <div className="feature-card card bg-base-100 border border-base-300 overflow-hidden">
-              <div className="h-40 bg-[url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&q=80')] bg-cover bg-center" />
-              <div className="p-6 space-y-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-error/10 text-error">
-                  <BarChart3 className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-bold text-base-content">Dashboard Analitik</h3>
-                <p className="text-xs leading-relaxed text-base-content/60">
-                  Pantau tren stok harian dan mingguan melalui grafik interaktif. Identifikasi
-                  item kritis dan selisih secara real-time.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="feature-card card bg-base-100 border border-base-300 overflow-hidden">
-              <div className="h-40 bg-[url('https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=600&q=80')] bg-cover bg-center" />
-              <div className="p-6 space-y-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-warning/10 text-warning">
-                  <Key className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-bold text-base-content">Keamanan PIN 6-Digit</h3>
-                <p className="text-xs leading-relaxed text-base-content/60">
-                  Petugas melakukan login secara aman menggunakan username dan 6-digit PIN unik
-                  untuk setiap akun operasional.
-                </p>
-              </div>
-            </div>
-
-            <div className="feature-card card bg-base-100 border border-base-300 overflow-hidden">
-              <div className="h-40 bg-[url('https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=600&q=80')] bg-cover bg-center" />
-              <div className="p-6 space-y-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-info/10 text-info">
-                  <Smartphone className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-bold text-base-content">Kirim via WhatsApp</h3>
-                <p className="text-xs leading-relaxed text-base-content/60">
-                  Notifikasi laporan langsung terkirim ke WhatsApp PIC cabang. Ringkasan lengkap
-                  dengan tautan PDF tanpa perlu aplikasi tambahan.
-                </p>
-              </div>
-            </div>
-
-            <div className="feature-card card bg-base-100 border border-base-300 overflow-hidden">
-              <div className="h-40 bg-[url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80')] bg-cover bg-center" />
-              <div className="p-6 space-y-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-secondary/10 text-secondary">
-                  <Clock className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-bold text-base-content">Multi-Shift</h3>
-                <p className="text-xs leading-relaxed text-base-content/60">
-                  Dukungan pencatatan untuk shift Opening, Middle, dan Closing. Setiap shift
-                  tercatat secara terpisah dan terorganisir.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* WORKFLOW */}
-        <section ref={workflowRef} className="bg-base-100 border-y border-base-300">
-          <div className="max-w-6xl mx-auto px-4 py-16 w-full space-y-10">
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl md:text-3xl font-bold text-base-content">Alur Kerja Sederhana</h2>
-              <p className="text-sm text-base-content/60 max-w-lg mx-auto">
-                Dari pencatatan fisik hingga laporan PDF, semuanya dalam lima langkah mudah.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
-              <div className="workflow-step flex flex-col items-center text-center space-y-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
-                  1
-                </div>
-                <h4 className="text-sm font-bold text-base-content">Login PIN</h4>
-                <p className="text-xs text-base-content/60">Akses aman dengan 6-digit PIN</p>
-              </div>
-
-              <div className="workflow-step flex flex-col items-center text-center space-y-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
-                  2
-                </div>
-                <h4 className="text-sm font-bold text-base-content">Pilih Shift</h4>
-                <p className="text-xs text-base-content/60">Opening, Middle, atau Closing</p>
-              </div>
-
-              <div className="workflow-step flex flex-col items-center text-center space-y-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
-                  3
-                </div>
-                <h4 className="text-sm font-bold text-base-content">Input Stok</h4>
-                <p className="text-xs text-base-content/60">Catat jumlah fisik setiap item</p>
-              </div>
-
-              <div className="workflow-step flex flex-col items-center text-center space-y-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
-                  4
-                </div>
-                <h4 className="text-sm font-bold text-base-content">Submit</h4>
-                <p className="text-xs text-base-content/60">Kirim laporan ke server</p>
-              </div>
-
-              <div className="workflow-step flex flex-col items-center text-center space-y-3">
-                <div className="w-12 h-12 rounded-full bg-success/10 text-success flex items-center justify-center font-bold text-sm">
-                  5
-                </div>
-                <h4 className="text-sm font-bold text-base-content">Laporan PDF</h4>
-                <p className="text-xs text-base-content/60">Download & kirim via WhatsApp</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="max-w-6xl mx-auto px-4 py-16 w-full">
-          <div className="relative rounded-2xl overflow-hidden bg-primary text-primary-content p-8 md:p-12">
-            <div className="absolute inset-0 opacity-10 bg-[url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1600&q=80')] bg-cover bg-center" />
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="space-y-2 text-center md:text-left">
-                <h2 className="text-xl md:text-2xl font-bold">Siap Memulai?</h2>
-                <p className="text-sm opacity-90 max-w-md">
-                  Masuk ke akun Anda dan mulai pencatatan stok pertama hari ini.
-                </p>
-              </div>
-              <Link
-                href="/login"
-                prefetch={false}
-                className="btn btn-lg bg-base-100 text-primary border-none hover:bg-base-200 gap-2 px-8"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-content text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
               >
                 Mulai Sekarang
                 <ArrowRight className="w-4 h-4" />
               </Link>
+              <a
+                href="#fitur"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-base-300 text-base-content/70 text-sm font-semibold transition-all hover:bg-base-200 hover:text-base-content"
+              >
+                Lihat Fitur
+              </a>
             </div>
           </div>
-        </section>
 
-        {/* FOOTER */}
-        <footer className="py-6 w-full border-t border-base-300 bg-base-100">
-          <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-medium text-base-content/50">
-            <span>STOKIS &copy; {new Date().getFullYear()}</span>
-            <span>Operasional Gudang & Retail</span>
+          {/* Hero visual: mockup ringkas */}
+          <div className="mt-12 md:mt-16 relative">
+            <div className="rounded-xl border border-base-300 bg-base-200/50 p-4 md:p-6 shadow-lg">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-3 h-3 rounded-full bg-error/60" />
+                <div className="w-3 h-3 rounded-full bg-warning/60" />
+                <div className="w-3 h-3 rounded-full bg-success/60" />
+                <span className="ml-2 text-xs font-semibold text-base-content/40">
+                  stokis.app
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-3 md:gap-4">
+                {[
+                  { label: "Kritis", value: "3", color: "bg-error/10 text-error border-error/20" },
+                  { label: "Hampir Habis", value: "7", color: "bg-warning/10 text-warning border-warning/20" },
+                  { label: "Aman", value: "42", color: "bg-success/10 text-success border-success/20" },
+                ].map((s) => (
+                  <div
+                    key={s.label}
+                    className={`rounded-lg border p-3 md:p-4 text-center ${s.color}`}
+                  >
+                    <div className="text-2xl md:text-3xl font-bold">{s.value}</div>
+                    <div className="text-xs font-semibold mt-1 opacity-70">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 space-y-2">
+                {[
+                  { name: "Minyak Goreng 2L", qty: "2", threshold: "10", status: "Kritis" },
+                  { name: "Tepung Terigu 1kg", qty: "8", threshold: "15", status: "Hampir Habis" },
+                  { name: "Gula Pasir 1kg", qty: "24", threshold: "10", status: "Aman" },
+                ].map((item) => (
+                  <div
+                    key={item.name}
+                    className="flex items-center justify-between py-2 px-3 rounded-md bg-base-100 border border-base-300 text-xs"
+                  >
+                    <span className="font-semibold text-base-content truncate mr-2">
+                      {item.name}
+                    </span>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-base-content/50">
+                        {item.qty}/{item.threshold}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          item.status === "Kritis"
+                            ? "bg-error/10 text-error"
+                            : item.status === "Hampir Habis"
+                            ? "bg-warning/10 text-warning"
+                            : "bg-success/10 text-success"
+                        }`}
+                      >
+                        {item.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </footer>
-      </main>
-    );
-  }
+        </div>
+      </section>
 
-  const isAdmin = user.role === "admin";
+      {/* How it works */}
+      <section className="py-16 md:py-24 border-t border-base-300">
+        <div className="max-w-6xl mx-auto px-4">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-base-content">
+            Cara Kerja
+          </h2>
+          <p className="mt-2 text-sm text-base-content/50 max-w-md">
+            Tiga langkah sederhana dari awal sampai laporan jadi.
+          </p>
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {steps.map((step) => (
+              <div key={step.num} className="relative">
+                <div className="text-5xl font-bold text-base-content/[0.06] leading-none">
+                  {step.num}
+                </div>
+                <h3 className="mt-3 text-base font-bold text-base-content">
+                  {step.title}
+                </h3>
+                <p className="mt-1.5 text-sm text-base-content/55 leading-relaxed">
+                  {step.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-  return (
-    <main ref={containerRef} className="space-y-8 max-w-5xl mx-auto">
-      <div className="rounded-xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-primary/10 border border-primary/20">
-        <div className="space-y-1.5">
+      {/* Features */}
+      <section id="fitur" className="py-16 md:py-24 border-t border-base-300 bg-base-200/40">
+        <div className="max-w-6xl mx-auto px-4">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-base-content">
+            Fitur Utama
+          </h2>
+          <p className="mt-2 text-sm text-base-content/50 max-w-md">
+            Dirancang untuk operasional gudang yang butuh kecepatan, bukan birokrasi.
+          </p>
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {features.map((f) => {
+              const Icon = f.icon;
+              return (
+                <div
+                  key={f.title}
+                  className="rounded-xl border border-base-300 bg-base-100 p-5 transition-all hover:shadow-md hover:border-primary/20"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Icon className="w-4.5 h-4.5 text-primary" />
+                  </div>
+                  <h3 className="mt-3.5 text-sm font-bold text-base-content">
+                    {f.title}
+                  </h3>
+                  <p className="mt-1.5 text-xs text-base-content/55 leading-relaxed">
+                    {f.desc}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Why Stokis */}
+      <section className="py-16 md:py-24 border-t border-base-300">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-base-content">
+                Kenapa Stokis?
+              </h2>
+              <p className="mt-3 text-sm text-base-content/55 leading-relaxed max-w-md">
+                Spreadsheet manual itu lambat. Software mahal itu ribet. Stokis hadir di tengahnya: cukup HP, cukup browser, langsung jalan.
+              </p>
+              <ul className="mt-6 space-y-3">
+                {[
+                  "Gratis untuk satu cabang",
+                  "Tidak perlu install aplikasi",
+                  "Data tersimpan di Google Sheets Anda",
+                  "Laporan PDF & Excel siap kirim",
+                  "Threshold alert otomatis",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-success mt-0.5 shrink-0" />
+                    <span className="text-sm text-base-content/70">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-xl border border-base-300 bg-base-200/50 p-6">
+              <div className="space-y-4">
+                {[
+                  { label: "Waktu input per SO", value: "< 10 menit", bar: "w-[15%]" },
+                  { label: "Waktu generate laporan", value: "< 5 detik", bar: "w-[8%]" },
+                  { label: "Biaya setup", value: "Gratis", bar: "w-[5%]" },
+                ].map((m) => (
+                  <div key={m.label}>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-base-content/60">
+                        {m.label}
+                      </span>
+                      <span className="font-bold text-primary">{m.value}</span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 rounded-full bg-base-300 overflow-hidden">
+                      <div className={`h-full rounded-full bg-primary ${m.bar}`} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-16 md:py-24 border-t border-base-300 bg-primary">
+        <div className="max-w-6xl mx-auto px-4 text-center">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-primary-content">
+            Siap Kelola Stok Lebih Baik?
+          </h2>
+          <p className="mt-3 text-sm text-primary-content/70 max-w-md mx-auto">
+            Mulai sekarang. Gratis untuk satu cabang, tidak perlu kartu kredit.
+          </p>
+          <Link
+            href="/login"
+            className="mt-8 inline-flex items-center gap-2 px-8 py-3.5 rounded-lg bg-base-100 text-primary text-sm font-bold transition-all hover:opacity-90 active:scale-[0.98] shadow-lg"
+          >
+            Mulai Gratis
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-8 border-t border-base-300">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-base-100 text-primary border border-primary/20">
-              {user.role}
+            <img
+              src="/logo.jpg"
+              alt="Stokis"
+              className="w-5 h-5 rounded object-cover"
+            />
+            <span className="text-xs font-semibold text-base-content/40">
+              Stokis &copy; {new Date().getFullYear()}
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-base-content">
-            Selamat Datang, {user.nama}!
-          </h1>
-          <p className="text-sm text-base-content/60">
-            Silakan gunakan modul di bawah untuk merekam stok, melihat laporan,
-            atau mengelola data master.
-          </p>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <h2 className="text-base font-bold flex items-center gap-2 text-base-content">
-          <Zap className="w-4 h-4 text-primary" />
-          <span>Modul Kerja</span>
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Link href="/so/input" prefetch={false} className="card bg-base-100 border border-base-300 hover:border-primary/30 hover:shadow-md transition-all p-5 flex items-start gap-4 group">
-            <div className="p-2.5 rounded-lg bg-primary/10 text-primary"><ClipboardCheck className="w-5 h-5" /></div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-bold flex items-center gap-1.5 text-base-content">
-                <span>Input Stock Opname</span>
-                <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-all translate-x-[-4px] group-hover:translate-x-0 text-primary" />
-              </h3>
-              <p className="text-xs text-base-content/60">Mulai sesi pencatatan stok fisik barang.</p>
-            </div>
-          </Link>
-          <Link href="/laporan" prefetch={false} className="card bg-base-100 border border-base-300 hover:border-primary/30 hover:shadow-md transition-all p-5 flex items-start gap-4 group">
-            <div className="p-2.5 rounded-lg bg-success/10 text-success"><FileText className="w-5 h-5" /></div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-bold flex items-center gap-1.5 text-base-content">
-                <span>Laporan & PDF</span>
-                <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-all translate-x-[-4px] group-hover:translate-x-0 text-primary" />
-              </h3>
-              <p className="text-xs text-base-content/60">Lihat arsip riwayat dan unduh laporan PDF.</p>
-            </div>
-          </Link>
-          {isAdmin && (
-            <Link href="/master-item" prefetch={false} className="card bg-base-100 border border-base-300 hover:border-primary/30 hover:shadow-md transition-all p-5 flex items-start gap-4 group">
-              <div className="p-2.5 rounded-lg bg-warning/10 text-warning"><Package className="w-5 h-5" /></div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold flex items-center gap-1.5 text-base-content">
-                  <span>Database Master Item</span>
-                  <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-all translate-x-[-4px] group-hover:translate-x-0 text-primary" />
-                </h3>
-                <p className="text-xs text-base-content/60">Kelola daftar barang dan threshold kritis.</p>
-              </div>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/login"
+              className="text-xs font-semibold text-base-content/40 hover:text-primary transition-colors"
+            >
+              Masuk
             </Link>
-          )}
-          {isAdmin && (
-            <Link href="/petugas" prefetch={false} className="card bg-base-100 border border-base-300 hover:border-primary/30 hover:shadow-md transition-all p-5 flex items-start gap-4 group">
-              <div className="p-2.5 rounded-lg bg-secondary/10 text-secondary"><Users className="w-5 h-5" /></div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold flex items-center gap-1.5 text-base-content">
-                  <span>Manajemen Pengguna</span>
-                  <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-all translate-x-[-4px] group-hover:translate-x-0 text-primary" />
-                </h3>
-                <p className="text-xs text-base-content/60">Daftarkan akun petugas baru dan atur PIN.</p>
-              </div>
-            </Link>
-          )}
+          </div>
         </div>
-      </div>
-
-      <div className="card bg-base-100 border border-base-300 p-6 space-y-4">
-        <h3 className="text-sm font-semibold flex items-center gap-2 text-base-content">
-          <HelpCircle className="w-4 h-4 text-base-content/50" />
-          <span>Panduan Singkat</span>
-        </h3>
-        <ol className="list-decimal list-inside text-xs space-y-2.5 text-base-content/60">
-          <li>Pastikan nama cabang sesuai dengan lokasi kerja Anda.</li>
-          <li>Masuk ke modul <span className="font-bold text-base-content">Input Stock Opname</span>, pilih shift.</li>
-          <li>Ketikkan jumlah stok fisik barang pada kolom yang disediakan.</li>
-          <li>Tekan <span className="font-bold text-base-content">Submit Laporan SO</span> setelah semua data terisi.</li>
-          <li>Unduh laporan <span className="font-bold text-base-content">PDF</span> dan <span className="font-bold text-base-content">Excel</span> yang digenerate otomatis.</li>
-        </ol>
-      </div>
-    </main>
+      </footer>
+    </div>
   );
 }

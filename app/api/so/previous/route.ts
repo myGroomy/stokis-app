@@ -1,9 +1,9 @@
 // app/api/so/previous/route.ts
 import { NextResponse } from 'next/server';
 import { callAppsScript } from '@/lib/appsscript';
-import { withAuth } from '@/lib/auth';
+import { withAuth, assertCabangAccess } from '@/lib/auth';
 
-export const GET = withAuth(async (request: Request) => {
+export const GET = withAuth(async (request: Request, _ctx, session) => {
   try {
     const { searchParams } = new URL(request.url);
     const cabangId = searchParams.get('cabang');
@@ -14,6 +14,9 @@ export const GET = withAuth(async (request: Request) => {
         { status: 400 }
       );
     }
+
+    const guard = assertCabangAccess(session, cabangId);
+    if (guard) return guard;
 
     const result = await callAppsScript('getPreviousSO', cabangId);
 

@@ -55,3 +55,26 @@ export function withAuth(
     return handler(req, context, session);
   };
 }
+
+/**
+ * Guard: pastikan user boleh mengakses data cabang tertentu.
+ * Admin boleh akses cabang manapun. Petugas hanya boleh akses cabang sendiri.
+ * @returns NextResponse error jika ditolak, null jika lolos
+ */
+export function assertCabangAccess(
+  session: SessionData,
+  cabangId: string
+): NextResponse | null {
+  if (session.role === 'admin') return null;
+  if (!cabangId || cabangId.trim() === session.cabangId) return null;
+  return NextResponse.json(
+    {
+      success: false,
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Tidak diizinkan mengakses data cabang lain',
+      },
+    },
+    { status: 403 }
+  );
+}

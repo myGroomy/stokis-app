@@ -564,6 +564,7 @@ export default function InputSOPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             items: formState.items,
+            cabangId: selectedCabang.Cabang_ID,
             cabangNama: formState.cabangNama,
             cabangKode: formState.cabangKode,
             tanggalOperasional: formState.tanggalOperasional,
@@ -589,6 +590,7 @@ export default function InputSOPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             items: formState.items,
+            cabangId: selectedCabang.Cabang_ID,
             cabangNama: formState.cabangNama,
             cabangKode: formState.cabangKode,
             tanggalOperasional: formState.tanggalOperasional,

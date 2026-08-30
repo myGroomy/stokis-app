@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callAppsScript } from '@/lib/appsscript';
-import { withAuth } from '@/lib/auth';
+import { withAuth, assertCabangAccess } from '@/lib/auth';
 
 export const GET = withAuth(async (req: NextRequest, _context, session) => {
   const { searchParams } = new URL(req.url);
   const cabangId = searchParams.get('cabang') || '';
 
-  // Petugas hanya bisa lihat user satu cabang, admin bisa semua
-  if (session.role === 'petugas' && cabangId && cabangId !== session.cabangId) {
-    return NextResponse.json(
-      { success: false, error: { code: 'FORBIDDEN', message: 'Akses ditolak' } },
-      { status: 403 }
-    );
-  }
+  const guard = assertCabangAccess(session, cabangId);
+  if (guard) return guard;
 
   const result = await callAppsScript('getUsers', cabangId);
   return NextResponse.json(result, { status: result.success ? 200 : 400 });

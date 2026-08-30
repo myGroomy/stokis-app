@@ -1,7 +1,7 @@
 // app/api/so/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { callAppsScript } from '@/lib/appsscript';
-import { withAuth } from '@/lib/auth';
+import { withAuth, assertCabangAccess } from '@/lib/auth';
 
 const SESI_ID_RE = /^SES[_-][A-Za-z0-9_-]{4,64}$/i;
 
@@ -9,7 +9,7 @@ function jsonError(code: string, message: string, status: number) {
   return NextResponse.json({ success: false, error: { code, message } }, { status });
 }
 
-export const POST = withAuth(async (req: NextRequest) => {
+export const POST = withAuth(async (req: NextRequest, _ctx, session) => {
   let raw: unknown;
   try {
     raw = await req.json();
@@ -35,6 +35,8 @@ export const POST = withAuth(async (req: NextRequest) => {
   }
 
   const payload = { ...body, sesiId: sesiId.trim() };
+  const guard = assertCabangAccess(session, cabangId.trim());
+  if (guard) return guard;
   const result = await callAppsScript('submitSO', cabangId.trim(), payload);
 
   const already = result.success && result.data?.status === 'already_processed';

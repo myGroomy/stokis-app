@@ -1,6 +1,6 @@
 // app/api/so/[laporanId]/spreadsheet/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/auth';
+import { withAuth, assertCabangAccess } from '@/lib/auth';
 import ExcelJS from 'exceljs';
 
 interface ItemData {
@@ -50,10 +50,20 @@ const STATUS_BG_HEX: Record<StatusType, string> = {
   'Tidak Dipantau': 'F1F2F4',
 };
 
-export const POST = withAuth(async (req: NextRequest, { params }) => {
+export const POST = withAuth(async (req: NextRequest, { params }, session) => {
   const { laporanId } = await params;
   const body = await req.json();
-  const { items, cabangNama, cabangKode, tanggalOperasional, shift, petugas, previousSOInfo } = body;
+  const { items, cabangId, cabangNama, cabangKode, tanggalOperasional, shift, petugas, previousSOInfo } = body;
+
+  if (!cabangId || typeof cabangId !== 'string') {
+    return NextResponse.json(
+      { success: false, error: { code: 'CABANG_REQUIRED', message: 'Parameter cabangId wajib disertakan' } },
+      { status: 400 }
+    );
+  }
+
+  const guard = assertCabangAccess(session, cabangId);
+  if (guard) return guard;
 
   // Sort items: Kritis → Hampir Habis → Aman → Tidak Dipantau
   const sortedItems: ItemData[] = [...items].sort((a: ItemData, b: ItemData) => {

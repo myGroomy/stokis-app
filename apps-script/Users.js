@@ -1,8 +1,7 @@
 // Users.js — Autentikasi & manajemen pengguna via spreadsheet Registry
 //
-// CATATAN KEAMANAN: PIN masih disimpan plaintext (kolom PIN) selama MVP.
-// Direkomendasikan memindahkan ke hashing (mis. kode PIN 4-6 digit tetap
-// butuh kendali akses; pertimbangkan `Users` dengan permission ketat).
+// CATATAN KEAMANAN: PIN di-hash dengan SHA-256 sebelum disimpan.
+// Fungsi login mendukung migrasi dari plaintext ke hash secara otomatis.
 
 const USERS_HEADERS = ['User_ID', 'Username', 'PIN', 'Nama', 'Role', 'Cabang_ID', 'Aktif', 'Created_At'];
 
@@ -10,21 +9,55 @@ function getUsersSheet_() {
   return getSheetByName_(getRegistry_(), 'Users');
 }
 
+// Hash PIN menggunakan SHA-256 (reusable pattern dari secureKeyEqual_)
+function hashPin_(pin) {
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(pin), Utilities.Charset.UTF_8);
+  return digest.map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
+}
+
+// Rehash PIN dari plaintext ke hash (dipanggil saat login untuk migrasi)
+function rehashPin_(userId, plaintextPin) {
+  var sheet = getUsersSheet_();
+  var rows = sheet.getDataRange().getValues();
+  var rowIdx = rows.findIndex(function(r, i) { return i > 0 && r[0] === userId; });
+  if (rowIdx === -1) return;
+  var updated = rows[rowIdx].slice();
+  updated[2] = hashPin_(plaintextPin);
+  sheet.getRange(rowIdx + 1, 1, 1, updated.length).setValues([updated]);
+}
+
 function login(payload) {
-  const username = String(payload.username || '').trim().toLowerCase();
-  const pin = String(payload.pin || '').trim();
+  var username = String(payload.username || '').trim().toLowerCase();
+  var pin = String(payload.pin || '').trim();
   if (!username || !pin) {
     throw ApiError_('validation_error', 'Username dan PIN wajib diisi');
   }
 
-  const sheet = getUsersSheet_();
-  const rows = sheetToObjects_(sheet);
+  var sheet = getUsersSheet_();
+  var rows = sheetToObjects_(sheet);
+  var hashedPin = hashPin_(pin);
 
-  const user = rows.find(r =>
-    String(r['Username']).toLowerCase() === username &&
-    String(r['PIN']) === pin &&
-    r['Aktif'] !== false
-  );
+  var user = null;
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    if (String(r['Username']).toLowerCase() !== username) continue;
+    if (r['Aktif'] === false) continue;
+
+    var storedPin = String(r['PIN']);
+
+    // Bandingkan dengan hash (constant-time via secureKeyEqual_)
+    if (secureKeyEqual_(storedPin, hashedPin)) {
+      user = r;
+      break;
+    }
+
+    // Migrasi: kalau masih plaintext, rehash otomatis
+    if (secureKeyEqual_(storedPin, pin)) {
+      rehashPin_(r['User_ID'], pin);
+      user = r;
+      break;
+    }
+  }
 
   if (!user) {
     throw ApiError_('authentication_failed', 'Username atau PIN salah');
@@ -39,9 +72,9 @@ function login(payload) {
 }
 
 function getUsers(cabangId) {
-  const rows = sheetToObjects_(getUsersSheet_());
+  var rows = sheetToObjects_(getUsersSheet_());
   return cabangId
-    ? rows.filter(r => String(r['Cabang_ID']).includes(cabangId))
+    ? rows.filter(function(r) { return String(r['Cabang_ID']).includes(cabangId); })
     : rows;
 }
 
@@ -49,12 +82,12 @@ function addUser(payload) {
   if (!payload.username || !payload.pin) {
     throw ApiError_('validation_error', 'username dan pin wajib diisi');
   }
-  const sheet = getUsersSheet_();
-  const userId = 'USR' + newRandomToken_(8);
+  var sheet = getUsersSheet_();
+  var userId = 'USR' + newRandomToken_(8);
   sheet.appendRow([
     userId,
     String(payload.username).trim(),
-    String(payload.pin),
+    hashPin_(String(payload.pin)),
     payload.nama || '',
     payload.role || 'petugas',
     payload.cabangId || '',
@@ -65,15 +98,15 @@ function addUser(payload) {
 }
 
 function updateUser(userId, payload) {
-  const sheet = getUsersSheet_();
-  const rows = sheet.getDataRange().getValues();
-  const rowIdx = rows.findIndex((r, i) => i > 0 && r[0] === userId);
+  var sheet = getUsersSheet_();
+  var rows = sheet.getDataRange().getValues();
+  var rowIdx = rows.findIndex(function(r, i) { return i > 0 && r[0] === userId; });
   if (rowIdx === -1) throw ApiError_('not_found', 'User ' + userId + ' tidak ditemukan');
 
   // Kolom: B=Username(2), C=PIN(3), D=Nama(4), E=Role(5), F=Cabang_ID(6)
-  const updated = rows[rowIdx].slice();
+  var updated = rows[rowIdx].slice();
   if (payload.username !== undefined) updated[1] = String(payload.username).trim();
-  if (payload.pin !== undefined) updated[2] = String(payload.pin);
+  if (payload.pin !== undefined) updated[2] = hashPin_(String(payload.pin));
   if (payload.nama !== undefined) updated[3] = payload.nama;
   if (payload.role !== undefined) updated[4] = payload.role;
   if (payload.cabangId !== undefined) updated[5] = payload.cabangId;
@@ -81,11 +114,33 @@ function updateUser(userId, payload) {
   return { userId };
 }
 
+// Migrasi manual: hash semua PIN yang masih plaintext
+function migratePins_() {
+  var sheet = getUsersSheet_();
+  var rows = sheet.getDataRange().getValues();
+  var headers = rows[0];
+  var pinCol = headers.indexOf('PIN');
+  var updated = 0;
+
+  for (var i = 1; i < rows.length; i++) {
+    var pin = String(rows[i][pinCol]);
+    // Hash SHA-256 = 64 karakter hex
+    if (pin.length === 64 && /^[0-9a-f]{64}$/.test(pin)) continue; // sudah hash
+
+    var newHash = hashPin_(pin);
+    sheet.getRange(i + 1, pinCol + 1).setValue(newHash);
+    updated++;
+  }
+
+  Logger.log('Migration selesai: ' + updated + ' PIN di-hash');
+  return { updated: updated };
+}
+
 function setUserActive(userId, aktif) {
-  const sheet = getUsersSheet_();
-  const rows = sheet.getDataRange().getValues();
-  const rowIdx = rows.findIndex((r, i) => i > 0 && r[0] === userId);
+  var sheet = getUsersSheet_();
+  var rows = sheet.getDataRange().getValues();
+  var rowIdx = rows.findIndex(function(r, i) { return i > 0 && r[0] === userId; });
   if (rowIdx === -1) throw ApiError_('not_found', 'User ' + userId + ' tidak ditemukan');
   sheet.getRange(rowIdx + 1, 7).setValue(aktif === true || aktif === 'true');
-  return { userId, aktif };
+  return { userId: userId, aktif: aktif };
 }

@@ -1,11 +1,25 @@
 /**
  * SETUP SCRIPT - FASE 1
- * Fungsi `runSetupPhase1()` untuk membuat seluruh struktur Sheets & Script Properties.
+ * Fungsi `runSetupPhase1(parentFolderId)` untuk membuat seluruh struktur Sheets & Script Properties.
+ * 
+ * @param {string} parentFolderId - Google Drive folder ID induk. 
+ *        Bisa dikosongkan untuk input manual via prompt.
  */
+function runSetupPhase1(parentFolderId) {
+  // Baca dari Script Properties dulu, lalu parameter, lalu prompt
+  let folderId = parentFolderId;
+  if (!folderId) {
+    folderId = PropertiesService.getScriptProperties().getProperty('FOLDER_DRIVE_INDUK');
+  }
+  if (!folderId) {
+    // Fallback: tidak ada UI prompt (web app deployment tidak punya UI)
+    throw new Error('FOLDER_DRIVE_INDUK belum dikonfigurasi di Script Properties. Jalankan: PropertiesService.getScriptProperties().setProperty("FOLDER_DRIVE_INDUK", "your_folder_id")');
+  }
+  if (!folderId) {
+    throw new Error('Folder ID wajib diisi');
+  }
 
-function runSetupPhase1() {
-  const PARENT_FOLDER_ID = '1IC8xwCoTN_tra4piKq7bI2LQaedJbdZG';
-  const parentFolder = DriveApp.getFolderById(PARENT_FOLDER_ID);
+  const parentFolder = DriveApp.getFolderById(folderId);
   
   Logger.log('🚀 Memulai Setup Fase 1 di folder: ' + parentFolder.getName());
 
@@ -82,7 +96,7 @@ function runSetupPhase1() {
   const sheetSettingsGlobal = registrySS.insertSheet('Settings_Global');
   sheetSettingsGlobal.appendRow(['Key', 'Value']);
   formatHeader_(sheetSettingsGlobal);
-  sheetSettingsGlobal.appendRow(['Folder_Drive_Induk', PARENT_FOLDER_ID]);
+  sheetSettingsGlobal.appendRow(['Folder_Drive_Induk', folderId]);
   sheetSettingsGlobal.appendRow(['Nama_Sistem', 'Sistem Stock Opname Multi Cabang']);
 
   Logger.log('✅ STOKIS_REGISTRY berhasil dibuat! ID: ' + registrySS.getId());
@@ -96,7 +110,7 @@ function runSetupPhase1() {
   scriptProperties.setProperties({
     'REGISTRY_SPREADSHEET_ID': registrySS.getId(),
     'STOKIS_API_KEY': generatedApiKey,
-    'FOLDER_DRIVE_INDUK': PARENT_FOLDER_ID
+    'FOLDER_DRIVE_INDUK': folderId
   });
 
   Logger.log('==================================================');

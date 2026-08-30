@@ -1,5 +1,6 @@
 // app/api/so/[laporanId]/pdf/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth';
 import PDFDocument from 'pdfkit';
 import { PassThrough } from 'stream';
 
@@ -63,16 +64,13 @@ function drawTableHeader(
   let x = 44;
   for (const [key, width] of Object.entries(cols)) {
     const align = ['step1', 'step2', 'total', 'prevS1', 'prevS2', 'prevT', 'currS1', 'currS2', 'currT', 'penggunaan', 'threshold'].includes(key) ? 'right' : 'left';
-    doc.text(labels[key] || key, x, yPos + 3, { width, align: align as any });
+    doc.text(labels[key] || key, x, yPos + 3, { width, align: align as 'left' | 'right' | 'center' });
     x += width;
   }
   return yPos + 14;
 }
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ laporanId: string }> }
-) {
+export const POST = withAuth(async (req: NextRequest, { params }) => {
   const { laporanId } = await params;
   const body = await req.json();
   const { items, cabangNama, cabangKode, tanggalOperasional, shift, petugas, previousSOInfo } = body;
@@ -345,4 +343,4 @@ export async function POST(
       'Content-Disposition': `inline; filename="${fileName}"`,
     },
   });
-}
+});

@@ -1,5 +1,6 @@
 // app/api/so/[laporanId]/spreadsheet/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth';
 import ExcelJS from 'exceljs';
 
 interface ItemData {
@@ -49,10 +50,7 @@ const STATUS_BG_HEX: Record<StatusType, string> = {
   'Tidak Dipantau': 'F1F2F4',
 };
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ laporanId: string }> }
-) {
+export const POST = withAuth(async (req: NextRequest, { params }) => {
   const { laporanId } = await params;
   const body = await req.json();
   const { items, cabangNama, cabangKode, tanggalOperasional, shift, petugas, previousSOInfo } = body;
@@ -397,4 +395,4 @@ export async function POST(
       'Content-Disposition': `inline; filename="${fileName}"`,
     },
   });
-}
+});

@@ -27,15 +27,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("stokis_user");
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored));
-      } catch {
-        localStorage.removeItem("stokis_user");
-      }
-    }
-    setLoading(false);
+    // Ambil session dari server (httpOnly cookie) bukan localStorage
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          setUser(data.data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const login = async (username: string, pin: string) => {
@@ -48,18 +49,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       if (data.success && data.data) {
         setUser(data.data);
-        localStorage.setItem("stokis_user", JSON.stringify(data.data));
         return { success: true };
       }
       return { success: false, error: data.error?.message || "Username atau PIN salah" };
-    } catch (err: any) {
-      return { success: false, error: "Gagal terhubung ke server: " + err.message };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return { success: false, error: "Gagal terhubung ke server: " + message };
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // Abaikan error logout, tetap clear local state
+    }
     setUser(null);
-    localStorage.removeItem("stokis_user");
   };
 
   const hasAnyRole = (roles: UserRole[]) => {

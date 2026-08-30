@@ -1,6 +1,7 @@
 // app/api/so/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { callAppsScript } from '@/lib/appsscript';
+import { withAuth } from '@/lib/auth';
 
 const SESI_ID_RE = /^SES[_-][A-Za-z0-9_-]{4,64}$/i;
 
@@ -8,7 +9,7 @@ function jsonError(code: string, message: string, status: number) {
   return NextResponse.json({ success: false, error: { code, message } }, { status });
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest) => {
   let raw: unknown;
   try {
     raw = await req.json();
@@ -40,4 +41,4 @@ export async function POST(req: NextRequest) {
   const status = already ? 200 : result.success ? 201 : 400;
 
   return NextResponse.json(result, { status });
-}
+});

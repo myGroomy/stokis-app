@@ -1,10 +1,14 @@
 // lib/appsscript.ts
 // Berjalan di Server Function / API Routes Vercel
 
-const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL || '';
-const API_KEY = process.env.STOKIS_API_KEY || '';
+import { getEnv } from '@/lib/env';
+
+const env = getEnv();
+const APPS_SCRIPT_URL = env.APPS_SCRIPT_URL;
+const API_KEY = env.STOKIS_API_KEY;
 const REQUEST_TIMEOUT_MS = 120_000; // GAS cold start + write batch bisa lambat
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -14,19 +18,14 @@ export interface ApiResponse<T = any> {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function callAppsScript<T = any>(
   action: string,
   cabangId?: string,
-  payload?: Record<string, any>
+  payload?: Record<string, unknown>
 ): Promise<ApiResponse<T>> {
-  if (!APPS_SCRIPT_URL) {
-    return {
-      success: false,
-      error: { code: 'CONFIG_ERROR', message: 'APPS_SCRIPT_URL belum dikonfigurasi di Environment Variable' }
-    };
-  }
-
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const body: Record<string, any> = {
       'x-api-key': API_KEY,
       action: action,
@@ -59,10 +58,10 @@ export async function callAppsScript<T = any>(
         error: { code: 'PARSE_ERROR', message: 'Respon dari Apps Script bukan format JSON valid: ' + text.substring(0, 150) + hint }
       };
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       success: false,
-      error: { code: 'FETCH_ERROR', message: err.message || 'Gagal memanggil API Apps Script' }
+      error: { code: 'FETCH_ERROR', message: err instanceof Error ? err.message : 'Gagal memanggil API Apps Script' }
     };
   }
 }

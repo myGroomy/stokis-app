@@ -90,11 +90,12 @@ function buildPdfHtml_(namaCabang, tanggal, shift, petugas, rows, sesiId, lapora
     var prevS1 = r.prevStep1 !== undefined && r.prevStep1 !== null ? r.prevStep1 : '-';
     var prevS2 = r.prevStep2 !== undefined && r.prevStep2 !== null ? r.prevStep2 : '-';
     var prevT  = r.prevTotal !== undefined && r.prevTotal !== null ? r.prevTotal : '-';
+    // Pemakaian = SO sekarang - SO sebelumnya → berkurang jadi minus, bertambah jadi plus
     var penggunaan = (r.prevTotal !== undefined && r.prevTotal !== null)
-      ? r.prevTotal - r.total
+      ? r.total - r.prevTotal
       : '-';
     var penggunaanColor = penggunaan === '-' ? neutral :
-                           penggunaan > 0 ? statusColor['Kritis'] : statusColor['Aman'];
+                           penggunaan >= 0 ? statusColor['Aman'] : statusColor['Kritis'];
     var penggunaanText = penggunaan === '-' ? '-' :
                           penggunaan > 0 ? '+' + penggunaan : String(penggunaan);
     var borderLeft = (r.status === 'Kritis' || r.status === 'Hampir Habis')
@@ -103,6 +104,7 @@ function buildPdfHtml_(namaCabang, tanggal, shift, petugas, rows, sesiId, lapora
     return '<tr style="background:' + rowBg + ';' + borderLeft + '">' +
       '<td style="' + tdStyle + '">' + (idx + 1) + '</td>' +
       '<td style="' + tdStyle + ';font-weight:600">' + r.nama + '</td>' +
+      '<td style="' + tdStyle + ';text-align:center;font-weight:600">' + (r.threshold || '–') + '</td>' +
       '<td style="' + tdStyle + ';color:' + neutral + ';font-size:8px">' + r.area + '</td>' +
       '<td style="' + tdStyle + ';text-align:right">' + prevS1 + '</td>' +
       '<td style="' + tdStyle + ';text-align:right">' + prevS2 + '</td>' +
@@ -163,24 +165,25 @@ function buildPdfHtml_(namaCabang, tanggal, shift, petugas, rows, sesiId, lapora
     '</div>' : '') +
     '<table>' +
     '<tr style="background:' + textDark + ';color:#fff">' +
-    '<th style="' + thStyle + ';color:#fff;border-color:' + textDark + '" colspan="3"></th>' +
+    '<th style="' + thStyle + ';color:#fff;border-color:' + textDark + '" colspan="4"></th>' +
     '<th style="' + thStyle + ';color:#B3D4FF;text-align:center;border-color:' + textDark + '" colspan="3">SO Sebelumnya</th>' +
     '<th style="' + thStyle + ';color:#B3D4FF;text-align:center;border-color:' + textDark + '" colspan="3">SO Sekarang</th>' +
     '<th style="' + thStyle + ';color:#fff;border-color:' + textDark + '" colspan="3"></th>' +
     '</tr>' +
     '<tr style="background:' + neutral + ';color:#fff">' +
-    '<th style="' + thStyle + ';color:#fff;width:22px">No</th>' +
-    '<th style="' + thStyle + ';color:#fff;width:105px">Nama Barang</th>' +
-    '<th style="' + thStyle + ';color:#fff;width:52px">Area</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:26px">S1</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:26px">S2</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:30px">Tot</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:26px">S1</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:26px">S2</th>' +
-    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:30px">Tot</th>' +
-    '<th style="' + thStyle + ';color:#fff;text-align:right;width:38px">Pemk</th>' +
-    '<th style="' + thStyle + ';color:#fff;width:65px">Ket</th>' +
-    '<th style="' + thStyle + ';color:#fff;width:48px">Status</th>' +
+    '<th style="' + thStyle + ';color:#fff;width:19px">No</th>' +
+    '<th style="' + thStyle + ';color:#fff;width:95px">Nama Barang</th>' +
+    '<th style="' + thStyle + ';color:#fff;text-align:center;width:42px">Threshold</th>' +
+    '<th style="' + thStyle + ';color:#fff;width:46px">Area</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:24px">S1</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:24px">S2</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:28px">Tot</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:24px">S1</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:24px">S2</th>' +
+    '<th style="' + thStyle + ';color:#B3D4FF;text-align:right;width:28px">Tot</th>' +
+    '<th style="' + thStyle + ';color:#fff;text-align:right;width:36px">Pemk</th>' +
+    '<th style="' + thStyle + ';color:#fff;width:60px">Ket</th>' +
+    '<th style="' + thStyle + ';color:#fff;width:46px">Status</th>' +
     '</tr>' +
     tableRows +
     '</table>' +

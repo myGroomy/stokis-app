@@ -81,6 +81,7 @@ function routeAction_(action, cabangId, payload, params) {
     case 'submitSO':             return jsonResponse_({ success: true, data: submitSO(cabangId, payload) });
     case 'getPreviousSO':        return jsonResponse_({ success: true, data: getPreviousSO(cabangId) });
     // Laporan
+    case 'saveLaporan':           return jsonResponse_({ success: true, data: saveLaporan(cabangId, payload) });
     case 'searchLaporan':        return jsonResponse_({ success: true, data: searchLaporan(cabangId, payload) });
     case 'getShareWhatsAppLink': return jsonResponse_({ success: true, data: getShareWhatsAppLink(cabangId, payload.laporanId) });
     case 'updateStatusKirimWA':  return jsonResponse_({ success: true, data: updateStatusKirimWA(cabangId, payload.laporanId) });

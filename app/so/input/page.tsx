@@ -28,6 +28,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { QuantumLoaderFull, QuantumLoaderMini } from '@/components/ui/QuantumLoader';
+import { SOGeneratingOverlay, type SOGerStep } from '@/components/SOGeneratingOverlay';
 import { staggerContainer, staggerItem } from '@/components/PageTransition';
 
 interface MasterItem {
@@ -201,6 +202,7 @@ export default function InputSOPage() {
   // Inputs: { [itemId]: { step1: string, step2: string, keterangan: string } }
   const [counts, setCounts] = useState<Record<string, { step1: string; step2: string; keterangan: string }>>({});
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [genStep, setGenStep] = useState<SOGerStep>('simpan');
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [submitResult, setSubmitResult] = useState<string>('');
 
@@ -522,6 +524,7 @@ export default function InputSOPage() {
       setShowSummary(false);
       setErrorMsg('');
       setSubmitResult('');
+      setGenStep('simpan');
 
       const body = {
         cabangId: selectedCabang.Cabang_ID,
@@ -549,15 +552,41 @@ export default function InputSOPage() {
       const rowsWritten: number =
         typeof data?.rows_written === 'number' ? data.rows_written : formState.items.length;
 
+      let laporanId = data?.laporanId || null;
+
       setSubmitResult(
         alreadyProcessed
           ? `Sesi ${formState.sesiId} sudah pernah diproses (${rowsWritten} item). Tidak ada data ganda yang dibuat.`
           : `${rowsWritten} item berhasil disimpan.`
       );
 
-      const laporanId = data?.laporanId || null;
+      // Buat catatan laporan secara langsung, terlepas dari PDF Drive,
+      // agar halaman konfirmasi/berbagi selalu punya laporanId yang valid.
+      setGenStep('laporan');
+      try {
+        const laporanRes = await fetch(`/api/so/${laporanId || formState.sesiId}/save-laporan`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cabangId: selectedCabang.Cabang_ID,
+            sesiId: formState.sesiId,
+            tanggalOperasional: formState.tanggalOperasional,
+            shift: formState.shift,
+            petugas: formState.petugas,
+            items: formState.items,
+          }),
+        });
+        const laporanJson = await laporanRes.json().catch(() => null);
+        const savedLaporanId = laporanJson?.data?.laporanId;
+        if (typeof savedLaporanId === 'string' && savedLaporanId) {
+          laporanId = savedLaporanId;
+        }
+      } catch {
+        // catatan laporan bersifat non-critical; laporanId fallback ke sesiId
+      }
 
       // Generate PDF (non-critical)
+      setGenStep('pdf');
       try {
         const pdfRes = await fetch(`/api/so/${laporanId || formState.sesiId}/pdf`, {
           method: 'POST',
@@ -584,6 +613,7 @@ export default function InputSOPage() {
       }
 
       // Generate Spreadsheet (non-critical)
+      setGenStep('spreadsheet');
       try {
         const xlsRes = await fetch(`/api/so/${laporanId || formState.sesiId}/spreadsheet`, {
           method: 'POST',
@@ -624,6 +654,7 @@ export default function InputSOPage() {
         setPendingDraft(null);
       }
 
+      setGenStep('selesai');
       router.push(`/so/konfirmasi/${laporanId || formState.sesiId}`);
     } catch (err) {
       setErrorMsg(
@@ -1178,6 +1209,11 @@ export default function InputSOPage() {
             onCancel={() => setShowSummary(false)}
           />
         )}
+      </AnimatePresence>
+
+      {/* Generating overlay shown saat submit berlangsung */}
+      <AnimatePresence>
+        {submitting && <SOGeneratingOverlay step={genStep} />}
       </AnimatePresence>
     </>
   );

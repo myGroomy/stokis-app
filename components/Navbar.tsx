@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCabang } from "@/lib/CabangContext";
 import { useAuth } from "@/lib/AuthContext";
+import { useTour } from "@/lib/TourContext";
 import {
   ClipboardCheck,
   Package,
@@ -16,6 +17,7 @@ import {
   ChevronDown,
   Home,
   LogOut,
+  HelpCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -34,6 +36,7 @@ const bottomNavItems: NavItem[] = [
   { name: "Laporan", href: "/laporan", icon: FileText },
   { name: "Item", href: "/master-item", icon: Package, roles: ["admin"] },
   { name: "Lainnya", href: "/cabang", icon: Building2, roles: ["admin"] },
+  { name: "Tutor", href: "/tutorial", icon: HelpCircle },
   { name: "Keluar", href: "/logout", icon: LogOut },
 ];
 
@@ -50,6 +53,7 @@ export function Navbar() {
   const pathname = usePathname();
   const { selectedCabang, cabangList, setSelectedCabang } = useCabang();
   const { user, logout } = useAuth();
+  const { openTour } = useTour();
   const role = user?.role || "petugas";
 
   const isVisible = (item: NavItem) => !item.roles || item.roles.includes(role);
@@ -90,7 +94,7 @@ export function Navbar() {
             </Link>
 
             {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-0.5">
+            <nav data-onboard="nav" className="hidden md:flex items-center gap-0.5">
               {filteredDesktop.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);
@@ -115,7 +119,7 @@ export function Navbar() {
             {/* Right side */}
             <div className="flex items-center gap-2">
               {/* Branch Selector */}
-              <div className="flex items-center rounded-md px-2.5 py-1.5 bg-base-200 border border-base-300 max-w-[160px] sm:max-w-none">
+              <div data-onboard="cabang" className="flex items-center rounded-md px-2.5 py-1.5 bg-base-200 border border-base-300 max-w-[160px] sm:max-w-none">
                 <Store className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 text-primary" />
                 <select
                   value={selectedCabang?.Cabang_ID || ""}
@@ -141,6 +145,16 @@ export function Navbar() {
                 )}
               </div>
 
+              {/* Tutorial */}
+              <button
+                onClick={openTour}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-colors duration-150 text-base-content/50 hover:text-primary hover:bg-primary/10"
+                title="Lihat tutorial"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+                <span className="text-xs font-semibold hidden sm:inline">Tutorial</span>
+              </button>
+
               {/* Logout */}
               <button
                 onClick={logout}
@@ -156,12 +170,27 @@ export function Navbar() {
       </header>
 
       {/* Mobile Bottom Nav Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-base-100 border-t border-base-300 shadow-[0_-2px_8px_rgba(0,0,0,0.08)]">
+      <nav data-onboard="nav" className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-base-100 border-t border-base-300 shadow-[0_-2px_8px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around h-16 px-1 safe-area-pb">
           {filteredBottom.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
             const isLogout = item.href === "/logout";
+            const isTutorial = item.href === "/tutorial";
+            if (isTutorial) {
+              return (
+                <button
+                  key={item.name}
+                  onClick={openTour}
+                  className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 transition-colors text-base-content/50 hover:text-primary"
+                >
+                  <div className="p-1.5 rounded-lg">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-semibold">{item.name}</span>
+                </button>
+              );
+            }
             return isLogout ? (
               <button
                 key={item.name}

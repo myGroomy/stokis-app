@@ -11,6 +11,7 @@ import {
   ShieldAlert,
   Shield,
   Key,
+  AlertTriangle,
 } from 'lucide-react';
 import { QuantumLoaderFull } from '@/components/ui/QuantumLoader';
 
@@ -36,6 +37,7 @@ export default function PetugasPage() {
   const [formNama, setFormNama] = useState<string>('');
   const [formRole, setFormRole] = useState<string>('petugas');
   const [saving, setSaving] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string>('');
 
   const fetchUsers = async () => {
     if (!selectedCabang) return;
@@ -45,12 +47,13 @@ export default function PetugasPage() {
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
         const filtered = json.data.filter((u: any) =>
-          String(u.Cabang_ID || '').includes(selectedCabang.Cabang_ID)
+          String(u.Cabang_ID || '') === selectedCabang.Cabang_ID
         );
         setUsersList(filtered);
       }
     } catch (e) {
       console.error('Error fetching users:', e);
+      setErrorMsg('Gagal memuat daftar pengguna. Periksa koneksi internet Anda.');
     } finally {
       setLoading(false);
     }
@@ -112,9 +115,8 @@ export default function PetugasPage() {
       setShowModal(false);
       fetchUsers();
     } catch (err: any) {
-      alert('Error: ' + err.message);
+      setErrorMsg('Error: ' + err.message);
     } finally {
-      setSaving(false);
     }
   };
 
@@ -130,7 +132,7 @@ export default function PetugasPage() {
       });
       fetchUsers();
     } catch (err: any) {
-      alert('Error: ' + err.message);
+      setErrorMsg('Error: ' + err.message);
     }
   };
 
@@ -176,11 +178,15 @@ export default function PetugasPage() {
         </motion.button>
       </motion.div>
 
+      {errorMsg && (
+        <div className="alert alert-error text-sm" role="alert">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          <span>{errorMsg}</span>
+          <button onClick={() => { setErrorMsg(''); fetchUsers(); }} className="btn btn-ghost btn-xs">Coba Lagi</button>
+        </div>
+      )}
+
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25, delay: 0.05 }}
-        className="card bg-base-100 border border-base-300 overflow-hidden"
       >
         {usersList.length === 0 ? (
           <div className="p-16 text-center space-y-2">

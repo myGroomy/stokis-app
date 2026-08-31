@@ -15,7 +15,8 @@ import {
   ExternalLink,
   Zap,
   Folder,
-  FileSpreadsheet
+  FileSpreadsheet,
+  AlertTriangle,
 } from 'lucide-react';
 import { QuantumLoaderFull } from '@/components/ui/QuantumLoader';
 
@@ -44,6 +45,7 @@ export default function CabangAdminPage() {
   const [nomorWa, setNomorWa] = useState<string>('');
   const [saving, setSaving] = useState<boolean>(false);
   const [successInfo, setSuccessInfo] = useState<string>('');
+  const [errorMsg, setErrorMsg] = useState<string>('');
 
   const fetchAllCabang = async () => {
     try {
@@ -55,6 +57,7 @@ export default function CabangAdminPage() {
       }
     } catch (e) {
       console.error('Error fetching all cabang:', e);
+      setErrorMsg('Gagal memuat daftar cabang. Periksa koneksi internet Anda.');
     } finally {
       setLoading(false);
     }
@@ -107,7 +110,7 @@ export default function CabangAdminPage() {
           fetchAllCabang();
           refreshCabangList();
         } else {
-          alert(json.error?.message || 'Gagal mengubah data cabang');
+          setErrorMsg(json.error?.message || 'Gagal mengubah data cabang');
         }
       } else {
         const res = await fetch('/api/cabang', {
@@ -127,11 +130,11 @@ export default function CabangAdminPage() {
           fetchAllCabang();
           refreshCabangList();
         } else {
-          alert(json.error?.message || 'Gagal membuat cabang baru');
+          setErrorMsg(json.error?.message || 'Gagal membuat cabang baru');
         }
       }
     } catch (err: any) {
-      alert('Error: ' + err.message);
+      setErrorMsg('Error: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -147,7 +150,7 @@ export default function CabangAdminPage() {
       fetchAllCabang();
       refreshCabangList();
     } catch (err: any) {
-      alert('Error: ' + err.message);
+      setErrorMsg('Error: ' + err.message);
     }
   };
 
@@ -197,6 +200,14 @@ export default function CabangAdminPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {errorMsg && (
+        <div className="alert alert-error text-sm" role="alert">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          <span>{errorMsg}</span>
+          <button onClick={() => { setErrorMsg(''); fetchAllCabang(); }} className="btn btn-ghost btn-xs">Coba Lagi</button>
+        </div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 8 }}

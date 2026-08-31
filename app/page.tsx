@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/AuthContext";
-import { useRouter } from "next/navigation";
+import { useCabang } from "@/lib/CabangContext";
 import {
   ClipboardCheck,
   FileText,
@@ -14,6 +14,13 @@ import {
   ChevronRight,
   Package,
   ArrowRight,
+  ArrowUpRight,
+  AlertCircle,
+  TrendingUp,
+  Store,
+  Clock,
+  Calendar,
+  CheckCircle2,
 } from "lucide-react";
 
 const features = [
@@ -78,13 +85,6 @@ const steps = [
 
 export default function HomePage() {
   const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && user) {
-      router.replace("/so/input");
-    }
-  }, [user, loading, router]);
 
   if (loading) {
     return (
@@ -97,8 +97,14 @@ export default function HomePage() {
     );
   }
 
-  if (user) return null;
+  if (!user) {
+    return <MarketingLanding />;
+  }
 
+  return <UserHome />;
+}
+
+function MarketingLanding() {
   return (
     <main className="overflow-x-hidden w-full max-w-full bg-base-100">
       {/* Hero */}
@@ -556,3 +562,301 @@ export default function HomePage() {
     </main>
   );
 }
+
+interface HomeLaporan {
+  Laporan_ID: string;
+  Sesi_ID: string;
+  Tanggal_Operasional: string;
+  Shift: string;
+  Petugas: string;
+  Waktu_Dibuat: string;
+  Link_PDF: string;
+  Jumlah_Kritis: number;
+  Jumlah_Hampir_Habis: number;
+  Status_Kirim_WA: string;
+}
+
+interface DashboardData {
+  totalTransaksi: number;
+  kritis: number;
+  hampirHabis: number;
+  aman: number;
+  detail: unknown[];
+}
+
+function formatWaktu(value: string): string {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return String(value);
+  return d.toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+const quickActions = [
+  {
+    href: "/so/input",
+    icon: ClipboardCheck,
+    title: "Input SO",
+    desc: "Catat stock opname baru",
+    color: "text-primary",
+    bg: "bg-primary/10",
+  },
+  {
+    href: "/laporan",
+    icon: FileText,
+    title: "Laporan",
+    desc: "Lihat & kirim laporan SO",
+    color: "text-info",
+    bg: "bg-info/10",
+  },
+  {
+    href: "/dashboard/harian",
+    icon: BarChart3,
+    title: "Dashboard",
+    desc: "Analitik stok harian/mingguan",
+    color: "text-success",
+    bg: "bg-success/10",
+  },
+];
+
+function UserHome() {
+  const { user } = useAuth();
+  const { selectedCabang } = useCabang();
+
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [laporan, setLaporan] = useState<HomeLaporan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [laporanLoading, setLaporanLoading] = useState(true);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const isAdmin = user?.role === "admin";
+  const cabang = selectedCabang?.Nama_Cabang || "Semua Cabang";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchAll = async () => {
+      if (!selectedCabang) {
+        setLoading(false);
+        setLaporanLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setLaporanLoading(true);
+      const cabangId = selectedCabang.Cabang_ID;
+
+      const [dashRes, lapRes] = await Promise.all([
+        fetch(`/api/dashboard/harian?cabang=${cabangId}&tanggal=${today}`),
+        fetch(`/api/laporan?cabang=${cabangId}`),
+      ]);
+
+      const dash = await dashRes.json();
+      if (!cancelled && dash.success && dash.data) setData(dash.data);
+
+      const lap = await lapRes.json();
+      if (!cancelled && lap.success && Array.isArray(lap.data)) {
+        setLaporan([...lap.data].reverse().slice(0, 5));
+      }
+
+      if (!cancelled) {
+        setLoading(false);
+        setLaporanLoading(false);
+      }
+    };
+
+    fetchAll();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCabang, today]);
+
+  return (
+    <div className="w-full max-w-6xl mx-auto px-4 py-6 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-semibold text-base-content flex items-center gap-2">
+            <Store className="w-6 h-6 text-primary" />
+            <span>Selamat datang, {user?.nama || "Petugas"} 👋</span>
+          </h1>
+          <p className="text-sm text-base-content/60 mt-1 flex items-center gap-1.5">
+            <span className="badge badge-ghost badge-sm">
+              {isAdmin ? "Admin" : "Petugas"}
+            </span>
+            Cabang: <span className="font-semibold text-base-content">{cabang}</span>
+          </p>
+        </div>
+        <Link
+          href="/so/input"
+          className="btn btn-primary btn-sm"
+        >
+          <ClipboardCheck className="w-4 h-4" />
+          Mulai Input SO
+        </Link>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {quickActions.map((a) => {
+          const Icon = a.icon;
+          return (
+            <Link
+              key={a.href}
+              href={a.href}
+              className="card bg-base-100 border border-base-300 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4"
+            >
+              <div className={`p-3 rounded-lg ${a.bg} ${a.color}`}>
+                <Icon className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-base-content">{a.title}</h3>
+                <p className="text-xs text-base-content/60">{a.desc}</p>
+              </div>
+              <ArrowUpRight className={`w-5 h-5 ${a.color}`} />
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Stock Summary */}
+      {selectedCabang ? (
+        <div className="space-y-4">
+          <h2 className="font-semibold text-base-content flex items-center gap-2 text-base">
+            <TrendingUp className="w-4 h-4 text-primary" />
+            Ringkasan Stok Hari Ini
+          </h2>
+
+          {loading || !data ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="card bg-base-100 border border-base-300 p-5 animate-pulse">
+                  <div className="h-4 w-24 bg-base-200 rounded mb-3" />
+                  <div className="h-8 w-12 bg-base-200 rounded" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="card bg-base-100 border border-base-300 p-5 flex items-center gap-4">
+                <div className="p-3 bg-primary/10 text-primary rounded">
+                  <Package className="w-6 h-6" />
+                </div>
+                <div className="space-y-0.5">
+                  <span className="text-xs text-base-content/60 font-semibold">Total Item Terhitung</span>
+                  <h3 className="text-2xl font-bold text-base-content tabular-nums">
+                    {data?.totalTransaksi || 0}
+                  </h3>
+                </div>
+              </div>
+              <div className="card bg-base-100 border border-base-300 p-5 flex items-center gap-4">
+                <div className="p-3 bg-error/10 text-error rounded">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div className="space-y-0.5">
+                  <span className="text-xs text-base-content/60 font-semibold">Item Status Kritis</span>
+                  <h3 className="text-2xl font-bold text-error tabular-nums">{data?.kritis || 0}</h3>
+                </div>
+              </div>
+              <div className="card bg-base-100 border border-base-300 p-5 flex items-center gap-4">
+                <div className="p-3 bg-warning/10 text-warning rounded">
+                  <TrendingUp className="w-6 h-6" />
+                </div>
+                <div className="space-y-0.5">
+                  <span className="text-xs text-base-content/60 font-semibold">Item Hampir Habis</span>
+                  <h3 className="text-2xl font-bold text-warning tabular-nums">{data?.hampirHabis || 0}</h3>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="alert alert-warning text-sm" role="alert">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>Silakan pilih cabang aktif melalui dropdown di navbar untuk melihat ringkasan stok dan laporan.</span>
+        </div>
+      )}
+
+      {/* Recent Laporan */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-base-content flex items-center gap-2 text-base">
+            <FileText className="w-4 h-4 text-primary" />
+            Laporan Terbaru
+          </h2>
+          <Link href="/laporan" className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1">
+            Lihat semua
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {!selectedCabang ? (
+          <div className="card bg-base-100 border border-base-300 p-8 text-center text-sm text-base-content/60">
+            Pilih cabang untuk melihat laporan terbaru.
+          </div>
+        ) : laporanLoading ? (
+          <div className="card bg-base-100 border border-base-300 p-6 animate-pulse space-y-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-12 bg-base-200 rounded" />
+            ))}
+          </div>
+        ) : laporan.length === 0 ? (
+          <div className="card bg-base-100 border border-base-300 p-8 text-center text-sm text-base-content/60">
+            Belum ada laporan stock opname untuk cabang ini.
+          </div>
+        ) : (
+          <div className="card bg-base-100 border border-base-300 overflow-hidden">
+            <div className="divide-y divide-base-300">
+              {laporan.map((l) => (
+                <div key={l.Laporan_ID} className="flex items-center gap-3 px-4 py-3 hover:bg-base-200 transition-colors">
+                  <div className="p-2 rounded-lg bg-base-200 text-base-content/60 flex-shrink-0">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm text-base-content truncate">
+                      {l.Petugas || "Petugas"}
+                    </div>
+                    <div className="text-xs text-base-content/60 flex items-center gap-1.5">
+                      <Calendar className="w-3 h-3 inline" />
+                      {formatWaktu(l.Waktu_Dibuat)}
+                      {l.Shift ? (
+                        <>
+                          <span>·</span>
+                          <span className="badge badge-ghost badge-xs">{l.Shift}</span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {l.Jumlah_Kritis > 0 && (
+                      <span className="badge badge-error badge-sm">{l.Jumlah_Kritis} Kritis</span>
+                    )}
+                    {l.Jumlah_Hampir_Habis > 0 && (
+                      <span className="badge badge-warning badge-sm">{l.Jumlah_Hampir_Habis} HH</span>
+                    )}
+                    <span
+                      className={`badge badge-outline badge-sm ${
+                        l.Status_Kirim_WA === "Sent"
+                          ? "text-success border-success/40"
+                          : "text-base-content/40 border-base-300"
+                      }`}
+                    >
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      {l.Status_Kirim_WA === "Sent" ? "WA" : "-"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+

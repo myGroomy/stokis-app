@@ -100,6 +100,7 @@ export default function DashboardHarianPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [chartType, setChartType] = useState<ChartType>('bar');
+  const [errorMsg, setErrorMsg] = useState<string>('');
 
   const fetchDashboard = async () => {
     if (!selectedCabang) return;
@@ -112,6 +113,7 @@ export default function DashboardHarianPage() {
       }
     } catch (e) {
       console.error('Error fetching dashboard:', e);
+      setErrorMsg('Gagal memuat data dashboard. Periksa koneksi internet Anda.');
     } finally {
       setLoading(false);
     }
@@ -132,10 +134,17 @@ export default function DashboardHarianPage() {
 
   const chartData = useMemo(() => {
     if (!data?.detail) return [];
+    const themeColor = (varName: string) => {
+      try {
+        return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+      } catch {
+        return '';
+      }
+    };
     return [
-      { name: 'Kritis', value: data.kritis, color: '#CA3521' },
-      { name: 'Hampir Habis', value: data.hampirHabis, color: '#B38600' },
-      { name: 'Aman', value: data.aman, color: '#216E4E' },
+      { name: 'Kritis', value: data.kritis, color: themeColor('--er') || '#CA3521' },
+      { name: 'Hampir Habis', value: data.hampirHabis, color: themeColor('--wa') || '#B38600' },
+      { name: 'Aman', value: data.aman, color: themeColor('--su') || '#216E4E' },
     ];
   }, [data]);
 
@@ -145,8 +154,10 @@ export default function DashboardHarianPage() {
 
   if (!data) {
     return (
-      <div className="p-12 text-center card bg-base-100 border border-base-300">
-        <p className="text-base-content/60 text-sm">Gagal memuat data dashboard.</p>
+      <div className="p-12 text-center card bg-base-100 border border-base-300 space-y-4">
+        <AlertCircle className="w-10 h-10 text-error mx-auto" />
+        <p className="text-base-content/60 text-sm">{errorMsg || 'Gagal memuat data dashboard.'}</p>
+        <button onClick={fetchDashboard} className="btn btn-primary btn-sm">Coba Lagi</button>
       </div>
     );
   }
@@ -173,7 +184,7 @@ export default function DashboardHarianPage() {
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-base-content flex items-center gap-2">
+          <h1 data-onboard="dashboard-heading" className="text-xl sm:text-2xl font-semibold text-base-content flex items-center gap-2">
             <BarChart3 className="w-6 h-6 text-primary" />
             <span>Dashboard Analitik Harian</span>
           </h1>

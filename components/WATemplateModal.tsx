@@ -45,6 +45,11 @@ ${data.linkPDF}
     });
   };
 
+  const waBase = typeof window !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    ? 'whatsapp://send'
+    : 'https://wa.me/';
+  const waHref = `${waBase}?text=${encodeURIComponent(templateText)}`;
+
   if (!isOpen) return null;
 
   return (
@@ -141,7 +146,7 @@ ${data.linkPDF}
             Tutup
           </button>
           <a
-            href={`https://wa.me/?text=${encodeURIComponent(templateText)}`}
+            href={waHref}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 btn btn-success gap-2 min-h-[42px]"

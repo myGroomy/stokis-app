@@ -30,6 +30,16 @@ import { QuantumLoaderFull } from '@/components/ui/QuantumLoader';
 
 type ChartType = 'bar' | 'line' | 'area';
 
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+function formatDateShort(iso: string): string {
+  if (!iso) return iso;
+  const [y, m, d] = iso.split('-');
+  if (!y || !m || !d) return iso;
+  const month = MONTHS_SHORT[parseInt(m, 10) - 1] || m;
+  return `${parseInt(d, 10)} ${month}`;
+}
+
 interface DailyStats {
   date: string;
   count: number;
@@ -117,6 +127,7 @@ export default function DashboardMingguanPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [chartType, setChartType] = useState<ChartType>('bar');
+  const [errorMsg, setErrorMsg] = useState<string>('');
 
   const fetchDashboard = async () => {
     if (!selectedCabang) return;
@@ -129,6 +140,7 @@ export default function DashboardMingguanPage() {
       }
     } catch (e) {
       console.error('Error fetching weekly dashboard:', e);
+      setErrorMsg('Gagal memuat data tren. Periksa koneksi internet Anda.');
     } finally {
       setLoading(false);
     }
@@ -164,8 +176,10 @@ export default function DashboardMingguanPage() {
 
   if (!data) {
     return (
-      <div className="p-12 text-center card bg-base-100 border border-base-300">
-        <p className="text-base-content/60 text-sm">Gagal memuat data tren.</p>
+      <div className="p-12 text-center card bg-base-100 border border-base-300 space-y-4">
+        <Activity className="w-10 h-10 text-error mx-auto" />
+        <p className="text-base-content/60 text-sm">{errorMsg || 'Gagal memuat data tren.'}</p>
+        <button onClick={fetchDashboard} className="btn btn-primary btn-sm">Coba Lagi</button>
       </div>
     );
   }
@@ -256,7 +270,7 @@ export default function DashboardMingguanPage() {
         <div className="space-y-1">
           <span className="text-sm text-base-content/60 font-semibold">Total Item Terhitung pada Periode Ini</span>
           <h2 className="text-3xl font-bold text-base-content tabular-nums">{data.totalTransaksi || 0} Transaksi</h2>
-          <p className="text-sm text-base-content/60 tabular-nums">Periode: {data.dari} hingga {data.sampai}</p>
+          <p className="text-sm text-base-content/60 tabular-nums">Periode: {formatDateShort(data.dari)} hingga {formatDateShort(data.sampai)}</p>
         </div>
         <div className="p-4 bg-primary/10 text-primary rounded">
           <Activity className="w-8 h-8" />
@@ -306,7 +320,7 @@ export default function DashboardMingguanPage() {
                 transition={{ delay: 0.05 * i }}
                 className="p-4 bg-base-200 border border-base-300 rounded text-center space-y-1"
               >
-                <span className="text-xs text-base-content/60 block tabular-nums">{day.date}</span>
+                <span className="text-xs text-base-content/60 block tabular-nums">{formatDateShort(day.date)}</span>
                 <span className="text-2xl font-bold text-primary tabular-nums block">{day.count}</span>
                 <div className="flex items-center justify-center gap-2 text-[10px] text-base-content/60 mt-1">
                   <span className="badge badge-error badge-xs">{day.kritis}K</span>

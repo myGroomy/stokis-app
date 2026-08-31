@@ -30,6 +30,7 @@ export default function KonfirmasiLaporanPage() {
   const [updatingWa, setUpdatingWa] = useState<boolean>(false);
   const [waSent, setWaSent] = useState<boolean>(false);
   const [showWATemplate, setShowWATemplate] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string>('');
 
   useEffect(() => {
     if (!selectedCabang || !laporanId) return;
@@ -48,6 +49,7 @@ export default function KonfirmasiLaporanPage() {
         }
       } catch (e) {
         console.error('Error fetching WhatsApp link:', e);
+        setErrorMsg('Gagal memuat detail laporan. Periksa koneksi internet Anda.');
       } finally {
         setLoading(false);
       }
@@ -77,6 +79,32 @@ export default function KonfirmasiLaporanPage() {
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-3">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
         <p className="text-base-content/60 text-sm tracking-wide">Menyiapkan laporan PDF...</p>
+      </div>
+    );
+  }
+
+  if (!loading && !laporan) {
+    return (
+      <div className="max-w-2xl mx-auto py-10 px-4">
+        <div className="alert alert-error text-sm" role="alert">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+          <span>{errorMsg || 'Gagal memuat detail laporan.'}</span>
+          <button
+            onClick={() => { setErrorMsg(''); setLoading(true); window.location.reload(); }}
+            className="btn btn-ghost btn-xs"
+          >
+            Coba Lagi
+          </button>
+        </div>
+        <div className="pt-4 text-sm">
+          <Link
+            href="/laporan"
+            className="inline-flex items-center gap-1.5 text-base-content/60 hover:text-base-content font-semibold transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Riwayat Laporan</span>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -140,9 +168,9 @@ export default function KonfirmasiLaporanPage() {
                 href={laporan.Link_PDF}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn gap-2 px-5 py-3 min-h-[44px]"
+                className="btn btn-primary gap-2 px-5 py-3 min-h-[44px]"
               >
-                <FileText className="w-4 h-4 text-primary" />
+                <FileText className="w-4 h-4" />
                 <span>Buka File PDF Drive</span>
                 <ExternalLink className="w-4 h-4" />
               </a>
@@ -159,7 +187,7 @@ export default function KonfirmasiLaporanPage() {
           </div>
 
           {waSent && (
-            <div className="alert alert-success text-sm py-2 mt-2">
+            <div className="alert alert-success text-sm py-2 mt-2" role="alert">
               <CheckCircle2 className="w-4 h-4" />
               <span>Status laporan telah diperbarui: Sudah Dikirim</span>
             </div>
@@ -194,7 +222,7 @@ export default function KonfirmasiLaporanPage() {
             tanggal={laporan.Tanggal_Operasional}
             shift={laporan.Shift}
             petugas={laporan.Petugas}
-            totalItem={laporan.Jumlah_Kritis + laporan.Jumlah_Hampir_Habis + (laporan.Detail?.length || 0)}
+            totalItem={laporan.Detail?.length || 0}
             jumlahKritis={laporan.Jumlah_Kritis}
             jumlahHampirHabis={laporan.Jumlah_Hampir_Habis}
             linkPDF={laporan.Link_PDF || ''}

@@ -718,7 +718,7 @@ export default function InputSOPage() {
                 <ClipboardCheck className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold tracking-tight text-base-content">
+                <h1 data-onboard="so-input-heading" className="text-lg font-semibold tracking-tight text-base-content">
                   Formulir Input Stock Opname
                 </h1>
                 <p className="text-sm text-base-content/60">
@@ -740,6 +740,7 @@ export default function InputSOPage() {
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 className="rounded-lg px-4 py-3 text-sm flex items-center gap-2 bg-error/10 border border-error/30 text-error"
+                role="alert"
               >
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{errorMsg}</span>
@@ -751,6 +752,7 @@ export default function InputSOPage() {
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 className="rounded-lg px-4 py-3 text-sm flex items-center gap-2 bg-success/10 border border-success/30 text-success"
+                role="alert"
               >
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
                 <span>{submitResult}</span>
@@ -760,7 +762,7 @@ export default function InputSOPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Tanggal Operasional */}
-            <div className="space-y-1.5">
+            <div data-onboard="so-tanggal" className="space-y-1.5">
               <label className="text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
                 <Calendar className="w-3.5 h-3.5 text-primary" />
                 <span>Tanggal Operasional</span>
@@ -775,7 +777,7 @@ export default function InputSOPage() {
             </div>
 
             {/* Shift */}
-            <div className="space-y-1.5">
+            <div data-onboard="so-shift" className="space-y-1.5">
               <label className="text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
                 <Clock className="w-3.5 h-3.5 text-primary" />
                 <span>Shift Kerja</span>
@@ -791,7 +793,7 @@ export default function InputSOPage() {
             </div>
 
             {/* Petugas — dari login, read-only */}
-            <div className="space-y-1.5">
+            <div data-onboard="so-petugas" className="space-y-1.5">
               <label className="text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
                 <User className="w-3.5 h-3.5 text-primary" />
                 <span>Petugas</span>
@@ -807,7 +809,7 @@ export default function InputSOPage() {
           </div>
 
           {/* Previous SO Reference Selector */}
-          <div className="space-y-1.5">
+          <div data-onboard="so-previous" className="space-y-1.5">
             <div className="flex items-center gap-1.5">
               <label className="text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
                 <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
@@ -858,7 +860,7 @@ export default function InputSOPage() {
         >
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Search */}
-            <div className="relative flex-1">
+            <div data-onboard="so-search" className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/50" />
               <input
                 type="text"
@@ -884,7 +886,7 @@ export default function InputSOPage() {
             </div>
 
             {/* Area Filter */}
-            <div className="relative">
+            <div data-onboard="so-area" className="relative">
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-base-content/50" />
               <select
                 value={selectedArea}
@@ -989,7 +991,7 @@ export default function InputSOPage() {
                       >
                         {/* Item header: name, satuan, threshold, status */}
                         <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="text-[9px] font-bold tabular-nums px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                          <span className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded bg-primary/10 text-primary">
                             {globalIndexMap[item.Item_ID]}
                           </span>
                           <span className="font-extrabold text-[13px] text-base-content">
@@ -1010,7 +1012,7 @@ export default function InputSOPage() {
                         <div className="grid grid-cols-3 sm:grid-cols-6 gap-1">
                           {/* ── SO SEBELUMNYA (read-only) ── */}
                           <div>
-                            <span className="block text-[7px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
+                            <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
                               S1
                             </span>
                             <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-md">
@@ -1018,7 +1020,7 @@ export default function InputSOPage() {
                             </div>
                           </div>
                           <div>
-                            <span className="block text-[7px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
+                            <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
                               S2
                             </span>
                             <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-md">
@@ -1026,7 +1028,7 @@ export default function InputSOPage() {
                             </div>
                           </div>
                           <div>
-                            <span className="block text-[7px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
+                            <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
                               Tot
                             </span>
                             <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content rounded-md">
@@ -1036,7 +1038,7 @@ export default function InputSOPage() {
 
                           {/* ── SO SEKARANG (editable) ── */}
                           <div>
-                            <span className="block text-[7px] mb-0 font-semibold uppercase tracking-wide text-primary text-center">
+                            <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-primary text-center">
                               S1
                             </span>
                             <input
@@ -1046,11 +1048,12 @@ export default function InputSOPage() {
                               placeholder="0"
                               value={step1Val}
                               onChange={(e) => handleCountChange(item.Item_ID, 'step1', e.target.value)}
+                              data-onboard="so-step"
                               className="w-full h-8 px-1 text-center text-[11px] font-bold tabular-nums input input-bordered rounded-md"
                             />
                           </div>
                           <div>
-                            <span className="block text-[7px] mb-0 font-semibold uppercase tracking-wide text-primary text-center">
+                            <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-primary text-center">
                               S2
                             </span>
                             <input
@@ -1064,7 +1067,7 @@ export default function InputSOPage() {
                             />
                           </div>
                           <div>
-                            <span className="block text-[7px] mb-0 font-semibold uppercase tracking-wide text-base-content/60 text-center">
+                            <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/60 text-center">
                               Tot
                             </span>
                             <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-primary/10 border border-primary/30 rounded-md">
@@ -1082,7 +1085,7 @@ export default function InputSOPage() {
                               SO Sebelumnya: {prev.tanggal} ({prev.shift})
                             </span>
                           )}
-                          <div className="relative flex-1 min-w-[160px]">
+                          <div data-onboard="so-keterangan" className="relative flex-1 min-w-[160px]">
                             <StickyNote
                               className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-base-content/50"
                             />
@@ -1105,7 +1108,7 @@ export default function InputSOPage() {
         )}
 
         {/* Floating Action Bar */}
-        <div className="sticky bottom-4 z-40 card bg-base-100 border border-base-300 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+        <div data-onboard="so-submit" className="sticky bottom-4 z-40 card bg-base-100 border border-base-300 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
           <div className="space-y-0.5">
             <span className="text-xs font-medium text-base-content/60">
               Selesaikan sesi pencatatan
@@ -1136,7 +1139,7 @@ export default function InputSOPage() {
       </form>
 
       {/* Floating navigation rail - always visible on the right */}
-      <div className="fixed right-3 sm:right-4 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2">
+      <div data-onboard="so-navrail" className="fixed right-3 sm:right-4 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2">
         <button
           type="button"
           onClick={scrollToFirstItem}

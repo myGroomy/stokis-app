@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { CabangProvider } from '@/lib/CabangContext';
 import { AuthProvider } from '@/lib/AuthContext';
+import { TourProvider } from '@/lib/TourContext';
 import { AuthGuard } from '@/components/AuthGuard';
 import { Navbar } from '@/components/Navbar';
 
@@ -32,10 +33,12 @@ export default function RootLayout({
         <AuthProvider>
           <CabangProvider>
             <AuthGuard>
-              <Navbar />
-              <main className="flex-1 w-full overflow-x-hidden">
-                {children}
-              </main>
+              <TourProvider>
+                <Navbar />
+                <main className="flex-1 w-full overflow-x-hidden">
+                  {children}
+                </main>
+              </TourProvider>
             </AuthGuard>
           </CabangProvider>
         </AuthProvider>

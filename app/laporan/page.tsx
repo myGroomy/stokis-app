@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCabang } from '@/lib/CabangContext';
@@ -13,10 +13,11 @@ import {
   Clock,
   User,
   ShieldAlert,
-  Loader2,
-  Filter
+  Filter,
+  AlertTriangle,
 } from 'lucide-react';
 import { WATemplateModal } from '@/components/WATemplateModal';
+import { QuantumLoaderFull } from '@/components/ui/QuantumLoader';
 
 interface LaporanItem {
   Laporan_ID: string;
@@ -53,6 +54,15 @@ export default function LaporanPage() {
   const [filterTanggal, setFilterTanggal] = useState<string>('');
   const [filterShift, setFilterShift] = useState<string>('');
   const [filterPetugas, setFilterPetugas] = useState<string>('');
+  const [debouncedPetugas, setDebouncedPetugas] = useState<string>('');
+  const [errorMsg, setErrorMsg] = useState<string>('');
+
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handlePetugasChange = (value: string) => {
+    setFilterPetugas(value);
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => setDebouncedPetugas(value), 300);
+  };
 
   const [showWATemplate, setShowWATemplate] = useState<boolean>(false);
   const [selectedLaporan, setSelectedLaporan] = useState<LaporanItem | null>(null);
@@ -65,16 +75,17 @@ export default function LaporanPage() {
         cabang: selectedCabang.Cabang_ID,
         ...(filterTanggal ? { tanggal: filterTanggal } : {}),
         ...(filterShift ? { shift: filterShift } : {}),
-        ...(filterPetugas ? { petugas: filterPetugas } : {}),
+        ...(debouncedPetugas ? { petugas: debouncedPetugas } : {}),
       });
 
       const res = await fetch(`/api/laporan?${query.toString()}`);
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
-        setLaporanList(json.data.reverse());
+        setLaporanList([...json.data].reverse());
       }
     } catch (e) {
       console.error('Error fetching laporan:', e);
+      setErrorMsg('Gagal memuat laporan. Periksa koneksi internet Anda.');
     } finally {
       setLoading(false);
     }
@@ -82,7 +93,7 @@ export default function LaporanPage() {
 
   useEffect(() => {
     fetchLaporan();
-  }, [selectedCabang, filterTanggal, filterShift, filterPetugas]);
+  }, [selectedCabang, filterTanggal, filterShift, debouncedPetugas]);
 
   if (!selectedCabang) {
     return (
@@ -129,6 +140,14 @@ export default function LaporanPage() {
           </div>
         </motion.div>
 
+        {errorMsg && (
+          <div className="alert alert-error text-sm" role="alert">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            <span>{errorMsg}</span>
+            <button onClick={() => { setErrorMsg(''); fetchLaporan(); }} className="btn btn-ghost btn-xs">Coba Lagi</button>
+          </div>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -173,7 +192,7 @@ export default function LaporanPage() {
               type="text"
               placeholder="Ketik nama petugas..."
               value={filterPetugas}
-              onChange={(e) => setFilterPetugas(e.target.value)}
+              onChange={(e) => handlePetugasChange(e.target.value)}
               className="input input-bordered w-full min-h-[42px] text-sm"
             />
           </div>
@@ -186,10 +205,7 @@ export default function LaporanPage() {
           className="card bg-base-100 border border-base-300 overflow-hidden"
         >
           {loading ? (
-            <div className="p-16 text-center">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
-              <p className="text-sm text-base-content/60">Memuat arsip laporan...</p>
-            </div>
+            <QuantumLoaderFull text="Memuat arsip laporan" />
           ) : laporanList.length === 0 ? (
             <div className="p-16 text-center space-y-2">
               <FileText className="w-12 h-12 mx-auto text-base-content/30" />

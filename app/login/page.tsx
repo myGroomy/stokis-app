@@ -75,8 +75,7 @@ export default function LoginPage() {
     const result = await login(username.trim(), pin);
     setSubmitting(false);
     if (result.success) {
-      router.push("/");
-      router.refresh();
+      router.push("/so/input");
     } else {
       setError(result.error || "Login gagal");
       setDigits(Array(PIN_LENGTH).fill(""));
@@ -125,13 +124,15 @@ export default function LoginPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Masukkan username"
                 autoComplete="username"
+                autoFocus
                 className="input input-bordered w-full min-h-[42px] text-sm"
               />
             </motion.div>
 
             <motion.div
+              key={error ? 'shake' : 'idle'}
               initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
+              animate={error ? { x: [-8, 8, -6, 6, -3, 3, 0], opacity: 1 } : { opacity: 1, x: 0 }}
               transition={{ duration: 0.3, delay: 0.2 }}
             >
               <label className="block text-xs font-semibold mb-2 text-base-content/70">
@@ -151,6 +152,7 @@ export default function LoginPage() {
                     value={d}
                     onChange={(e) => handleDigitChange(i, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(i, e)}
+                    aria-label={`PIN digit ${i + 1}`}
                     className="input input-bordered w-12 h-13 text-center text-lg font-bold font-mono tabular-nums px-0"
                   />
                 ))}
@@ -164,6 +166,7 @@ export default function LoginPage() {
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                   className="alert alert-error text-sm py-2"
+                  role="alert"
                 >
                   <span>{error}</span>
                 </motion.div>

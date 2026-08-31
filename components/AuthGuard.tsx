@@ -14,14 +14,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F7F8F9]">
+      <div className="min-h-screen flex items-center justify-center bg-base-200">
         <div className="flex flex-col items-center gap-3">
           <img
             src="/logo.jpg"
             alt="Stokis"
             className="w-12 h-12 rounded-lg shadow-sm object-cover animate-pulse"
           />
-          <div className="w-5 h-5 border-2 border-[#1868DB] border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       </div>
     );

@@ -16,7 +16,8 @@ import {
   CheckCircle2,
   Trash2,
   Search,
-  Filter
+  Filter,
+  AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -58,6 +59,7 @@ export default function MasterItemPage() {
     Threshold: 0,
   });
   const [savingItem, setSavingItem] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string>('');
 
   const [editingThreshold, setEditingThreshold] = useState<string | null>(null);
   const [tempThreshold, setTempThreshold] = useState<number>(0);
@@ -76,6 +78,7 @@ export default function MasterItemPage() {
       }
     } catch (e) {
       console.error('Error fetching master items:', e);
+      setErrorMsg('Gagal memuat data barang. Periksa koneksi internet Anda.');
     } finally {
       setLoading(false);
     }
@@ -113,10 +116,10 @@ export default function MasterItemPage() {
         });
         fetchItems();
       } else {
-        alert(json.error?.message || 'Gagal menambahkan master item');
+        setErrorMsg(json.error?.message || 'Gagal menambahkan master item');
       }
     } catch (err: any) {
-      alert('Error: ' + err.message);
+      setErrorMsg('Error: ' + err.message);
     } finally {
       setSavingItem(false);
     }
@@ -139,7 +142,7 @@ export default function MasterItemPage() {
         fetchItems();
       }
     } catch (err: any) {
-      alert('Gagal mengubah threshold: ' + err.message);
+      setErrorMsg('Gagal mengubah threshold: ' + err.message);
     }
   };
 
@@ -159,12 +162,13 @@ export default function MasterItemPage() {
         fetchItems();
       }
     } catch (err: any) {
-      alert('Gagal mengubah status item: ' + err.message);
+      setErrorMsg('Gagal mengubah status item: ' + err.message);
     }
   };
 
   const areas = useMemo(() => {
     const areaSet = new Set(items.map(i => i.Area || 'Area Umum'));
+    if (areaSet.size === 0) DEFAULT_AREAS.forEach(a => areaSet.add(a));
     return Array.from(areaSet).sort();
   }, [items]);
 
@@ -218,6 +222,14 @@ export default function MasterItemPage() {
           <span>Tambah Item Baru</span>
         </button>
       </motion.div>
+
+      {errorMsg && (
+        <div className="alert alert-error text-sm" role="alert">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          <span>{errorMsg}</span>
+          <button onClick={() => { setErrorMsg(''); fetchItems(); }} className="btn btn-ghost btn-xs">Coba Lagi</button>
+        </div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 8 }}
@@ -458,7 +470,7 @@ export default function MasterItemPage() {
                       onChange={(e) => setNewItem({ ...newItem, Area: e.target.value })}
                       className="select select-bordered w-full text-sm"
                     >
-                      {DEFAULT_AREAS.map((a) => (
+                      {areas.map((a) => (
                         <option key={a} value={a}>{a}</option>
                       ))}
                     </select>

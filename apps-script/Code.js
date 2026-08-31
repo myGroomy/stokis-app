@@ -81,12 +81,12 @@ function routeAction_(action, cabangId, payload, params) {
     case 'submitSO':             return jsonResponse_({ success: true, data: submitSO(cabangId, payload) });
     case 'getPreviousSO':        return jsonResponse_({ success: true, data: getPreviousSO(cabangId) });
     // Laporan
-    case 'searchLaporan':        return jsonResponse_({ success: true, data: searchLaporan(cabangId, params) });
+    case 'searchLaporan':        return jsonResponse_({ success: true, data: searchLaporan(cabangId, payload) });
     case 'getShareWhatsAppLink': return jsonResponse_({ success: true, data: getShareWhatsAppLink(cabangId, payload.laporanId) });
     case 'updateStatusKirimWA':  return jsonResponse_({ success: true, data: updateStatusKirimWA(cabangId, payload.laporanId) });
     // Dashboard
-    case 'getDashboardHarian':   return jsonResponse_({ success: true, data: getDashboardHarian(cabangId, params.tanggal) });
-    case 'getDashboardMingguan': return jsonResponse_({ success: true, data: getDashboardMingguan(cabangId, params.dari, params.sampai) });
+    case 'getDashboardHarian':   return jsonResponse_({ success: true, data: getDashboardHarian(cabangId, payload.tanggal) });
+    case 'getDashboardMingguan': return jsonResponse_({ success: true, data: getDashboardMingguan(cabangId, payload.dari, payload.sampai) });
 
     default:
       throw ApiError_('invalid_action', 'Action tidak dikenal: ' + action);

@@ -93,7 +93,9 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
       try {
         const res = await uploadPdfToDrive(folderId, fileName, buffer);
         pdfLink = res.webViewLink || res.downloadUrl;
-      } catch { /* fallback */ }
+      } catch (err) {
+        console.error('[Regenerate] PDF Drive upload gagal:', err);
+      }
     }
     if (!pdfLink) {
       const origin = req.nextUrl?.origin || process.env.APP_URL || '';
@@ -180,7 +182,9 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
       try {
         const res = await uploadXlsxToDrive(folderId, xlsxFileName, Buffer.from(xlsxBuffer));
         xlsxLink = res.webViewLink || res.downloadUrl;
-      } catch { /* fallback */ }
+      } catch (err) {
+        console.error('[Regenerate] XLSX Drive upload gagal:', err);
+      }
     }
     if (!xlsxLink) {
       const origin = req.nextUrl?.origin || process.env.APP_URL || '';

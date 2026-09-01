@@ -139,7 +139,8 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
       const res = await uploadXlsxToDrive(folderId, fileName, Buffer.from(xlsxBuffer));
       xlsxLink = res.webViewLink || res.downloadUrl;
     }
-  } catch {
+  } catch (err) {
+    console.error('[XLSX] Drive upload gagal, fallback ke xlsx-file:', err);
     xlsxLink = '';
   }
 

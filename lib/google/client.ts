@@ -45,7 +45,7 @@ export function getDriveClient() {
   const auth = new google.auth.JWT({
     email: clientEmail,
     key: privateKey,
-    scopes: ['https://www.googleapis.com/auth/drive.file'],
+    scopes: ['https://www.googleapis.com/auth/drive'],
   });
   cachedDrive = google.drive({ version: 'v3', auth });
   return cachedDrive;

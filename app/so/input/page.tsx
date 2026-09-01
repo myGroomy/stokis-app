@@ -560,6 +560,7 @@ export default function InputSOPage() {
             shift: formState.shift,
             petugas: formState.petugas,
             items: formState.items,
+            previousSOInfo,
           }),
         });
         const laporanJson = await laporanRes.json().catch(() => null);

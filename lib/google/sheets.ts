@@ -129,6 +129,7 @@ export async function appendRows(
 /**
  * Pastikan sebuah sheet dengan judul tertentu ada di spreadsheet.
  * Bila belum ada, buat sheet baru lalu tulis baris header.
+ * Bila sudah ada tapi baris header-nya beda, perbarui header agar konsisten.
  */
 export async function ensureSheet(
   spreadsheetId: string,
@@ -143,13 +144,27 @@ export async function ensureSheet(
   const exists = (meta.data.sheets || []).some(
     (s) => s.properties?.title === sheetTitle
   );
-  if (exists) return;
 
-  await sheets.spreadsheets.batchUpdate({
+  if (!exists) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [{ addSheet: { properties: { title: sheetTitle } } }],
+      },
+    });
+    await writeRow(spreadsheetId, `${sheetTitle}!A1`, headers);
+    return;
+  }
+
+  const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    requestBody: {
-      requests: [{ addSheet: { properties: { title: sheetTitle } } }],
-    },
+    range: `${sheetTitle}!A1`,
   });
-  await writeRow(spreadsheetId, `${sheetTitle}!A1`, headers);
+  const current = (res.data.values?.[0] || []).map((h) => String(h).trim());
+  const needsUpdate =
+    current.length !== headers.length ||
+    current.some((h, i) => h !== headers[i]);
+  if (needsUpdate) {
+    await writeRow(spreadsheetId, `${sheetTitle}!A1`, headers);
+  }
 }

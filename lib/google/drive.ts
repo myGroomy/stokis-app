@@ -1,6 +1,7 @@
 // lib/google/drive.ts
 // Operasi Google Drive API v3 — pengganti DriveApp di Google Apps Script.
 
+import { PassThrough } from 'stream';
 import { getDriveClient } from './client';
 
 /**
@@ -14,6 +15,9 @@ export async function uploadPdfToDrive(
   buffer: Buffer
 ): Promise<{ fileId: string; webViewLink: string; downloadUrl: string }> {
   const drive = getDriveClient();
+  const bodyStream = new PassThrough();
+  bodyStream.end(buffer);
+
   const res = await drive.files.create({
     requestBody: {
       name: fileName,
@@ -22,9 +26,10 @@ export async function uploadPdfToDrive(
     },
     media: {
       mimeType: 'application/pdf',
-      body: buffer,
+      body: bodyStream,
     },
     fields: 'id,webViewLink,name',
+    supportsAllDrives: true,
   });
 
   const fileId = res.data.id;
@@ -38,9 +43,10 @@ export async function uploadPdfToDrive(
     await drive.permissions.create({
       fileId,
       requestBody: { role: 'reader', type: 'anyone' },
+      supportsAllDrives: true,
     });
   } catch {
-    // abaikan; file tetap di Drive namun hanya bisa diakses akun yang berhak
+    // abaikan; file tetap di Drive namun link mungkin butuh akses terpisah
   }
 
   return { fileId, webViewLink, downloadUrl };

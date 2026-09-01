@@ -32,13 +32,26 @@ export const POST = withAuth(async (req: NextRequest, _ctx, session) => {
   const guard = assertCabangAccess(session, cabangId);
   if (guard) return guard;
 
+  const rawPreviousSOInfo =
+    body.previousSOInfo &&
+    typeof body.previousSOInfo === 'object' &&
+    !Array.isArray(body.previousSOInfo)
+      ? (body.previousSOInfo as { tanggal?: unknown; shift?: unknown })
+      : null;
+
   const payload = {
     sesiId,
     tanggalOperasional: body.tanggalOperasional || '',
     shift: body.shift || '',
     petugas: body.petugas || '',
     items: Array.isArray(body.items) ? body.items : [],
-    linkPdf: body.linkPdf || '',
+    linkPdf: typeof body.linkPdf === 'string' ? body.linkPdf : '',
+    previousSOInfo: rawPreviousSOInfo
+      ? {
+          tanggal: String(rawPreviousSOInfo.tanggal || ''),
+          shift: String(rawPreviousSOInfo.shift || ''),
+        }
+      : null,
   };
 
   const result = await callAppsScript('saveLaporan', cabangId, payload);

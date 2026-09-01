@@ -24,11 +24,13 @@ interface SaveLaporanPayload {
   petugas?: string;
   items?: SaveLaporanItem[];
   linkPdf?: string;
+  previousSOInfo?: { tanggal?: string; shift?: string } | null;
 }
 
 interface SaveLaporanItem {
   itemId?: string;
   namaBarang?: string;
+  satuan?: string;
   area?: string;
   threshold?: number;
   step1?: unknown;
@@ -37,6 +39,8 @@ interface SaveLaporanItem {
   prevStep1?: number | null;
   prevStep2?: number | null;
   prevTotal?: number | null;
+  prevTanggal?: string | null;
+  prevShift?: string | null;
 }
 
 /**
@@ -98,6 +102,7 @@ export async function saveLaporan(
     shift,
     petugas: payload.petugas || '',
     items: payload.items || [],
+    previousSOInfo: payload.previousSOInfo || null,
   });
 
   return { status: 'success', sesiId, laporanId, rows_written: 1 };
@@ -107,8 +112,8 @@ export const LAPORAN_DETAIL_SHEET = 'Laporan_SO';
 
 const LAPORAN_DETAIL_HEADERS = [
   'Laporan_ID', 'Tanggal_Operasional', 'Shift', 'Petugas',
-  'Nama_Barang', 'Area',
-  'Prev_Step1', 'Prev_Step2', 'Prev_Total',
+  'Item_ID', 'Nama_Barang', 'Area', 'Satuan', 'Threshold',
+  'Prev_Step1', 'Prev_Step2', 'Prev_Total', 'Prev_Tanggal', 'Prev_Shift',
   'Step1', 'Step2', 'Total',
   'Penggunaan', 'Keterangan', 'Status',
 ];
@@ -121,10 +126,14 @@ async function saveLaporanDetail(
     shift: string;
     petugas: string;
     items: SaveLaporanItem[];
+    previousSOInfo?: { tanggal?: string; shift?: string } | null;
   }
 ): Promise<void> {
   const { spreadsheetId } = await resolveCabang(cabangId);
   await ensureSheet(spreadsheetId, LAPORAN_DETAIL_SHEET, LAPORAN_DETAIL_HEADERS);
+
+  const prevTanggal = data.previousSOInfo?.tanggal || '';
+  const prevShift = data.previousSOInfo?.shift || '';
 
   const rows: unknown[][] = (data.items || []).map((it) => {
     const step1 = Number(it.step1) || 0;
@@ -139,11 +148,16 @@ async function saveLaporanDetail(
       data.tanggalOperasional,
       data.shift,
       data.petugas,
+      it.itemId || '',
       it.namaBarang || '',
       it.area || '',
+      it.satuan || '',
+      threshold || null,
       it.prevStep1 != null ? Number(it.prevStep1) : null,
       it.prevStep2 != null ? Number(it.prevStep2) : null,
       prevTotal,
+      (it.prevTanggal || prevTanggal) as string | null,
+      (it.prevShift || prevShift) as string | null,
       step1,
       step2,
       total,

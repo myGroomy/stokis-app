@@ -135,9 +135,13 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
 
   try {
     const { folderId } = await resolveCabang(cabangId);
+    console.log(`[XLSX] cabangId=${cabangId}, folderId=${folderId}`);
     if (folderId) {
       const res = await uploadXlsxToDrive(folderId, fileName, Buffer.from(xlsxBuffer));
       xlsxLink = res.webViewLink || res.downloadUrl;
+      console.log(`[XLSX] Drive upload sukses: ${xlsxLink}`);
+    } else {
+      console.log('[XLSX] folderId kosong, skip Drive upload');
     }
   } catch (err) {
     console.error('[XLSX] Drive upload gagal, fallback ke xlsx-file:', err);

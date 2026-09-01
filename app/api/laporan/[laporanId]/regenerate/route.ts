@@ -1,12 +1,11 @@
 // app/api/laporan/[laporanId]/regenerate/route.ts
-// Regenerate PDF & XLSX untuk laporan yang sudah ada berdasarkan data di Laporan_SO.
+// Regenerate XLSX untuk laporan yang sudah ada berdasarkan data di Laporan_SO.
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, assertCabangAccess } from '@/lib/auth';
 import { resolveCabang } from '@/lib/google/registry';
 import { uploadFileToGASDrive } from '@/lib/appsscript';
-import { updateLaporanPdfLink, updateLaporanXlsxLink, getLaporanById, getLaporanDetail } from '@/lib/domain/laporan-service';
-import { generateSOReportPdf, type SOReportItem } from '@/lib/domain/pdf-report';
-import { generateXlsxReport } from '@/lib/domain/xlsx-report';
+import { updateLaporanXlsxLink, getLaporanById, getLaporanDetail } from '@/lib/domain/laporan-service';
+import { generateXlsxReport, type XlsxItem } from '@/lib/domain/xlsx-report';
 
 export const POST = withAuth(async (req: NextRequest, { params }, session) => {
   const { laporanId } = await params;
@@ -50,8 +49,8 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
   const petugas = String(laporan['Petugas'] || '');
   const sesiId = String(laporan['Sesi_ID'] || '');
 
-  // 4. Map detail rows to SOReportItem[]
-  const items: SOReportItem[] = detailRows.map((r) => ({
+  // 4. Map detail rows to XlsxItem[]
+  const items: XlsxItem[] = detailRows.map((r) => ({
     itemId: String(r['Item_ID'] || ''),
     namaBarang: String(r['Nama_Barang'] || ''),
     satuan: String(r['Satuan'] || ''),
@@ -63,8 +62,6 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
     prevStep1: r['Prev_Step1'] != null && r['Prev_Step1'] !== '' ? Number(r['Prev_Step1']) : null,
     prevStep2: r['Prev_Step2'] != null && r['Prev_Step2'] !== '' ? Number(r['Prev_Step2']) : null,
     prevTotal: r['Prev_Total'] != null && r['Prev_Total'] !== '' ? Number(r['Prev_Total']) : null,
-    prevTanggal: r['Prev_Tanggal'] ? String(r['Prev_Tanggal']) : null,
-    prevShift: r['Prev_Shift'] ? String(r['Prev_Shift']) : null,
   }));
 
   const previousSOInfo = {
@@ -72,11 +69,11 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
     shift: detailRows[0]?.['Prev_Shift'] ? String(detailRows[0]['Prev_Shift']) : '',
   };
 
-  const results: { pdf?: string; xlsx?: string; error?: string } = {};
+  const results: { xlsx?: string; error?: string } = {};
 
-  // 5. Generate PDF
+  // 5. Generate XLSX
   try {
-    const { buffer, fileName } = await generateSOReportPdf({
+    const { buffer, fileName } = await generateXlsxReport({
       laporanId,
       cabangNama,
       cabangKode,
@@ -85,38 +82,6 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
       petugas,
       items,
       previousSOInfo,
-      waktuDibuat: new Date(),
-    });
-
-    let pdfLink = '';
-    if (folderId) {
-      try {
-        const res = await uploadFileToGASDrive({ folderId, fileName, mimeType: 'application/pdf', buffer: Buffer.from(buffer) });
-        pdfLink = res.webViewLink || res.downloadUrl;
-      } catch (err) {
-        console.error('[Regenerate] PDF GAS upload gagal:', err);
-      }
-    }
-    if (!pdfLink) {
-      const origin = req.nextUrl?.origin || process.env.APP_URL || '';
-      pdfLink = `${origin}/api/so/${encodeURIComponent(laporanId)}/pdf-file?cabang=${encodeURIComponent(cabangId)}`;
-    }
-    await updateLaporanPdfLink(cabangId, sesiId || laporanId, laporanId, pdfLink);
-    results.pdf = pdfLink;
-  } catch (err) {
-    results.error = 'PDF: ' + (err instanceof Error ? err.message : String(err));
-  }
-
-  // 6. Generate XLSX
-  try {
-    const { buffer, fileName } = generateXlsxReport({
-      laporanId,
-      cabangNama,
-      cabangKode,
-      tanggalOperasional,
-      shift,
-      petugas,
-      items,
     });
 
     let xlsxLink = '';
@@ -135,7 +100,7 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
     await updateLaporanXlsxLink(cabangId, sesiId || laporanId, laporanId, xlsxLink);
     results.xlsx = xlsxLink;
   } catch (err) {
-    results.error = (results.error ? results.error + '; ' : '') + 'XLSX: ' + (err instanceof Error ? err.message : String(err));
+    results.error = 'XLSX: ' + (err instanceof Error ? err.message : String(err));
   }
 
   return NextResponse.json({ success: true, data: results });

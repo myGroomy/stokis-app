@@ -1,6 +1,6 @@
 # Stokis - Multi-Branch Stock Opname System
 
-Stokis is a modern, serverless Next.js web application designed to streamline daily stock opname (inventory counting) operations across multiple branch locations. It integrates directly with Google Sheets as its primary database and uses Google Drive for automated PDF report generation and storage, eliminating the need for traditional database servers.
+Stokis is a modern, serverless Next.js web application designed to streamline daily stock opname (inventory counting) operations across multiple branch locations. It integrates directly with Google Sheets as its primary database and uses Google Drive for automated XLSX report generation and storage, eliminating the need for traditional database servers.
 
 > **Branch `without-gas`**: Versi terbaru tanpa Google Apps Script. Seluruh logika bisnis dijalankan sebagai TypeScript di Vercel, langsung mengakses Google Sheets API + Drive API via Service Account.
 
@@ -15,7 +15,7 @@ Stokis is a modern, serverless Next.js web application designed to streamline da
 | **Input SO** | Form pencatatan per item dengan Step 1 & Step 2 counting |
 | **Previous SO Comparison** | Bandingkan stok sekarang vs sebelumnya |
 | **Threshold Monitoring** | Status otomatis: Kritis / Hampir Habis / Aman |
-| **PDF Reports** | Generate PDF dengan comparison table, urut berdasarkan status kritis |
+| **XLSX Reports** | Generate berkas Excel (.xlsx) dengan tabel perbandingan SO sebelumnya vs sekarang, status warna otomatis, dan tanggal dd/mm/yyyy |
 | **WhatsApp Template** | Copy template pesan WA untuk laporan |
 | **Dashboard** | Grafik harian & mingguan (bar/line/area) |
 | **Master Item** | Kelola item, threshold, dan area penempatan |
@@ -34,7 +34,7 @@ Banyak bisnis retail/kafe/F&B kesulitan dengan:
 Stokis menyelesaikan ini dengan:
 - **Google Sheets sebagai database** - Gratis, real-time, familiar
 - **Auto-clone template** - Tambah cabang dalam hitungan detik
-- **PDF Auto-generate** - Langsung simpan ke Drive folder per cabang
+- **XLSX Auto-generate** - Langsung buat berkas Excel bergaya Mochikin (ExcelJS) & simpan ke Drive folder per cabang
 - **Visual dashboard** - Langsung lihat mana item kritis
 
 ---
@@ -48,7 +48,8 @@ Charts:      Recharts (Bar/Line/Area toggle)
 Icons:       Lucide React
 Backend:     Next.js API Routes → lib/domain/* → lib/google/*
 Database:    Google Sheets API v4 (per cabang)
-File Storage: Google Drive API v3 (PDF reports)
+File Storage: Google Drive API v3 (XLSX reports)
+Excel Engine: ExcelJS (styled sheets with headers, color badges, freeze panes)
 Auth:        Custom PIN-based auth (admin/petugas)
 ```
 
@@ -153,6 +154,39 @@ Buka http://localhost:3000
 
 ---
 
+## Deployment Guide (Vercel)
+
+Aplikasi ini dapat di-deploy dengan mudah ke **Vercel** karena arsitekturnya murni serverless (Next.js App Router).
+
+### 1. Persiapan Repository
+Pastikan seluruh perubahan telah dipush ke repository GitHub/GitLab Anda.
+
+### 2. Hubungkan ke Vercel
+1. Buka [Vercel Dashboard](https://vercel.com/dashboard)
+2. Klik **Add New...** > **Project**
+3. Pilih repository `stokis`
+4. Framework Preset: **Next.js**
+
+### 3. Konfigurasi Environment Variables
+Di bagian **Environment Variables**, tambahkan variabel berikut:
+
+| Key | Value Contoh | Deskripsi |
+|-----|--------------|-----------|
+| `STOKIS_API_KEY` | `stk_a2f79d3...` | Key rahasia untuk sesi auth (min 32 karakter) |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | `stokis-service@xxx.iam.gserviceaccount.com` | Email Service Account GCP |
+| `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` | `"-----BEGIN PRIVATE KEY-----\n..."` | Private Key dari file JSON GCP (pastikan newline `\n` ter-escape dengan benar) |
+| `REGISTRY_SPREADSHEET_ID` | `1aBcDeFgHiJk...` | ID Google Sheet Registry utama |
+| `APP_URL` | `https://stokis-yourproject.vercel.app` | (Opsional) URL publik aplikasi untuk link fallback XLSX |
+
+### 4. Deploy
+1. Klik **Deploy**
+2. Tunggu proses build selesai (~1-2 menit)
+3. Aplikasi siap digunakan di URL publik Vercel!
+
+> **Penting untuk Production:** Pastikan seluruh spreadsheet cabang dan registry Google Sheets sudah di-share ke `GOOGLE_SERVICE_ACCOUNT_EMAIL` dengan hak akses **Editor**.
+
+---
+
 ## User Guide
 
 ### Login
@@ -166,12 +200,13 @@ Buka http://localhost:3000
 4. (Opsional) Tambah keterangan untuk item tertentu
 5. Klik "Simpan & Buat Laporan"
 6. Review popup ringkasan > Konfirmasi
-7. PDF otomatis terbuka, data tersimpan di Sheets
+7. Berkas XLSX otomatis dibuat dan tersimpan ke Google Drive
 
 ### Lihat Laporan
 1. Menu **Laporan** - list semua SO per cabang
-2. Klik tombol **WhatsApp** > Copy template pesan
-3. Paste ke WhatsApp group/manager
+2. Klik tombol **XLSX** untuk mengunduh/membuka file Excel
+3. Klik tombol **WhatsApp** > Salin template pesan yang sudah berisi link XLSX
+4. Paste ke WhatsApp group/manager
 
 ### Dashboard
 - **Harian**: Grafik distribusi status (Kritis/Hampir Habis/Aman)

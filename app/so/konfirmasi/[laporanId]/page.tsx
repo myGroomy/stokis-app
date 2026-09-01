@@ -7,15 +7,12 @@ import { useParams } from 'next/navigation';
 import { useCabang } from '@/lib/CabangContext';
 import {
   CheckCircle2,
-  FileText,
   Share2,
   ExternalLink,
   ArrowLeft,
   PlusCircle,
   Loader2,
-  ShieldCheck,
   AlertTriangle,
-  Send,
   Table,
   RefreshCw
 } from 'lucide-react';
@@ -90,7 +87,6 @@ export default function KonfirmasiLaporanPage() {
       if (json.success && json.data) {
         setLaporan((prev: any) => ({
           ...prev,
-          Link_PDF: json.data.pdf || prev?.Link_PDF || '',
           Link_XLSX: json.data.xlsx || prev?.Link_XLSX || '',
         }));
       } else {
@@ -107,7 +103,7 @@ export default function KonfirmasiLaporanPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-3">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
-        <p className="text-base-content/60 text-sm tracking-wide">Menyiapkan laporan PDF...</p>
+        <p className="text-base-content/60 text-sm tracking-wide">Menyiapkan laporan XLSX...</p>
       </div>
     );
   }
@@ -157,7 +153,7 @@ export default function KonfirmasiLaporanPage() {
               Stock Opname Berhasil Disimpan
             </h1>
             <p className="text-base-content/60 text-sm max-w-md mx-auto">
-              Data transaksi telah tercatat di spreadsheet cabang dan berkas PDF telah tersimpan di Google Drive.
+              Data transaksi telah tercatat di spreadsheet cabang dan berkas XLSX telah tersimpan di Google Drive.
             </p>
           </div>
 
@@ -192,25 +188,12 @@ export default function KonfirmasiLaporanPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-            {laporan?.Link_PDF && (
-              <a
-                href={laporan.Link_PDF}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary gap-2 px-5 py-3 min-h-[44px]"
-              >
-                <FileText className="w-4 h-4" />
-                <span>Buka File PDF</span>
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            )}
-
             {laporan?.Link_XLSX && (
               <a
                 href={laporan.Link_XLSX}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn btn-secondary gap-2 px-5 py-3 min-h-[44px]"
+                className="btn btn-primary gap-2 px-5 py-3 min-h-[44px]"
               >
                 <Table className="w-4 h-4" />
                 <span>Buka File XLSX</span>
@@ -239,7 +222,7 @@ export default function KonfirmasiLaporanPage() {
               ) : (
                 <RefreshCw className="w-3.5 h-3.5" />
               )}
-              <span>{regenerating ? 'Memproses...' : 'Buat Ulang File (PDF & XLSX)'}</span>
+              <span>{regenerating ? 'Memproses...' : 'Buat Ulang File XLSX'}</span>
             </button>
           </div>
 
@@ -282,7 +265,6 @@ export default function KonfirmasiLaporanPage() {
             totalItem={laporan.Detail?.length || 0}
             jumlahKritis={laporan.Jumlah_Kritis}
             jumlahHampirHabis={laporan.Jumlah_Hampir_Habis}
-            linkPDF={laporan.Link_PDF || ''}
             linkXLSX={laporan.Link_XLSX || ''}
           />
         )}

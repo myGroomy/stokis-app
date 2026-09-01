@@ -549,7 +549,7 @@ export default function InputSOPage() {
           : `${rowsWritten} item berhasil disimpan.`
       );
 
-      // Buat catatan laporan secara langsung, terlepas dari PDF Drive,
+      // Buat catatan laporan secara langsung, terlepas dari upload Drive,
       // agar halaman konfirmasi/berbagi selalu punya laporanId yang valid.
       setGenStep('laporan');
       try {
@@ -573,27 +573,6 @@ export default function InputSOPage() {
         }
       } catch {
         // catatan laporan bersifat non-critical; laporanId fallback ke sesiId
-      }
-
-      // Generate PDF (non-critical)
-      setGenStep('pdf');
-      try {
-        await fetch(`/api/so/${laporanId || formState.sesiId}/pdf`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            items: formState.items,
-            cabangId: selectedCabang.Cabang_ID,
-            cabangNama: formState.cabangNama,
-            cabangKode: formState.cabangKode,
-            tanggalOperasional: formState.tanggalOperasional,
-            shift: formState.shift,
-            petugas: formState.petugas,
-            previousSOInfo,
-          }),
-        });
-      } catch {
-        // PDF generation is non-critical
       }
 
       // Generate XLSX (non-critical)
@@ -1114,7 +1093,7 @@ export default function InputSOPage() {
               Selesaikan sesi pencatatan
             </span>
             <p className="text-sm font-semibold text-base-content">
-              Laporan PDF akan dibuat & link Drive siap dibagikan
+              Laporan XLSX akan dibuat & link Drive siap dibagikan
             </p>
           </div>
 

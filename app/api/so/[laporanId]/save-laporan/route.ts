@@ -1,6 +1,6 @@
 // app/api/so/[laporanId]/save-laporan/route.ts
 // Menyimpan catatan laporan ke Laporan_PDF secara langsung dari payload,
-// terlepas dari keberhasilan generate PDF Drive, sehingga halaman
+// terlepas dari keberhasilan upload Drive, sehingga halaman
 // konfirmasi/berbagi selalu punya laporanId yang valid.
 import { NextRequest, NextResponse } from 'next/server';
 import { callAppsScript } from '@/lib/appsscript';

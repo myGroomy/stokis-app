@@ -125,7 +125,7 @@ export default function CabangAdminPage() {
         });
         const json = await res.json();
         if (json.success) {
-          setSuccessInfo(`Cabang "${namaCabang}" berhasil dibuat secara otomatis dengan spreadsheet Google Sheets dan folder PDF baru.`);
+          setSuccessInfo(`Cabang "${namaCabang}" berhasil dibuat secara otomatis dengan spreadsheet Google Sheets dan folder Drive baru.`);
           setShowModal(false);
           fetchAllCabang();
           refreshCabangList();
@@ -272,7 +272,7 @@ export default function CabangAdminPage() {
                           href={`https://drive.google.com/drive/folders/${c.Folder_Drive_ID}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          title="Buka Folder PDF Google Drive"
+                          title="Buka Folder Google Drive"
                           className="badge badge-primary gap-1 hover:badge-outline transition-colors"
                         >
                           <Folder className="w-3.5 h-3.5" />
@@ -381,7 +381,7 @@ export default function CabangAdminPage() {
                 {!editingCabang && (
                   <div className="alert alert-info text-sm py-2">
                     <Zap className="w-4 h-4 flex-shrink-0" />
-                    <span>Sistem akan menyalin template spreadsheet Google Sheets mandiri dan membuat folder Drive PDF khusus untuk cabang ini.</span>
+                    <span>Sistem akan menyalin template spreadsheet Google Sheets mandiri dan membuat folder Drive khusus untuk cabang ini.</span>
                   </div>
                 )}
 

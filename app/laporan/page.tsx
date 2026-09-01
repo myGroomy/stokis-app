@@ -140,7 +140,6 @@ export default function LaporanPage() {
             item.Laporan_ID === row.Laporan_ID
               ? {
                   ...item,
-                  Link_PDF: json.data.pdf || item.Link_PDF,
                   Link_XLSX: json.data.xlsx || item.Link_XLSX,
                 }
               : item
@@ -310,17 +309,6 @@ export default function LaporanPage() {
                         </span>
                       </td>
                       <td className="px-5 py-4 text-right space-x-2" data-label="Aksi">
-                        {row.Link_PDF && (
-                          <a
-                            href={row.Link_PDF}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="Buka Berkas PDF di Google Drive"
-                            className="btn btn-ghost btn-xs text-base-content/60 hover:text-primary"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
-                        )}
                         {row.Link_XLSX && (
                           <a
                             href={row.Link_XLSX}
@@ -373,7 +361,6 @@ export default function LaporanPage() {
             totalItem={selectedLaporan.Jumlah_Kritis + selectedLaporan.Jumlah_Hampir_Habis}
             jumlahKritis={selectedLaporan.Jumlah_Kritis}
             jumlahHampirHabis={selectedLaporan.Jumlah_Hampir_Habis}
-            linkPDF={selectedLaporan.Link_PDF || ''}
             linkXLSX={selectedLaporan.Link_XLSX || ''}
           />
         )}

@@ -32,9 +32,9 @@ const features = [
   },
   {
     icon: FileText,
-    title: "Laporan PDF Otomatis",
+    title: "Laporan XLSX Otomatis",
     description:
-      "Laporan PDF ter generate otomatis setelah submission. Threshold kritis, warna status, dan distribusi via WhatsApp langsung.",
+      "Laporan XLSX tergenerate otomatis setelah submission. Threshold kritis, warna status, dan distribusi via WhatsApp langsung.",
   },
   {
     icon: BarChart3,
@@ -79,7 +79,7 @@ const steps = [
     number: "3",
     title: "Laporan Otomatis",
     description:
-      "PDF tergenerate otomatis dengan status Kritis/Hampir Habis/Aman. Kirim ke WhatsApp grup cabang dalam satu klik.",
+      "Excel XLSX tergenerate otomatis dengan status Kritis/Hampir Habis/Aman. Kirim ke WhatsApp grup cabang dalam satu klik.",
   },
 ];
 
@@ -124,7 +124,7 @@ function MarketingLanding() {
             Kelola Stok Lebih Cepat, Laporan Lebih Akurat
           </h1>
           <p className="text-base leading-normal mt-5 text-base-content/60 font-medium max-w-xl mx-auto">
-            Satu platform untuk input stock opname, generate laporan PDF, dan
+            Satu platform untuk input stock opname, generate laporan XLSX, dan
             distribusi ke WhatsApp. Terisolasi per cabang, aman, dan mobile
             friendly.
           </p>
@@ -253,7 +253,7 @@ function MarketingLanding() {
           <div className="flex items-center gap-2 whitespace-nowrap animate-marquee">
             {[
               "Input Cepat",
-              "Laporan PDF",
+              "Laporan XLSX",
               "Multi Cabang",
               "Dashboard Analitik",
               "Keamanan SHA-256",
@@ -263,7 +263,7 @@ function MarketingLanding() {
               "Real-time Validation",
               "Threshold Monitoring",
               "Input Cepat",
-              "Laporan PDF",
+              "Laporan XLSX",
               "Multi Cabang",
               "Dashboard Analitik",
               "Keamanan SHA-256",
@@ -327,10 +327,10 @@ function MarketingLanding() {
               <FileText className="w-6 h-6" />
             </div>
             <h3 className="text-lg font-semibold">
-              Laporan PDF Otomatis
+              Laporan XLSX Otomatis
             </h3>
             <p className="text-sm mt-2 opacity-90 leading-relaxed">
-              Laporan PDF ter generate otomatis setelah submission. Threshold
+              Laporan XLSX tergenerate otomatis setelah submission. Threshold
               kritis, warna status (Merah/Hijau), distribusi via WhatsApp langsung
               ke grup cabang.
             </p>
@@ -470,7 +470,7 @@ function MarketingLanding() {
                 },
                 {
                   icon: FileText,
-                  title: "PDF Otomatis",
+                  title: "XLSX Otomatis",
                   desc: "Laporan tergenerate tanpa perlu export manual. Langsung siap kirim.",
                 },
                 {

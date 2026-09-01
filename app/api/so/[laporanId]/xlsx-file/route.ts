@@ -7,30 +7,33 @@ import { readSheetData, sheetToObjects } from '@/lib/google/sheets';
 import * as XLSX from 'xlsx';
 
 function fmtDateValue(v: unknown): string {
-  if (v == null) return '';
-  if (typeof v === 'number') {
-    const ms = Math.round((v - 25569) * 86400000);
-    const d = new Date(ms);
-    if (!Number.isNaN(d.getTime())) {
-      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
-    }
-    return String(v);
+  const d = normalizeDate(v);
+  if (!d) return String(v ?? '');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const year = d.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+/** Normalkan serial number Google Sheets / ISO ke Date (origin 25569 = 1970-01-01). */
+function normalizeDate(v: unknown): Date | null {
+  if (v == null) return null;
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    const d = new Date(Math.round((v - 25569) * 86400000));
+    return Number.isNaN(d.getTime()) ? null : d;
   }
   const s = String(v).trim();
   if (/^\d{5,6}$/.test(s)) {
-    const ms = Math.round((Number(s) - 25569) * 86400000);
-    const d = new Date(ms);
-    if (!Number.isNaN(d.getTime())) {
-      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
-    }
+    const d = new Date(Math.round((Number(s) - 25569) * 86400000));
+    return Number.isNaN(d.getTime()) ? null : d;
   }
-  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (m) return m[0];
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ].*)?$/);
+  if (m) {
+    const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
   const d = new Date(s);
-  if (!Number.isNaN(d.getTime())) {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }
-  return s;
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 function getStatus(step1: number, step2: number, threshold: number): string {
@@ -142,8 +145,9 @@ export async function GET(
 
   const xlsxBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
   const kode = cabangKode.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-  const [yy, mm, dd] = tanggalOperasional.split('-');
-  const tgl = dd && mm && yy ? `${dd}-${mm}-${yy}` : tanggalOperasional;
+  const tgl = /^\d{2}\/\d{2}\/\d{4}$/.test(tanggalOperasional)
+    ? tanggalOperasional.split('/').join('-')
+    : tanggalOperasional;
   const shiftLabel = (shift || 'SO').toUpperCase();
   const petugasLabel = petugas.replace(/[/\\:*?"<>|]/g, '').trim() || 'Petugas';
   const fileName = `${kode} - ${tgl} - ${shiftLabel} - ${petugasLabel}.xlsx`;

@@ -163,7 +163,7 @@ export const ONBOARDING_TOUR: TourDefinition = {
       id: 'so-submit',
       title: 'Simpan & Buat Laporan',
       description:
-        'Setelah semua stok diisi, tekan tombol ini untuk menyimpan dan menghasilkan laporan. File PDF & Excel akan diunduh otomatis.',
+        'Setelah semua stok diisi, tekan tombol ini untuk menyimpan dan menghasilkan laporan. File Excel (XLSX) akan diunduh otomatis.',
       selector: '[data-onboard="so-submit"]',
       placement: 'top',
     },
@@ -171,7 +171,7 @@ export const ONBOARDING_TOUR: TourDefinition = {
       id: 'dashboard',
       title: 'Dashboard & Laporan',
       description:
-        'Halaman Dashboard menampilkan ringkasan stok (kritis, hampir habis, aman) dalam bentuk grafik. Halaman Laporan menyimpan arsip laporan SO yang dapat diunduh sebagai PDF atau dikirim via WhatsApp.',
+        'Halaman Dashboard menampilkan ringkasan stok (kritis, hampir habis, aman) dalam bentuk grafik. Halaman Laporan menyimpan arsip laporan SO yang dapat diunduh sebagai XLSX atau dikirim via WhatsApp.',
       selector: '[data-onboard="dashboard-heading"]',
       placement: 'bottom',
       path: '/dashboard/harian',

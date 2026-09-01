@@ -21,7 +21,7 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
   const guard = assertCabangAccess(session, cabangId);
   if (guard) return guard;
 
-  const { buffer, fileName } = generateXlsxReport({
+  const { buffer, fileName } = await generateXlsxReport({
     laporanId,
     cabangNama,
     cabangKode,
@@ -29,6 +29,7 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
     shift,
     petugas,
     items: Array.isArray(items) ? items : [],
+    previousSOInfo,
   });
 
   // Upload to Drive via GAS

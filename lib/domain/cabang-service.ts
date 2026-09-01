@@ -53,10 +53,10 @@ export async function createCabang(payload: CreateCabangPayload): Promise<{
   });
   const newSpreadsheetId = String(copyRes.data.id || '');
 
-  // 4. Buat folder PDF.
+  // 4. Buat folder Drive untuk laporan cabang.
   const folderRes = await drive.files.create({
     requestBody: {
-      name: 'PDF_' + Nama_Cabang,
+      name: 'Files_' + Nama_Cabang,
       mimeType: 'application/vnd.google-apps.folder',
       parents: [parentFolderId],
     },

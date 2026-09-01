@@ -195,7 +195,7 @@ export async function getShareWhatsAppLink(
   const laporan = rows.find((r) => String(r['Laporan_ID']) === laporanId) as LaporanRow | undefined;
   if (!laporan) throw new ApiError('not_found', 'Laporan ' + laporanId + ' tidak ditemukan');
   const nomorWA = String(cabang['Nomor_WA_Cabang'] || '').replace(/\D/g, '');
-  const teks = `Laporan SO ${cabang['Nama_Cabang'] || ''} - ${formatDate(laporan['Tanggal_Operasional'])} ${laporan['Shift']}\n${laporan['Link_PDF'] || ''}`;
+  const teks = `Laporan SO ${cabang['Nama_Cabang'] || ''} - ${formatDate(laporan['Tanggal_Operasional'])} ${laporan['Shift']}\n${laporan['Link_XLSX'] || ''}`;
   return { waLink: `https://wa.me/${nomorWA}?text=${encodeURIComponent(teks)}`, laporan };
 }
 
@@ -210,27 +210,6 @@ export async function updateStatusKirimWA(
   const rowNumber = found.index + 2; // 1-based, +1 utk header
   await writeRow(spreadsheetId, `Laporan_PDF!J${rowNumber}`, ['Sudah Dikirim']);
   return { laporanId, status: 'Sudah Dikirim' };
-}
-
-/**
- * Simpan link PDF yang sudah di-upload ke Drive ke baris Laporan_PDF.
- * Mencocokkan Sesi_ID (lebih unik) lalu fallback ke Laporan_ID.
- * Kolom G = Link_PDF.
- */
-export async function updateLaporanPdfLink(
-  cabangId: string,
-  sesiId: string,
-  laporanId: string,
-  linkPdf: string
-): Promise<{ updated: boolean }> {
-  const { spreadsheetId } = await resolveCabang(cabangId);
-  const { rows } = await readSheetData(spreadsheetId, 'Laporan_PDF');
-  const bySesi = findRowIndex(rows, 1, sesiId);
-  const targetIndex = bySesi.index !== -1 ? bySesi.index : findRowIndex(rows, 0, laporanId).index;
-  if (targetIndex === -1) return { updated: false };
-  const rowNumber = targetIndex + 2; // 1-based, +1 utk header
-  await writeRow(spreadsheetId, `Laporan_PDF!G${rowNumber}`, [linkPdf]);
-  return { updated: true };
 }
 
 /**

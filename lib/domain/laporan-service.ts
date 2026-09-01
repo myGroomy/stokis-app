@@ -257,3 +257,28 @@ async function readAllRows(spreadsheetId: string, sheetName: string): Promise<Re
   const { headers, rows } = await readSheetData(spreadsheetId, sheetName);
   return sheetToObjects(headers, rows);
 }
+
+/**
+ * Ambil data laporan dari Laporan_PDF berdasarkan Laporan_ID.
+ */
+export async function getLaporanById(
+  cabangId: string,
+  laporanId: string
+): Promise<LaporanRow | null> {
+  const { spreadsheetId } = await resolveCabang(cabangId);
+  const rows = await readAllRows(spreadsheetId, 'Laporan_PDF');
+  return (rows.find((r) => String(r['Laporan_ID']) === laporanId) as unknown as LaporanRow) || null;
+}
+
+/**
+ * Ambil detail item laporan dari Laporan_SO berdasarkan Laporan_ID.
+ */
+export async function getLaporanDetail(
+  cabangId: string,
+  laporanId: string
+): Promise<Record<string, unknown>[]> {
+  const { spreadsheetId } = await resolveCabang(cabangId);
+  const { headers, rows } = await readSheetData(spreadsheetId, LAPORAN_DETAIL_SHEET);
+  const all = sheetToObjects(headers, rows);
+  return all.filter((r) => String(r['Laporan_ID']) === laporanId);
+}

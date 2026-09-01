@@ -16,6 +16,8 @@ import {
   Filter,
   AlertTriangle,
   Table,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { WATemplateModal } from '@/components/WATemplateModal';
 import { QuantumLoaderFull } from '@/components/ui/QuantumLoader';
@@ -68,7 +70,7 @@ export default function LaporanPage() {
 
   const [showWATemplate, setShowWATemplate] = useState<boolean>(false);
   const [selectedLaporan, setSelectedLaporan] = useState<LaporanItem | null>(null);
-
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const fetchLaporan = async () => {
     if (!selectedCabang) return;
     try {
@@ -120,6 +122,36 @@ export default function LaporanPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ cabangId: selectedCabang?.Cabang_ID }),
     });
+  };
+
+  const handleRegenerate = async (row: LaporanItem) => {
+    if (!selectedCabang) return;
+    setRegeneratingId(row.Laporan_ID);
+    try {
+      const res = await fetch(`/api/laporan/${row.Laporan_ID}/regenerate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cabangId: selectedCabang.Cabang_ID }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setLaporanList((prev) =>
+          prev.map((item) =>
+            item.Laporan_ID === row.Laporan_ID
+              ? {
+                  ...item,
+                  Link_PDF: json.data.pdf || item.Link_PDF,
+                  Link_XLSX: json.data.xlsx || item.Link_XLSX,
+                }
+              : item
+          )
+        );
+      }
+    } catch {
+      // silent
+    } finally {
+      setRegeneratingId(null);
+    }
   };
 
   return (
@@ -300,6 +332,18 @@ export default function LaporanPage() {
                             <Table className="w-4 h-4" />
                           </a>
                         )}
+                        <button
+                          onClick={() => handleRegenerate(row)}
+                          disabled={regeneratingId === row.Laporan_ID}
+                          title="Buat Ulang File"
+                          className="btn btn-ghost btn-xs text-base-content/60 hover:text-warning"
+                        >
+                          {regeneratingId === row.Laporan_ID ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-4 h-4" />
+                          )}
+                        </button>
                         <button
                           onClick={() => handleOpenWATemplate(row)}
                           title="Siapkan Pesan WhatsApp"

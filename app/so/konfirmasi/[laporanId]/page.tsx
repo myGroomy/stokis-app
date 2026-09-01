@@ -16,7 +16,8 @@ import {
   ShieldCheck,
   AlertTriangle,
   Send,
-  Table
+  Table,
+  RefreshCw
 } from 'lucide-react';
 import { WATemplateModal } from '@/components/WATemplateModal';
 
@@ -32,7 +33,7 @@ export default function KonfirmasiLaporanPage() {
   const [waSent, setWaSent] = useState<boolean>(false);
   const [showWATemplate, setShowWATemplate] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
-
+  const [regenerating, setRegenerating] = useState<boolean>(false);
   useEffect(() => {
     if (!selectedCabang || !laporanId) return;
 
@@ -72,6 +73,33 @@ export default function KonfirmasiLaporanPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cabangId: selectedCabang?.Cabang_ID }),
       });
+    }
+  };
+
+  const handleRegenerate = async () => {
+    if (!selectedCabang || !laporanId) return;
+    setRegenerating(true);
+    setErrorMsg('');
+    try {
+      const res = await fetch(`/api/laporan/${laporanId}/regenerate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cabangId: selectedCabang.Cabang_ID }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setLaporan((prev: any) => ({
+          ...prev,
+          Link_PDF: json.data.pdf || prev?.Link_PDF || '',
+          Link_XLSX: json.data.xlsx || prev?.Link_XLSX || '',
+        }));
+      } else {
+        setErrorMsg(json.error?.message || 'Gagal regenerate file');
+      }
+    } catch (err) {
+      setErrorMsg('Gagal regenerate: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setRegenerating(false);
     }
   };
 
@@ -197,6 +225,21 @@ export default function KonfirmasiLaporanPage() {
             >
               <Share2 className="w-4 h-4" />
               <span>{waSent ? 'Kirim Ulang ke WhatsApp' : 'Siapkan Pesan WhatsApp'}</span>
+            </button>
+          </div>
+
+          <div className="flex justify-center pt-1">
+            <button
+              onClick={handleRegenerate}
+              disabled={regenerating}
+              className="btn btn-ghost btn-sm gap-2 text-xs"
+            >
+              {regenerating ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5" />
+              )}
+              <span>{regenerating ? 'Memproses...' : 'Buat Ulang File (PDF & XLSX)'}</span>
             </button>
           </div>
 

@@ -63,7 +63,7 @@ function drawTableHeader(
   headerColor: string = '#1868DB'
 ) {
   doc.rect(40, yPos, pageWidth, 14).fill(headerColor);
-  doc.fontSize(7).font('Helvetica-Bold').fillColor('#FFFFFF');
+  doc.fontSize(6).font('Helvetica-Bold').fillColor('#FFFFFF');
   let x = 44;
   for (const [key, width] of Object.entries(cols)) {
     const align = ['step1', 'step2', 'total', 'prevS1', 'prevS2', 'prevT', 'currS1', 'currS2', 'currT', 'penggunaan', 'threshold'].includes(key) ? 'right' : 'left';
@@ -93,11 +93,14 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
     return STATUS_ORDER[getStatus(a)] - STATUS_ORDER[getStatus(b)];
   });
 
-  // Standardized filename: [KODE_CABANG]-[TANGGAL]-[SHIFT]
+  // Standardized filename: [KODE CABANG - SO TGL - OPENING/CLOSING - PETUGAS]
   const kode = (cabangKode || 'CBG').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-  const tgl = (tanggalOperasional || '').replace(/-/g, '');
+  const tglRaw = tanggalOperasional || '';
+  const [yy, mm, dd] = String(tglRaw).split('-');
+  const tgl = dd && mm && yy ? `${dd}-${mm}-${yy}` : String(tglRaw);
   const shiftLabel = (shift || 'SO').toUpperCase();
-  const fileName = `${kode}-${tgl}-${shiftLabel}.pdf`;
+  const petugasLabel = String(petugas || 'Petugas').replace(/[/\\:*?"<>|]/g, '').trim();
+  const fileName = `${kode} - ${tgl} - ${shiftLabel} - ${petugasLabel}.pdf`;
 
   const stream = new PassThrough();
   const doc = new PDFDocument({
@@ -175,35 +178,40 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
   yPos += 14;
 
   // Table columns
-  // | No | Nama Barang | Area | SO LAMA (S1|S2|Tot) | SO BARU (S1|S2|Tot) | Penggunaan | Ket | Status |
+  // | Nama Barang | Area | SO SEBELUMNYA (STEP1|STEP2|TOTAL) | SO SEKARANG (STEP1|STEP2|TOTAL) | Penggunaan | Keterangan |
   // Total width = 515
   const cols = {
-    no: 18,
-    nama: 100,
-    area: 60,
-    prevS1: 24, prevS2: 24, prevT: 28,
-    currS1: 24, currS2: 24, currT: 28,
-    penggunaan: 36,
-    ket: 74,
-    status: 45,
+    nama: 105,
+    area: 52,
+    prevS1: 30, prevS2: 30, prevT: 34,
+    currS1: 30, currS2: 30, currT: 34,
+    penggunaan: 40,
+    ket: 130,
   } as const;
 
   const labels: Record<string, string> = {
-    no: 'No', nama: 'Nama Barang', area: 'Area',
-    prevS1: 'S1', prevS2: 'S2', prevT: 'Tot',
-    currS1: 'S1', currS2: 'S2', currT: 'Tot',
-    penggunaan: 'Pemakaian',
-    ket: 'Keterangan',
-    status: 'Status',
+    nama: 'Nama Barang', area: 'Area',
+    prevS1: 'STEP 1', prevS2: 'STEP 2', prevT: 'TOTAL',
+    currS1: 'STEP 1', currS2: 'STEP 2', currT: 'TOTAL',
+    penggunaan: 'PENGGUNAAN',
+    ket: 'KETERANGAN',
   };
 
-  // Mega-header row (group SO Lama / SO Baru)
-  doc.rect(40, yPos, pageWidth, 11).fill('#172B4D');
-  doc.fontSize(6.5).font('Helvetica-Bold').fillColor('#FFFFFF');
-  const soLamaStartX = 40 + cols.no + cols.nama + cols.area + 4;
-  const soBaStartX = soLamaStartX + cols.prevS1 + cols.prevS2 + cols.prevT;
-  doc.text('SO LAMA', soLamaStartX, yPos + 2, { width: cols.prevS1 + cols.prevS2 + cols.prevT, align: 'center' });
-  doc.text('SO BARU', soBaStartX, yPos + 2, { width: cols.currS1 + cols.currS2 + cols.currT, align: 'center' });
+  const prevGroupW = cols.prevS1 + cols.prevS2 + cols.prevT;
+  const currGroupW = cols.currS1 + cols.currS2 + cols.currT;
+  const prevGroupStartX = 44 + cols.nama + cols.area;
+  const currGroupStartX = prevGroupStartX + prevGroupW;
+  const prevLabel = `SO ${previousSOInfo?.tanggal || '-'} ${(previousSOInfo?.shift || '').toUpperCase()}`.trim();
+  const currLabel = `SO ${tanggalOperasional || '-'} ${(shift || '').toUpperCase()}`.trim();
+
+  // Mega-header row (group SO Sebelumnya / SO Sekarang dengan tanggal & shift)
+  const drawMegaHeader = (yy: number) => {
+    doc.rect(40, yy, pageWidth, 11).fill('#172B4D');
+    doc.fontSize(6.5).font('Helvetica-Bold').fillColor('#FFFFFF');
+    doc.text(prevLabel, prevGroupStartX, yy + 2, { width: prevGroupW, align: 'center' });
+    doc.text(currLabel, currGroupStartX, yy + 2, { width: currGroupW, align: 'center' });
+  };
+  drawMegaHeader(yPos);
   yPos += 11;
 
   // Column header row
@@ -218,10 +226,7 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
       doc.addPage();
       yPos = 40;
       // Redraw group headers on continuation pages
-      doc.rect(40, yPos, pageWidth, 11).fill('#172B4D');
-      doc.fontSize(6.5).font('Helvetica-Bold').fillColor('#FFFFFF');
-      doc.text('SO LAMA', soLamaStartX, yPos + 2, { width: cols.prevS1 + cols.prevS2 + cols.prevT, align: 'center' });
-      doc.text('SO BARU', soBaStartX, yPos + 2, { width: cols.currS1 + cols.currS2 + cols.currT, align: 'center' });
+      drawMegaHeader(yPos);
       yPos += 11;
       yPos = drawTableHeader(doc, yPos, pageWidth, cols, labels, '#44546F');
       doc.fontSize(7).font('Helvetica').fillColor('#172B4D');
@@ -246,19 +251,18 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
     doc.fillColor('#172B4D');
     let x = 44;
 
-    doc.text(String(rowCount + 1), x, yPos + 3, { width: cols.no }); x += cols.no;
     doc.text(item.namaBarang, x, yPos + 3, { width: cols.nama }); x += cols.nama;
     doc.fontSize(6.5).fillColor('#6B778C');
     doc.text(item.area || '-', x, yPos + 3, { width: cols.area }); x += cols.area;
     doc.fontSize(7).fillColor('#44546F');
 
-    // SO Lama
+    // SO Sebelumnya
     doc.text(item.prevStep1 !== null ? String(item.prevStep1) : '-', x, yPos + 3, { width: cols.prevS1, align: 'right' }); x += cols.prevS1;
     doc.text(item.prevStep2 !== null ? String(item.prevStep2) : '-', x, yPos + 3, { width: cols.prevS2, align: 'right' }); x += cols.prevS2;
     doc.font('Helvetica-Bold').text(item.prevTotal !== null ? String(item.prevTotal) : '-', x, yPos + 3, { width: cols.prevT, align: 'right' }); x += cols.prevT;
     doc.font('Helvetica');
 
-    // SO Baru
+    // SO Sekarang
     doc.text(String(item.step1), x, yPos + 3, { width: cols.currS1, align: 'right' }); x += cols.currS1;
     doc.text(String(item.step2), x, yPos + 3, { width: cols.currS2, align: 'right' }); x += cols.currS2;
     doc.font('Helvetica-Bold').fillColor('#172B4D').text(String(total), x, yPos + 3, { width: cols.currT, align: 'right' }); x += cols.currT;
@@ -279,12 +283,7 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
     const ket = item.keterangan || '';
     doc.fontSize(6).fillColor('#44546F').text(ket, x, yPos + 3, { width: cols.ket, lineBreak: false });
     x += cols.ket;
-    doc.fontSize(7);
-
-    // Status badge
-    doc.fontSize(6).font('Helvetica-Bold').fillColor(STATUS_COLOR[status]);
-    doc.text(status, x, yPos + 3, { width: cols.status, align: 'center' });
-    doc.fontSize(7).font('Helvetica').fillColor('#172B4D');
+    doc.fontSize(7).fillColor('#172B4D');
 
     // Bottom border for critical rows
     if (status === 'Kritis') {

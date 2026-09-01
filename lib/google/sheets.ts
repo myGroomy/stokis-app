@@ -125,3 +125,31 @@ export async function appendRows(
     requestBody: { values: rows },
   });
 }
+
+/**
+ * Pastikan sebuah sheet dengan judul tertentu ada di spreadsheet.
+ * Bila belum ada, buat sheet baru lalu tulis baris header.
+ */
+export async function ensureSheet(
+  spreadsheetId: string,
+  sheetTitle: string,
+  headers: string[]
+): Promise<void> {
+  const sheets = getSheetsClient();
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId,
+    fields: 'sheets.properties.title',
+  });
+  const exists = (meta.data.sheets || []).some(
+    (s) => s.properties?.title === sheetTitle
+  );
+  if (exists) return;
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [{ addSheet: { properties: { title: sheetTitle } } }],
+    },
+  });
+  await writeRow(spreadsheetId, `${sheetTitle}!A1`, headers);
+}

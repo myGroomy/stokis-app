@@ -2,7 +2,7 @@
 // Operasi laporan — port dari Laporan.js. Menggunakan Google Sheets API.
 
 import { resolveCabang } from '@/lib/google/registry';
-import { readSheetData, sheetToObjects, findRowIndex, appendRows, writeRow } from '@/lib/google/sheets';
+import { readSheetData, sheetToObjects, findRowIndex, appendRows, writeRow, ensureSheet } from '@/lib/google/sheets';
 import { calculateStatus } from './so';
 import { ApiError } from './errors';
 import { randomToken, buildLaporanId, formatDate } from './ids';
@@ -22,8 +22,21 @@ interface SaveLaporanPayload {
   tanggalOperasional?: string;
   shift?: string;
   petugas?: string;
-  items?: Array<{ step1?: unknown; step2?: unknown; threshold?: unknown }>;
+  items?: SaveLaporanItem[];
   linkPdf?: string;
+}
+
+interface SaveLaporanItem {
+  itemId?: string;
+  namaBarang?: string;
+  area?: string;
+  threshold?: number;
+  step1?: unknown;
+  step2?: unknown;
+  keterangan?: string;
+  prevStep1?: number | null;
+  prevStep2?: number | null;
+  prevTotal?: number | null;
 }
 
 /**
@@ -77,7 +90,72 @@ export async function saveLaporan(
     'Belum Dikirim',
   ]]);
 
+  // Simpan baris detail laporan (perbandingan SO lama vs sekarang) ke sheet
+  // Laporan_SO sebagai data riil, formatnya sama dengan tabel di PDF.
+  await saveLaporanDetail(cabangId, {
+    laporanId,
+    tanggalOperasional: payload.tanggalOperasional || '',
+    shift,
+    petugas: payload.petugas || '',
+    items: payload.items || [],
+  });
+
   return { status: 'success', sesiId, laporanId, rows_written: 1 };
+}
+
+export const LAPORAN_DETAIL_SHEET = 'Laporan_SO';
+
+const LAPORAN_DETAIL_HEADERS = [
+  'Laporan_ID', 'Tanggal_Operasional', 'Shift', 'Petugas',
+  'Nama_Barang', 'Area',
+  'Prev_Step1', 'Prev_Step2', 'Prev_Total',
+  'Step1', 'Step2', 'Total',
+  'Penggunaan', 'Keterangan', 'Status',
+];
+
+async function saveLaporanDetail(
+  cabangId: string,
+  data: {
+    laporanId: string;
+    tanggalOperasional: string;
+    shift: string;
+    petugas: string;
+    items: SaveLaporanItem[];
+  }
+): Promise<void> {
+  const { spreadsheetId } = await resolveCabang(cabangId);
+  await ensureSheet(spreadsheetId, LAPORAN_DETAIL_SHEET, LAPORAN_DETAIL_HEADERS);
+
+  const rows: unknown[][] = (data.items || []).map((it) => {
+    const step1 = Number(it.step1) || 0;
+    const step2 = Number(it.step2) || 0;
+    const total = step1 + step2;
+    const prevTotal = it.prevTotal != null ? Number(it.prevTotal) : null;
+    const penggunaan = prevTotal != null ? prevTotal - total : null;
+    const threshold = Number(it.threshold) || 0;
+    const status = !threshold ? 'Tidak Dipantau' : calculateStatus(total, threshold);
+    return [
+      data.laporanId,
+      data.tanggalOperasional,
+      data.shift,
+      data.petugas,
+      it.namaBarang || '',
+      it.area || '',
+      it.prevStep1 != null ? Number(it.prevStep1) : null,
+      it.prevStep2 != null ? Number(it.prevStep2) : null,
+      prevTotal,
+      step1,
+      step2,
+      total,
+      penggunaan,
+      it.keterangan || '',
+      status,
+    ];
+  });
+
+  if (rows.length > 0) {
+    await appendRows(spreadsheetId, LAPORAN_DETAIL_SHEET, rows);
+  }
 }
 
 export async function searchLaporan(

@@ -598,42 +598,6 @@ export default function InputSOPage() {
         // PDF generation is non-critical
       }
 
-      // Generate Spreadsheet (non-critical)
-      setGenStep('spreadsheet');
-      try {
-        const xlsRes = await fetch(`/api/so/${laporanId || formState.sesiId}/spreadsheet`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            items: formState.items,
-            cabangId: selectedCabang.Cabang_ID,
-            cabangNama: formState.cabangNama,
-            cabangKode: formState.cabangKode,
-            tanggalOperasional: formState.tanggalOperasional,
-            shift: formState.shift,
-            petugas: formState.petugas,
-            previousSOInfo,
-          }),
-        });
-
-        if (xlsRes.ok) {
-          const blob = await xlsRes.blob();
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          const kode = (formState.cabangKode || 'CBG').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-          const tgl = (formState.tanggalOperasional || '').replace(/-/g, '');
-          const shiftLabel = (formState.shift || 'SO').toUpperCase();
-          a.download = `${kode}-${tgl}-${shiftLabel}.xlsx`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }
-      } catch {
-        // Spreadsheet generation is non-critical
-      }
-
       // Submit sukses → hapus draft sementara
       if (selectedCabang) {
         clearDraft(selectedCabang.Cabang_ID);
@@ -1131,7 +1095,7 @@ export default function InputSOPage() {
               Selesaikan sesi pencatatan
             </span>
             <p className="text-sm font-semibold text-base-content">
-              Laporan PDF & Excel akan otomatis diunduh
+              Laporan PDF akan dibuat & link Drive siap dibagikan
             </p>
           </div>
 

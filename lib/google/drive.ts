@@ -31,5 +31,17 @@ export async function uploadPdfToDrive(
   if (!fileId) throw new Error('Gagal membuat file di Google Drive (fileId kosong)');
   const webViewLink = res.data.webViewLink || '';
   const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+
+  // Buka akses "siapa saja dengan link dapat melihat" agar link bisa dibagikan
+  // lewat WhatsApp/e-mail. Best-effort — jika gagal, link tetap tersimpan.
+  try {
+    await drive.permissions.create({
+      fileId,
+      requestBody: { role: 'reader', type: 'anyone' },
+    });
+  } catch {
+    // abaikan; file tetap di Drive namun hanya bisa diakses akun yang berhak
+  }
+
   return { fileId, webViewLink, downloadUrl };
 }

@@ -2,17 +2,17 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Database, FileText, FileSpreadsheet, Share2, CheckCircle2 } from 'lucide-react';
+import { Database, FileText, Share2, CheckCircle2 } from 'lucide-react';
 import { QuantumLoader } from '@/components/ui/QuantumLoader';
 
-export type SOGerStep = 'simpan' | 'laporan' | 'pdf' | 'spreadsheet' | 'selesai';
+export type SOGerStep = 'simpan' | 'laporan' | 'pdf' | 'selesai';
 
 interface SOGeneratingOverlayProps {
   step: SOGerStep;
   texto?: string;
 }
 
-const STEP_ORDER: SOGerStep[] = ['simpan', 'laporan', 'pdf', 'spreadsheet', 'selesai'];
+const STEP_ORDER: SOGerStep[] = ['simpan', 'laporan', 'pdf', 'selesai'];
 
 const STEP_CONFIG: Record<SOGerStep, { label: string; icon: React.ReactNode }> = {
   simpan: {
@@ -26,10 +26,6 @@ const STEP_CONFIG: Record<SOGerStep, { label: string; icon: React.ReactNode }> =
   pdf: {
     label: 'Menyiapkan berkas PDF...',
     icon: <FileText className="w-5 h-5" />,
-  },
-  spreadsheet: {
-    label: 'Menyiapkan berkas Excel...',
-    icon: <FileSpreadsheet className="w-5 h-5" />,
   },
   selesai: {
     label: 'Selesai! Membuka laman berbagi...',

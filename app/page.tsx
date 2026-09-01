@@ -21,6 +21,9 @@ import {
   Clock,
   Calendar,
   CheckCircle2,
+  BookOpen,
+  Info,
+  Calculator,
 } from "lucide-react";
 
 const features = [
@@ -781,6 +784,170 @@ function UserHome() {
           <span>Silakan pilih cabang aktif melalui dropdown di navbar untuk melihat ringkasan stok dan laporan.</span>
         </div>
       )}
+
+      {/* Panduan Penggunaan & Penjelasan Istilah */}
+      <div className="card bg-base-100 border border-base-300 p-5 sm:p-6 space-y-6">
+        <div className="flex items-center gap-3 pb-3 border-b border-base-300">
+          <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
+            <BookOpen className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-base-content text-base">
+              Panduan Penggunaan Aplikasi & Istilah Penting
+            </h2>
+            <p className="text-xs text-base-content/60">
+              Penjelasan lengkap alur kerja, arti S1, S2, Threshold, Pemakaian, dan Status Stok.
+            </p>
+          </div>
+        </div>
+
+        {/* Alur Penggunaan */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-bold text-base-content/60 uppercase tracking-wider flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-primary" />
+            Langkah-Langkah Penggunaan Aplikasi
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            <div className="p-3.5 bg-base-200/50 rounded-xl space-y-1 border border-base-300/50">
+              <div className="font-bold text-primary flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-primary text-primary-content text-[11px] flex items-center justify-center">1</span>
+                <span>Pilih Cabang</span>
+              </div>
+              <p className="text-base-content/70 leading-relaxed">
+                Pilih cabang tempat Anda bertugas dari dropdown di navbar atas. Setiap cabang memiliki data fisik terpisah.
+              </p>
+            </div>
+            <div className="p-3.5 bg-base-200/50 rounded-xl space-y-1 border border-base-300/50">
+              <div className="font-bold text-primary flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-primary text-primary-content text-[11px] flex items-center justify-center">2</span>
+                <span>Buka Form SO</span>
+              </div>
+              <p className="text-base-content/70 leading-relaxed">
+                Klik <strong>Input SO</strong>, tentukan Tanggal Operasional dan Shift (Opening sebelum toko buka, atau Closing tutupan toko).
+              </p>
+            </div>
+            <div className="p-3.5 bg-base-200/50 rounded-xl space-y-1 border border-base-300/50">
+              <div className="font-bold text-primary flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-primary text-primary-content text-[11px] flex items-center justify-center">3</span>
+                <span>Hitung S1 & S2</span>
+              </div>
+              <p className="text-base-content/70 leading-relaxed">
+                Isi jumlah fisik barang di lokasi utama (S1) dan gudang/cadangan (S2). Total dihitung otomatis oleh sistem.
+              </p>
+            </div>
+            <div className="p-3.5 bg-base-200/50 rounded-xl space-y-1 border border-base-300/50">
+              <div className="font-bold text-primary flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-primary text-primary-content text-[11px] flex items-center justify-center">4</span>
+                <span>Simpan & Bagikan</span>
+              </div>
+              <p className="text-base-content/70 leading-relaxed">
+                Klik <strong>Simpan & Buat Laporan</strong>. File Excel XLSX otomatis dibuat & link siap dibagikan ke WhatsApp grup cabang.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Glosarium Istilah */}
+        <div className="space-y-3 pt-2">
+          <h3 className="text-xs font-bold text-base-content/60 uppercase tracking-wider flex items-center gap-1.5">
+            <Info className="w-4 h-4 text-info" />
+            Penjelasan Istilah Utama (S1, S2, Threshold & Pemakaian)
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+            <div className="p-4 border border-base-300 rounded-xl space-y-1.5 bg-base-100">
+              <div className="flex items-center gap-2 font-semibold text-base-content">
+                <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-mono text-[11px] font-bold">S1</span>
+                <span>Step 1 (Hitungan Utama / Display)</span>
+              </div>
+              <p className="text-base-content/70 leading-relaxed">
+                Jumlah fisik barang di area operasional utama (misal: rak pajangan depan toko, meja barista, rak kasir, dsb).
+              </p>
+            </div>
+
+            <div className="p-4 border border-base-300 rounded-xl space-y-1.5 bg-base-100">
+              <div className="flex items-center gap-2 font-semibold text-base-content">
+                <span className="px-2 py-0.5 rounded bg-secondary/10 text-secondary font-mono text-[11px] font-bold">S2</span>
+                <span>Step 2 (Hitungan Gudang / Cadangan)</span>
+              </div>
+              <p className="text-base-content/70 leading-relaxed">
+                Jumlah fisik barang di area penyimpanan cadangan (misal: stok dalam dus di gudang belakang, freezer penyimpanan).
+              </p>
+            </div>
+
+            <div className="p-4 border border-base-300 rounded-xl space-y-1.5 bg-base-100">
+              <div className="flex items-center gap-2 font-semibold text-base-content">
+                <span className="px-2 py-0.5 rounded bg-base-200 font-mono text-[11px] font-bold">Total</span>
+                <span>Total Stok Akhir (S1 + S2)</span>
+              </div>
+              <p className="text-base-content/70 leading-relaxed">
+                Jumlah keseluruhan barang di cabang saat ini. Dihitung otomatis: <code className="bg-base-200 px-1 py-0.5 rounded font-mono text-[11px]">Total = S1 + S2</code>.
+              </p>
+            </div>
+
+            <div className="p-4 border border-base-300 rounded-xl space-y-1.5 bg-base-100">
+              <div className="flex items-center gap-2 font-semibold text-base-content">
+                <span className="px-2 py-0.5 rounded bg-warning/10 text-warning font-mono text-[11px] font-bold">Threshold</span>
+                <span>Batas Minimum Aman</span>
+              </div>
+              <p className="text-base-content/70 leading-relaxed">
+                Batas minimum jumlah barang agar toko tidak kehabisan stok. Ditentukan oleh Admin di menu Master Item.
+              </p>
+            </div>
+
+            <div className="p-4 border border-base-300 rounded-xl space-y-1.5 bg-base-100">
+              <div className="flex items-center gap-2 font-semibold text-base-content">
+                <span className="px-2 py-0.5 rounded bg-info/10 text-info font-mono text-[11px] font-bold">Pemakaian</span>
+                <span>Selisih Stok Terpakai</span>
+              </div>
+              <p className="text-base-content/70 leading-relaxed">
+                Hitungan perkiraan barang terpakai dibanding SO sebelumnya: <code className="bg-base-200 px-1 py-0.5 rounded font-mono text-[11px]">Total SO Lama - Total SO Baru</code>.
+              </p>
+            </div>
+
+            <div className="p-4 border border-base-300 rounded-xl space-y-1.5 bg-base-100">
+              <div className="flex items-center gap-2 font-semibold text-base-content">
+                <span className="px-2 py-0.5 rounded bg-base-200 font-mono text-[11px] font-bold">Shift</span>
+                <span>Sesi Opening / Closing</span>
+              </div>
+              <p className="text-base-content/70 leading-relaxed">
+                <strong>Opening</strong>: Hitungan awal sebelum toko beroperasi.<br />
+                <strong>Closing</strong>: Hitungan akhir saat tutup operasional toko.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Indikator Status Stok */}
+        <div className="p-4 bg-base-200/40 rounded-xl space-y-2.5 border border-base-300/60 text-xs">
+          <span className="font-bold text-base-content flex items-center gap-1.5">
+            <Calculator className="w-3.5 h-3.5 text-primary" />
+            Rumus & Indikator Status Stok Otomatis:
+          </span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="flex items-center gap-2.5 p-2.5 bg-base-100 rounded-lg border border-base-300">
+              <span className="badge badge-error badge-sm font-bold shrink-0">🔴 KRITIS</span>
+              <span className="text-base-content/80 text-[11px]">
+                Total Stok ≤ Threshold <br />
+                <span className="text-base-content/50">(Segera restok barang)</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-2.5 p-2.5 bg-base-100 rounded-lg border border-base-300">
+              <span className="badge badge-warning badge-sm font-bold shrink-0">🟡 HAMPIR HABIS</span>
+              <span className="text-base-content/80 text-[11px]">
+                Total Stok ≤ Threshold × 2 <br />
+                <span className="text-base-content/50">(Siapkan pesanan baru)</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-2.5 p-2.5 bg-base-100 rounded-lg border border-base-300">
+              <span className="badge badge-success badge-sm font-bold shrink-0">🟢 AMAN</span>
+              <span className="text-base-content/80 text-[11px]">
+                Total Stok &gt; Threshold × 2 <br />
+                <span className="text-base-content/50">(Stok mencukupi)</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Recent Laporan */}
       <div className="space-y-4">

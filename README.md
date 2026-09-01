@@ -2,6 +2,8 @@
 
 Stokis is a modern, serverless Next.js web application designed to streamline daily stock opname (inventory counting) operations across multiple branch locations. It integrates directly with Google Sheets as its primary database and uses Google Drive for automated PDF report generation and storage, eliminating the need for traditional database servers.
 
+> **Branch `without-gas`**: Versi terbaru tanpa Google Apps Script. Seluruh logika bisnis dijalankan sebagai TypeScript di Vercel, langsung mengakses Google Sheets API + Drive API via Service Account.
+
 ---
 
 ## What is Stokis?
@@ -44,9 +46,9 @@ Frontend:     Next.js 16 + React 19 + Tailwind CSS 4 + TypeScript
 Animations:  Framer Motion + Custom Quantum Pulse Loader
 Charts:      Recharts (Bar/Line/Area toggle)
 Icons:       Lucide React
-Backend:     Next.js API Routes → Google Apps Script
-Database:    Google Sheets (per cabang)
-File Storage: Google Drive (PDF reports)
+Backend:     Next.js API Routes → lib/domain/* → lib/google/*
+Database:    Google Sheets API v4 (per cabang)
+File Storage: Google Drive API v3 (PDF reports)
 Auth:        Custom PIN-based auth (admin/petugas)
 ```
 
@@ -57,56 +59,93 @@ Auth:        Custom PIN-based auth (admin/petugas)
 ### Prerequisites
 - Node.js 18+ & npm
 - Google Account (untuk Sheets & Drive)
+- Google Cloud Project (untuk Service Account)
 - Code editor (VS Code recommended)
 
 ### Step 1: Clone & Install
 ```bash
 git clone https://github.com/myGroomy/stokis.git
 cd stokis
+git checkout without-gas
 npm install
 ```
 
-### Step 2: Google Apps Script Setup
+### Step 2: Buat Service Account di Google Cloud Console
 
-1. **Buat Google Apps Script Project**
-   - Buka https://script.google.com
-   - Buat project baru
-   - Copy isi file `scripts/clasp/Code.js` (registry + utility functions)
-   - Copy isi `SO.js`, `MasterItem.js`, `Cabang.js`, `PDF.js`, `Laporan.js`, dll sesuai kebutuhan
+1. **Buka Google Cloud Console**
+   - https://console.cloud.google.com
 
-2. **Deploy sebagai Web App**
-   - Klik Deploy → New deployment
-   - Select type: **Web app**
-   - Execute as: **Me**
-   - Who has access: **Anyone** (supaya Next.js bisa call)
-   - Copy **Web App URL**
+2. **Buat Project baru**
+   - Klik project dropdown > **New Project**
+   - Nama: `stokis-backend` (bebas)
+   - Klik **Create**
 
-3. **Buat Template Spreadsheet**
-   - Buat Google Sheet baru
-   - Buat sheet dengan nama:
-     - `Master_Item` (kolom: Item_ID, Nama_Barang, Area, Satuan, Threshold, Aktif)
-     - `SO_Transaksi` (kolom: Transaksi_ID, Timestamp, Tanggal_Operasional, Shift, Item_ID, Nama_Barang, Area, Step1, Step2, Total, Petugas, Sesi_ID, Keterangan)
-     - `Laporan_PDF` (kolom: Laporan_ID, Sesi_ID, Tanggal_Operasional, Shift, Petugas, Waktu_Dibuat, Link_PDF, Jumlah_Kritis, Jumlah_Hampir_Habis, Status_Kirim_WA)
-   - Copy **Spreadsheet ID** dari URL
+3. **Aktifkan API**
+   - Buka https://console.cloud.google.com/apis/library/sheets.googleapis.com → **Enable**
+   - Buka https://console.cloud.google.com/apis/library/drive.googleapis.com → **Enable**
 
-4. **Buat Root Drive Folder**
-   - Buat folder di Google Drive untuk menyimpan folder PDF semua cabang
-   - Copy **Folder ID** dari URL
+4. **Buat Service Account**
+   - Buka https://console.cloud.google.com/iam-admin/serviceaccounts
+   - Klik **Create Service Account**
+   - Nama: `stokis-service` (bebas)
+   - Klik **Create and Continue** > Skip role > **Done**
 
-### Step 3: Environment Variables
-Buat `.env.local` di root folder:
-```env
-# URL dari Step 2.2
-GAS_WEB_APP_URL="https://script.google.com/macros/s/.../exec"
+5. **Generate Key (JSON)**
+   - Klik service account > Tab **Keys** > **Add Key** > **Create new key**
+   - Pilih **JSON** > **Create**
+   - File JSON akan terdownload
 
-# ID dari Step 2.3
-TEMPLATE_SPREADSHEET_ID="1abc...def"
+6. **Catat Email Service Account**
+   - Format: `stokis-service@project-id.iam.gserviceaccount.com`
+   - Email ini akan digunakan untuk share spreadsheet & folder
 
-# ID dari Step 2.4
-ROOT_DRIVE_FOLDER_ID="1xyz...789"
+### Step 3: Buat Registry Spreadsheet
+
+Buat Google Sheet baru sebagai **registry** (source of truth):
+
+| Sheet | Kolom |
+|-------|-------|
+| **Daftar_Cabang** | Cabang_ID, Nama_Cabang, Alamat, Spreadsheet_ID, Folder_Drive_ID, PIC_Nama, Nomor_WA_Cabang, Aktif, Created_At |
+| **Settings_Global** | Key, Value (contoh: Folder_Drive_Induk) |
+| **Template_Referensi** | Kolom A baris 2: Template_Spreadsheet_ID |
+| **Users** | User_ID, Username, PIN (SHA-256 hash), Nama, Role, Cabang_ID, Aktif, Created_At |
+
+Copy **Spreadsheet ID** dari URL:
+```
+https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit
 ```
 
-### Step 4: Run Development Server
+### Step 4: Buat Spreadsheet Cabang & Folder Drive
+
+Untuk setiap cabang:
+1. Buat Google Sheet baru (atau copy dari template) dengan sheet: `Master_Item`, `SO_Transaksi`, `Laporan_PDF`, `Petugas`
+2. Buat folder di Drive untuk menyimpan PDF cabang tersebut
+3. Isi `Spreadsheet_ID` dan `Folder_Drive_ID` di sheet `Daftar_Cabang` di registry
+
+### Step 5: Share Spreadsheet & Folder ke Service Account
+
+**Penting:** Service Account tidak bisa akses spreadsheet/folder yang tidak di-share kepadanya.
+
+Untuk setiap spreadsheet (registry + cabang) dan folder Drive:
+1. Buka spreadsheet/folder
+2. Klik **Share**
+3. Masukkan email Service Account (dari Step 2.6)
+4. Permission: **Editor**
+5. Klik **Send**
+
+### Step 6: Environment Variables
+
+Buat `.env.local` di root folder:
+```env
+STOKIS_API_KEY=stk_a2f79d39a8f24077af8ab723bbef727af5243d67
+GOOGLE_SERVICE_ACCOUNT_EMAIL=stokis-service@project-id.iam.gserviceaccount.com
+GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----"
+REGISTRY_SPREADSHEET_ID=1aBcDeFgHiJkLmNoPqRsTuVwXyZ
+```
+
+> **Note:** Untuk production, set env vars di Vercel Dashboard > Settings > Environment Variables.
+
+### Step 7: Run Development Server
 ```bash
 npm run dev
 ```
@@ -126,12 +165,12 @@ Buka http://localhost:3000
 3. Isi Step 1 & Step 2 per item
 4. (Opsional) Tambah keterangan untuk item tertentu
 5. Klik "Simpan & Buat Laporan"
-6. Review popup ringkasan → Konfirmasi
+6. Review popup ringkasan > Konfirmasi
 7. PDF otomatis terbuka, data tersimpan di Sheets
 
 ### Lihat Laporan
 1. Menu **Laporan** - list semua SO per cabang
-2. Klik tombol **WhatsApp** → Copy template pesan
+2. Klik tombol **WhatsApp** > Copy template pesan
 3. Paste ke WhatsApp group/manager
 
 ### Dashboard
@@ -148,23 +187,36 @@ Buka http://localhost:3000
 ## Architecture
 
 ```
-┌─────────────────┐     ┌──────────────────────┐
-│   Next.js App   │────▶│  Google Apps Script  │
-│   (Frontend)    │     │  (Backend Logic)     │
-└─────────────────┘     └──────────┬───────────┘
-                                  │
-                    ┌─────────────▼─────────────┐
-                    │  Google Sheets API       │
-                    │  (Master_Item,          │
-                    │   SO_Transaksi,         │
-                    │   Laporan_PDF)          │
-                    └─────────────┬─────────────┘
-                                  │
-                    ┌─────────────▼─────────────┐
-                    │  Google Drive API       │
-                    │  (PDF Storage)          │
-                    └─────────────────────────┘
+┌─────────────────────┐
+│   Next.js App       │
+│   (Frontend)        │
+└──────────┬──────────┘
+           │
+┌──────────▼──────────┐     ┌─────────────────────────┐
+│  API Routes         │────▶│  lib/domain/*           │
+│  (Next.js Server)   │     │  (Logika Bisnis)        │
+└─────────────────────┘     └──────────┬──────────────┘
+                                       │
+                            ┌──────────▼──────────────┐
+                            │  lib/google/*           │
+                            │  (Google Sheets API +   │
+                            │   Drive API)            │
+                            └──────────┬──────────────┘
+                                       │
+                   ┌───────────────────┼───────────────────┐
+                   │                   │                   │
+        ┌──────────▼──────────┐ ┌──────▼──────┐ ┌─────────▼────────┐
+        │  Google Sheets API  │ │ Google Drive │ │  Service Account │
+        │  (per cabang)       │ │ (PDF)        │ │  (JWT Auth)      │
+        └─────────────────────┘ └─────────────┘ └──────────────────┘
 ```
+
+**Flow Request:**
+1. Frontend → API Route (Next.js)
+2. API Route → `lib/appsscript.ts` (dispatcher lokal)
+3. Dispatcher → `lib/domain/*` (validasi + logika bisnis)
+4. Domain → `lib/google/*` (Sheets API / Drive API)
+5. Google API → Spreadsheet / Drive (via Service Account JWT)
 
 ---
 
@@ -172,39 +224,78 @@ Buka http://localhost:3000
 
 ```
 stokis/
-├── app/                    # Next.js App Router
-│   ├── api/               # API Routes (proxy ke GAS)
-│   │   ├── so/           # SO CRUD endpoints
-│   │   ├── laporan/       # Laporan endpoints
-│   │   ├── master-item/   # Master item endpoints
-│   │   ├── cabang/        # Branch management
-│   │   └── users/         # User auth
-│   ├── so/input/          # Input SO page
-│   ├── so/konfirmasi/     # Confirmation page
-│   ├── laporan/           # Laporan list page
-│   ├── dashboard/         # Analytics pages
-│   ├── master-item/       # Master item admin
-│   ├── cabang/            # Branch admin
-│   ├── petugas/           # User management
-│   └── login/             # Login page
-├── components/            # React components
-│   ├── ui/               # Reusable UI (QuantumLoader, etc.)
+├── app/                      # Next.js App Router
+│   ├── api/                  # API Routes
+│   │   ├── so/               # SO CRUD + PDF + laporan
+│   │   ├── laporan/          # Laporan endpoints
+│   │   ├── master-item/      # Master item endpoints
+│   │   ├── cabang/           # Branch management
+│   │   ├── petugas/          # Petugas management
+│   │   ├── users/            # User auth
+│   │   └── dashboard/        # Dashboard data
+│   ├── so/input/             # Input SO page
+│   ├── so/konfirmasi/        # Confirmation page
+│   ├── laporan/              # Laporan list page
+│   ├── dashboard/            # Analytics pages
+│   ├── master-item/          # Master item admin
+│   ├── cabang/               # Branch admin
+│   ├── petugas/              # User management
+│   └── login/                # Login page
+├── components/               # React components
+│   ├── ui/                   # Reusable UI (QuantumLoader, etc.)
 │   ├── WATemplateModal.tsx
 │   └── PageTransition.tsx
-├── lib/                   # Utilities
-│   ├── appsscript.ts      # GAS API caller
-│   ├── AuthContext.tsx    # Auth context
-│   ├── CabangContext.tsx   # Branch context
-│   └── utils.ts           # cn() utility
-├── scripts/clasp/         # Google Apps Script files
-│   ├── Code.gs           # Registry & utilities
-│   ├── SO.js             # SO logic
-│   ├── PDF.js            # PDF generation
-│   ├── MasterItem.js     # Item management
-│   └── ...
-├── public/               # Static assets
-└── app/globals.css       # Tailwind + custom animations
+├── lib/
+│   ├── google/               # Google API layer
+│   │   ├── client.ts         # JWT client (Sheets + Drive)
+│   │   ├── sheets.ts         # CRUD dasar Google Sheets API
+│   │   ├── registry.ts       # Resolver cabang + registry
+│   │   └── drive.ts          # Upload PDF ke Google Drive
+│   ├── domain/               # Logika bisnis (port dari GAS)
+│   │   ├── ids.ts            # Generator ID + validasi
+│   │   ├── so.ts             # Konstanta kolom SO + helpers
+│   │   ├── so-validation.ts  # Validasi payload SO
+│   │   ├── errors.ts         # ApiError + helpers
+│   │   ├── so-service.ts     # submitSO, getPreviousSO
+│   │   ├── laporan-service.ts # saveLaporan, searchLaporan, WA link
+│   │   ├── cabang-service.ts  # CRUD cabang + buat cabang baru
+│   │   ├── master-item-service.ts # CRUD master item
+│   │   ├── petugas-service.ts     # CRUD petugas
+│   │   ├── users-service.ts       # Login + CRUD users
+│   │   └── dashboard-service.ts   # Dashboard harian & mingguan
+│   ├── appsscript.ts         # Dispatcher lokal (switch action -> service TS)
+│   ├── AuthContext.tsx        # Auth context
+│   ├── CabangContext.tsx      # Branch context
+│   └── utils.ts              # cn() utility
+├── public/                   # Static assets
+├── app/globals.css           # Tailwind + custom animations
+├── docs/
+│   └── SETUP-WITHOUT-GAS.md  # Panduan setup lengkap
+└── migrasi6.md               # Catatan migrasi GAS -> TS
 ```
+
+---
+
+## Environment Variables
+
+| Variable | Keterangan | Wajib |
+|----------|-----------|-------|
+| `STOKIS_API_KEY` | Secret key untuk signing session (min 32 char) | Ya |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Email Service Account dari GCP | Ya |
+| `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` | Private key dari JSON key SA | Ya |
+| `REGISTRY_SPREADSHEET_ID` | ID spreadsheet registry | Ya |
+
+---
+
+## Troubleshooting
+
+| Error | Solusi |
+|-------|--------|
+| `REGISTRY_SPREADSHEET_ID belum dikonfigurasi` | Set env `REGISTRY_SPREADSHEET_ID` |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL... wajib dikonfigurasi` | Set kedua env Google SA |
+| `CABANG_TIDAK_DITEMUKAN` | Cek `Cabang_ID` di sheet `Daftar_Cabang` |
+| `Spreadsheet_ID kosong` | Isi kolom `Spreadsheet_ID` di registry |
+| Error 403 dari Google API | Share spreadsheet/folder ke email Service Account |
 
 ---
 

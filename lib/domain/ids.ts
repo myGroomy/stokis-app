@@ -78,10 +78,36 @@ export function secureKeyEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-/** format YYYY-MM-DD dari Date, timezone lokal. */
+/** format YYYY-MM-DD dari Date, string tanggal, atau serial number Google Sheets. */
 export function formatDate(date: Date | string | number | null | undefined): string {
-  if (!date) return '';
+  if (date == null || date === '') return '';
+  if (typeof date === 'number' && Number.isFinite(date)) {
+    return formatFromDate(serialToDate(date));
+  }
+  const s = String(date).trim();
+  // Serial number Google Sheets (mis. "46266" = 2026-09-01). V8 me-render
+  // "46266" sebagai TAHUN 46266 bila diparsing sebagai tanggal biasa.
+  if (/^\d{5,6}$/.test(s)) {
+    return formatFromDate(serialToDate(Number(s)));
+  }
+  // ISO YYYY-MM-DD (dengan/ tanpa waktu) — hindari pertukaran timezone.
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ].*)?$/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
   const d = date instanceof Date ? date : new Date(date);
+  return formatFromDate(d.getTime());
+}
+
+/**
+ * Serial number Google Sheets → Date. Origin Excel 1900: 25569 = 1970-01-01.
+ */
+function serialToDate(serial: number): number | null {
+  const ms = Math.round((serial - 25569) * 86400000);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function formatFromDate(ms: number | null | undefined): string {
+  if (ms == null || !Number.isFinite(ms)) return '';
+  const d = new Date(ms);
   if (isNaN(d.getTime())) return '';
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');

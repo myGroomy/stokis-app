@@ -30,6 +30,7 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
     petugas,
     items: (Array.isArray(items) ? items : []) as SOReportItem[],
     previousSOInfo,
+    waktuDibuat: new Date(),
   });
 
   // Catat link PDF ke Laporan_PDF — SELALU dicatat, baik berhasil upload ke

@@ -34,6 +34,7 @@ interface PrevItem {
   shift: string;
   petugas: string;
   keterangan: string;
+  waktu: string;
 }
 
 export interface PreviousSOResult {
@@ -42,6 +43,7 @@ export interface PreviousSOResult {
     tanggal: string;
     shift: string;
     petugas: string;
+    waktu: string;
   } | null;
   items: Record<string, PrevItem>;
   history: Array<{
@@ -49,6 +51,7 @@ export interface PreviousSOResult {
     tanggal: string;
     shift: string;
     petugas: string;
+    waktu: string;
     items: Record<string, PrevItem>;
   }>;
 }
@@ -63,6 +66,19 @@ async function readAllRows(
 
 function fmtDate(v: unknown): string {
   return formatDate(String(v ?? ''));
+}
+
+/** Format jam HH:mm dari Timestamp (ISO string / serial number). */
+function fmtTime(v: unknown): string {
+  const s = String(v ?? '').trim();
+  const m = s.match(/(\d{2}):(\d{2})/);
+  if (m) return `${m[1]}:${m[2]}`;
+  const num = Number(s);
+  if (Number.isFinite(num) && num > 0 && !/^\d{4}$/.test(s)) {
+    const mins = Math.round((num - Math.floor(num)) * 1440) % 1440;
+    return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+  }
+  return '';
 }
 
 async function findLaporanIdForSesi(spreadsheetId: string, sesiId: string): Promise<string | null> {
@@ -208,6 +224,7 @@ export async function getPreviousSO(cabangId: string): Promise<PreviousSOResult>
           shift: String(r['Shift'] || ''),
           petugas: String(r['Petugas'] || ''),
           keterangan: String(r['Keterangan'] || ''),
+          waktu: fmtTime(r['Timestamp']),
         };
       });
       return {
@@ -215,6 +232,7 @@ export async function getPreviousSO(cabangId: string): Promise<PreviousSOResult>
         tanggal: fmtDate(firstRow['Tanggal_Operasional']),
         shift: String(firstRow['Shift'] ?? ''),
         petugas: String(firstRow['Petugas'] ?? ''),
+        waktu: fmtTime(firstRow['Timestamp']),
         items,
       };
     });
@@ -222,7 +240,13 @@ export async function getPreviousSO(cabangId: string): Promise<PreviousSOResult>
   const latestEntry = history[0] || null;
   return {
     latest: latestEntry
-      ? { sesiId: latestEntry.sesiId, tanggal: latestEntry.tanggal, shift: latestEntry.shift, petugas: latestEntry.petugas }
+      ? {
+          sesiId: latestEntry.sesiId,
+          tanggal: latestEntry.tanggal,
+          shift: latestEntry.shift,
+          petugas: latestEntry.petugas,
+          waktu: latestEntry.waktu,
+        }
       : null,
     items: latestEntry ? latestEntry.items : {},
     history,

@@ -65,9 +65,25 @@ export async function GET(
   }));
 
   const firstPrev = detail.find((r) => String(r['Prev_Tanggal'] || '').trim());
-  const previousSOInfo = firstPrev
-    ? { tanggal: fmtDateValue(firstPrev['Prev_Tanggal']), shift: String(firstPrev['Prev_Shift'] || '') }
-    : null;
+  let previousSOInfo: {
+    tanggal: string;
+    shift: string;
+    petugas?: string;
+    waktu?: string;
+  } | null = null;
+  if (firstPrev) {
+    const pTgl = fmtDateValue(firstPrev['Prev_Tanggal']);
+    const pShift = String(firstPrev['Prev_Shift'] || '');
+    const prevLap = laporanRows.find(
+      (r) => fmtDateValue(r['Tanggal_Operasional']) === pTgl && String(r['Shift'] || '') === pShift
+    );
+    previousSOInfo = {
+      tanggal: pTgl,
+      shift: pShift,
+      petugas: prevLap ? String(prevLap['Petugas'] || '') : String(firstPrev['Petugas'] || ''),
+      waktu: prevLap ? String(prevLap['Waktu_Dibuat'] || '') : String(firstPrev['Prev_Waktu'] || ''),
+    };
+  }
 
   const { buffer, fileName } = await generateSOReportPdf({
     laporanId,
@@ -78,6 +94,7 @@ export async function GET(
     petugas: String(laporan['Petugas'] || ''),
     items,
     previousSOInfo,
+    waktuDibuat: laporan['Waktu_Dibuat'] ? String(laporan['Waktu_Dibuat']) : undefined,
   });
 
   return new NextResponse(new Uint8Array(buffer), {
@@ -108,6 +125,18 @@ function fmtDateValue(v: unknown): string {
     return String(v);
   }
   const s = String(v).trim();
+  // Serial number berbentuk string (dibaca via FORMATTED_VALUE), mis. "46266".
+  if (/^\d{5,6}$/.test(s)) {
+    const ms = Math.round((Number(s) - 25569) * 86400000);
+    const d = new Date(ms);
+    if (!Number.isNaN(d.getTime())) {
+      return (
+        `${d.getUTCFullYear()}-` +
+        `${String(d.getUTCMonth() + 1).padStart(2, '0')}-` +
+        `${String(d.getUTCDate()).padStart(2, '0')}`
+      );
+    }
+  }
   const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (m) return m[0];
   const d = new Date(s);

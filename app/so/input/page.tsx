@@ -182,12 +182,13 @@ export default function InputSOPage() {
 
   const [items, setItems] = useState<MasterItem[]>([]);
   const [previousSO, setPreviousSO] = useState<Record<string, PreviousSO>>({});
-  const [previousSOInfo, setPreviousSOInfo] = useState<{ tanggal: string; shift: string } | null>(null);
+  const [previousSOInfo, setPreviousSOInfo] = useState<{ tanggal: string; shift: string; petugas?: string; waktu?: string } | null>(null);
   const [previousSOHistory, setPreviousSOHistory] = useState<Array<{
     sesiId: string;
     tanggal: string;
     shift: string;
     petugas: string;
+    waktu: string;
     items: Record<string, PreviousSO>;
   }>>([]);
   const [selectedPrevIndex, setSelectedPrevIndex] = useState<number>(0);
@@ -281,6 +282,8 @@ export default function InputSOPage() {
             setPreviousSOInfo({
               tanggal: ref.tanggal,
               shift: ref.shift,
+              petugas: ref.petugas || '',
+              waktu: ref.waktu || '',
             });
           }
         }
@@ -330,7 +333,7 @@ export default function InputSOPage() {
     if (session) {
       setSelectedPrevIndex(index);
       setPreviousSO(session.items || {});
-      setPreviousSOInfo({ tanggal: session.tanggal, shift: session.shift });
+      setPreviousSOInfo({ tanggal: session.tanggal, shift: session.shift, petugas: session.petugas || '', waktu: session.waktu || '' });
     }
   };
 

@@ -30,7 +30,14 @@ export interface SOReportInput {
   shift: string;
   petugas: string;
   items: SOReportItem[];
-  previousSOInfo?: { tanggal?: string; shift?: string } | null;
+  previousSOInfo?: {
+    tanggal?: string | number | null;
+    shift?: string;
+    petugas?: string;
+    waktu?: string;
+  } | null;
+  /** Waktu SO sekarang dibuat (untuk label "SO Sekarang"). Default: sekarang. */
+  waktuDibuat?: string | Date | number | null;
 }
 
 type StatusType = 'Kritis' | 'Hampir Habis' | 'Aman' | 'Tidak Dipantau';
@@ -73,6 +80,45 @@ function buildFileName(input: Pick<SOReportInput, 'cabangKode' | 'tanggalOperasi
   const shiftLabel = (input.shift || 'SO').toUpperCase();
   const petugasLabel = String(input.petugas || 'Petugas').replace(/[/\\:*?"<>|]/g, '').trim();
   return `${kode} - ${tgl} - ${shiftLabel} - ${petugasLabel}.pdf`;
+}
+
+/** YYYY-MM-DD → dd/mm/yy. */
+function shortTgl(tgl: string | number | null | undefined): string {
+  const s = String(tgl ?? '').trim();
+  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[3]}/${m[2]}/${m[1].slice(2)}`;
+  return s || '-';
+}
+
+/** Ambil HH:mm dari nilai waktu (ISO string, Date, atau serial number). */
+function fmtTimeLabel(v: string | Date | number | null | undefined): string {
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    return `${String(v.getHours()).padStart(2, '0')}:${String(v.getMinutes()).padStart(2, '0')}`;
+  }
+  const s = String(v ?? '').trim();
+  const m = s.match(/(\d{2}):(\d{2})/);
+  if (m) return `${m[1]}:${m[2]}`;
+  return '';
+}
+
+/**
+ * Label sesi SO: `dd/mm/yy : hh:mm - shift - petugas - cabang`.
+ * Bagian yang tidak diketahui dihilangkan.
+ */
+function describeSO(opts: {
+  tanggal?: string | number | null;
+  waktu?: string | Date | number | null;
+  shift?: string;
+  petugas?: string;
+  cabangKode?: string;
+}): string {
+  const tgl = shortTgl(opts.tanggal);
+  const waktu = fmtTimeLabel(opts.waktu);
+  const rest = [opts.shift, opts.petugas, opts.cabangKode].filter(Boolean).join(' - ');
+  let label = tgl;
+  if (waktu) label += ` : ${waktu}`;
+  if (rest) label += ` - ${rest}`;
+  return label || '-';
 }
 
 function drawTableHeader(
@@ -120,7 +166,7 @@ export async function generateSOReportPdf(input: SOReportInput): Promise<{
   doc.fontSize(16).font('Helvetica-Bold').fillColor('#FFFFFF');
   doc.text('LAPORAN STOCK OPNAME', 40, 50, { width: pageWidth, align: 'center' });
   doc.fontSize(9).font('Helvetica').fillColor('#B3D4FF');
-  doc.text(`${input.cabangNama}  ·  ${input.tanggalOperasional}  ·  Shift ${input.shift}`, 40, 70, { width: pageWidth, align: 'center' });
+  doc.text(`${input.cabangNama}  ·  ${shortTgl(input.tanggalOperasional)}  ·  Shift ${input.shift}`, 40, 70, { width: pageWidth, align: 'center' });
 
   let yPos = 104;
 
@@ -166,10 +212,22 @@ export async function generateSOReportPdf(input: SOReportInput): Promise<{
   if (hasPrevData && previousSOInfo) {
     doc.rect(40, yPos, pageWidth, 14).fill('#E9F2FF');
     doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#1868DB');
-    const prevLabel = `SO Sebelumnya: ${previousSOInfo.tanggal || '-'} · Shift ${previousSOInfo.shift || '-'}`;
-    const currLabel = `SO Sekarang: ${input.tanggalOperasional} · Shift ${input.shift}`;
-    doc.text(prevLabel, 44, yPos + 3, { width: pageWidth / 2 - 4 });
-    doc.text(currLabel, 44 + pageWidth / 2, yPos + 3, { width: pageWidth / 2 - 4 });
+    const prevDesc = describeSO({
+      tanggal: previousSOInfo.tanggal,
+      waktu: previousSOInfo.waktu,
+      shift: previousSOInfo.shift,
+      petugas: previousSOInfo.petugas,
+      cabangKode: input.cabangKode,
+    });
+    const currDesc = describeSO({
+      tanggal: input.tanggalOperasional,
+      waktu: input.waktuDibuat ?? new Date(),
+      shift: input.shift,
+      petugas: input.petugas,
+      cabangKode: input.cabangKode,
+    });
+    doc.text(`SO SEBELUMNYA: ${prevDesc}`, 44, yPos + 3, { width: pageWidth / 2 - 4, lineBreak: false });
+    doc.text(`SO SEKARANG: ${currDesc}`, 44 + pageWidth / 2, yPos + 3, { width: pageWidth / 2 - 4, lineBreak: false });
     yPos += 16;
   }
 
@@ -201,8 +259,8 @@ export async function generateSOReportPdf(input: SOReportInput): Promise<{
   const currGroupW = cols.currS1 + cols.currS2 + cols.currT;
   const prevGroupStartX = 44 + cols.nama + cols.area + cols.satuan + cols.threshold;
   const currGroupStartX = prevGroupStartX + prevGroupW;
-  const prevLabel = `SO ${previousSOInfo?.tanggal || '-'} ${(previousSOInfo?.shift || '').toUpperCase()}`.trim();
-  const currLabel = `SO ${input.tanggalOperasional || '-'} ${(input.shift || '').toUpperCase()}`.trim();
+  const prevLabel = `SO ${shortTgl(previousSOInfo?.tanggal || '')} ${(previousSOInfo?.shift || '').toUpperCase()}`.trim();
+  const currLabel = `SO ${shortTgl(input.tanggalOperasional || '')} ${(input.shift || '').toUpperCase()}`.trim();
 
   const drawMegaHeader = (yy: number) => {
     doc.rect(40, yy, pageWidth, 11).fill('#172B4D');

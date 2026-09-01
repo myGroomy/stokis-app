@@ -88,6 +88,8 @@ function routeAction_(action, cabangId, payload, params) {
     // Dashboard
     case 'getDashboardHarian':   return jsonResponse_({ success: true, data: getDashboardHarian(cabangId, payload.tanggal) });
     case 'getDashboardMingguan': return jsonResponse_({ success: true, data: getDashboardMingguan(cabangId, payload.dari, payload.sampai) });
+    // Drive Upload
+    case 'uploadFileToDrive':    return jsonResponse_({ success: true, data: uploadFileToDrive(cabangId, payload) });
 
     default:
       throw ApiError_('invalid_action', 'Action tidak dikenal: ' + action);

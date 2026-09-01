@@ -2,9 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, assertCabangAccess } from '@/lib/auth';
 import { resolveCabang } from '@/lib/google/registry';
-import { uploadPdfToDrive } from '@/lib/google/drive';
 import { updateLaporanPdfLink } from '@/lib/domain/laporan-service';
 import { generateSOReportPdf, type SOReportItem } from '@/lib/domain/pdf-report';
+import { uploadFileToGASDrive } from '@/lib/appsscript';
 
 export const POST = withAuth(async (req: NextRequest, { params }, session) => {
   const { laporanId } = await params;
@@ -41,10 +41,16 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
   try {
     const { folderId } = await resolveCabang(cabangId);
     if (folderId) {
-      const res = await uploadPdfToDrive(folderId, fileName, buffer);
+      const res = await uploadFileToGASDrive({
+        folderId,
+        fileName,
+        mimeType: 'application/pdf',
+        buffer: Buffer.from(buffer),
+      });
       pdfLink = res.webViewLink || res.downloadUrl;
     }
-  } catch {
+  } catch (err) {
+    console.error('[PDF] GAS upload gagal, fallback ke pdf-file:', err);
     // Service account umumnya tanpa kuota Drive → fallback ke link aplikasi.
     pdfLink = '';
   }

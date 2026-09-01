@@ -194,3 +194,41 @@ function buildPdfHtml_(namaCabang, tanggal, shift, petugas, rows, sesiId, lapora
     '</div>' +
     '</body></html>';
 }
+
+/**
+ * Upload file ke Google Drive folder cabang.
+ * payload: { folderId, fileName, mimeType, fileBase64 }
+ * Mengembalikan { fileId, webViewLink, downloadUrl }
+ */
+function uploadFileToDrive(cabangId, payload) {
+  var folderId = payload.folderId;
+  var fileName = payload.fileName;
+  var mimeType = payload.mimeType;
+  var fileBase64 = payload.fileBase64;
+
+  if (!folderId || !fileName || !fileBase64) {
+    throw ApiError_('validation_error', 'folderId, fileName, fileBase64 wajib diisi');
+  }
+
+  var decoded = Utilities.base64Decode(fileBase64);
+  var blob = Utilities.newBlob(decoded, mimeType, fileName);
+
+  var folder = DriveApp.getFolderById(folderId);
+  var file = folder.createFile(blob);
+
+  // Set permission "anyone with link can view"
+  try {
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch (e) {
+    Logger.log('setSharing gagal: ' + e.message);
+  }
+
+  var webViewLink = file.getUrl();
+  var downloadUrl = 'https://drive.google.com/uc?export=download&id=' + file.getId();
+
+  return {
+    fileId: file.getId(),
+    webViewLink: webViewLink,
+    downloadUrl: downloadUrl
+  };
+}

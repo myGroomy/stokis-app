@@ -2,8 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, assertCabangAccess } from '@/lib/auth';
 import { resolveCabang } from '@/lib/google/registry';
-import { uploadXlsxToDrive } from '@/lib/google/drive';
 import { updateLaporanXlsxLink } from '@/lib/domain/laporan-service';
+import { uploadFileToGASDrive } from '@/lib/appsscript';
 import * as XLSX from 'xlsx';
 
 interface XlsxItem {
@@ -137,14 +137,19 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
     const { folderId } = await resolveCabang(cabangId);
     console.log(`[XLSX] cabangId=${cabangId}, folderId=${folderId}`);
     if (folderId) {
-      const res = await uploadXlsxToDrive(folderId, fileName, Buffer.from(xlsxBuffer));
+      const res = await uploadFileToGASDrive({
+        folderId,
+        fileName,
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        buffer: Buffer.from(xlsxBuffer),
+      });
       xlsxLink = res.webViewLink || res.downloadUrl;
-      console.log(`[XLSX] Drive upload sukses: ${xlsxLink}`);
+      console.log(`[XLSX] GAS upload sukses: ${xlsxLink}`);
     } else {
       console.log('[XLSX] folderId kosong, skip Drive upload');
     }
   } catch (err) {
-    console.error('[XLSX] Drive upload gagal, fallback ke xlsx-file:', err);
+    console.error('[XLSX] GAS upload gagal, fallback ke xlsx-file:', err);
     xlsxLink = '';
   }
 

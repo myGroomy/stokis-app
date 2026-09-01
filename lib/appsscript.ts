@@ -8,6 +8,8 @@
 //   - Semua route yang memanggil callAppsScript tetap bekerja tanpa perubahan.
 //
 // Kontrak dipelihara identik dengan GAS: { success, data?, error? }.
+// Untuk upload file ke Drive, kita panggil GAS asli karena service account
+// tidak punya storage quota.
 
 import {
   getCabangList as cabangList,
@@ -117,4 +119,50 @@ export async function callAppsScript<T = any>(
   } catch (err) {
     return fail(err) as ApiResponse<T>;
   }
+}
+
+/**
+ * Panggil Google Apps Script yang sudah di-deploy untuk upload file ke Drive.
+ * Karena service account tidak punya storage quota, upload dilakukan lewat
+ * GAS yang berjalan di akun Google user dengan akses Drive penuh.
+ */
+export async function uploadFileToGASDrive(params: {
+  folderId: string;
+  fileName: string;
+  mimeType: string;
+  buffer: Buffer;
+}): Promise<{ fileId: string; webViewLink: string; downloadUrl: string }> {
+  const gasUrl = process.env.APPS_SCRIPT_URL;
+  const apiKey = process.env.STOKIS_API_KEY;
+  if (!gasUrl) throw new Error('APPS_SCRIPT_URL belum dikonfigurasi');
+  if (!apiKey) throw new Error('STOKIS_API_KEY belum dikonfigurasi');
+
+  const fileBase64 = params.buffer.toString('base64');
+
+  const res = await fetch(gasUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: 'uploadFileToDrive',
+      cabangId: '',
+      'x-api-key': apiKey,
+      payload: {
+        folderId: params.folderId,
+        fileName: params.fileName,
+        mimeType: params.mimeType,
+        fileBase64,
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`GAS HTTP error: ${res.status} ${res.statusText}`);
+  }
+
+  const json = await res.json() as ApiResponse<{ fileId: string; webViewLink: string; downloadUrl: string }>;
+  if (!json.success || !json.data) {
+    throw new Error(json.error?.message || 'GAS upload gagal');
+  }
+
+  return json.data;
 }

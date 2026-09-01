@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, assertCabangAccess } from '@/lib/auth';
 import { resolveCabang } from '@/lib/google/registry';
-import { uploadPdfToDrive, uploadXlsxToDrive } from '@/lib/google/drive';
+import { uploadFileToGASDrive } from '@/lib/appsscript';
 import { updateLaporanPdfLink, updateLaporanXlsxLink, getLaporanById, getLaporanDetail } from '@/lib/domain/laporan-service';
 import { generateSOReportPdf, type SOReportItem } from '@/lib/domain/pdf-report';
 import * as XLSX from 'xlsx';
@@ -91,10 +91,15 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
     let pdfLink = '';
     if (folderId) {
       try {
-        const res = await uploadPdfToDrive(folderId, fileName, buffer);
+        const res = await uploadFileToGASDrive({
+          folderId,
+          fileName,
+          mimeType: 'application/pdf',
+          buffer: Buffer.from(buffer),
+        });
         pdfLink = res.webViewLink || res.downloadUrl;
       } catch (err) {
-        console.error('[Regenerate] PDF Drive upload gagal:', err);
+        console.error('[Regenerate] PDF GAS upload gagal:', err);
       }
     }
     if (!pdfLink) {
@@ -180,10 +185,15 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
     let xlsxLink = '';
     if (folderId) {
       try {
-        const res = await uploadXlsxToDrive(folderId, xlsxFileName, Buffer.from(xlsxBuffer));
+        const res = await uploadFileToGASDrive({
+          folderId,
+          fileName: xlsxFileName,
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          buffer: Buffer.from(xlsxBuffer),
+        });
         xlsxLink = res.webViewLink || res.downloadUrl;
       } catch (err) {
-        console.error('[Regenerate] XLSX Drive upload gagal:', err);
+        console.error('[Regenerate] XLSX GAS upload gagal:', err);
       }
     }
     if (!xlsxLink) {

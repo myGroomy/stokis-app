@@ -87,7 +87,11 @@ function drawTableHeader(
   doc.fontSize(6).font('Helvetica-Bold').fillColor('#FFFFFF');
   let x = 44;
   for (const [key, width] of Object.entries(cols)) {
-    const align = ['prevS1', 'prevS2', 'prevT', 'currS1', 'currS2', 'currT', 'penggunaan', 'threshold'].includes(key) ? 'right' : 'left';
+    const align = ['prevS1', 'prevS2', 'prevT', 'currS1', 'currS2', 'currT', 'penggunaan', 'threshold'].includes(key)
+      ? 'right'
+      : key === 'status'
+        ? 'center'
+        : 'left';
     doc.text(labels[key] || key, x, yPos + 3, { width, align: align as 'left' | 'right' | 'center' });
     x += width;
   }
@@ -173,27 +177,29 @@ export async function generateSOReportPdf(input: SOReportInput): Promise<{
   doc.text('PERBANDINGAN STOK (KRITIS LEBIH DULU)', 40, yPos, { width: pageWidth });
   yPos += 14;
 
-  // | Nama Barang | Area | SO SEBELUMNYA (STEP1|STEP2|TOTAL) | SO SEKARANG (STEP1|STEP2|TOTAL) | Penggunaan | Keterangan |
+  // | Nama Barang | Area | Satuan | Threshold | SO SEBELUMNYA (STEP1|STEP2|TOTAL) | SO SEKARANG (STEP1|STEP2|TOTAL) | Penggunaan | Status | Keterangan |
   const cols = {
-    nama: 105,
-    area: 52,
-    prevS1: 30, prevS2: 30, prevT: 34,
-    currS1: 30, currS2: 30, currT: 34,
-    penggunaan: 40,
-    ket: 130,
+    nama: 92,
+    area: 40,
+    satuan: 34,
+    threshold: 32,
+    prevS1: 26, prevS2: 26, prevT: 32,
+    currS1: 26, currS2: 26, currT: 32,
+    penggunaan: 32,
+    status: 55,
+    ket: 62,
   } as const;
 
   const labels: Record<string, string> = {
-    nama: 'Nama Barang', area: 'Area',
+    nama: 'NAMA BARANG', area: 'AREA', satuan: 'SATUAN', threshold: 'THRESHOLD',
     prevS1: 'STEP 1', prevS2: 'STEP 2', prevT: 'TOTAL',
     currS1: 'STEP 1', currS2: 'STEP 2', currT: 'TOTAL',
-    penggunaan: 'PENGGUNAAN',
-    ket: 'KETERANGAN',
+    penggunaan: 'PENGGUNAAN', status: 'STATUS', ket: 'KETERANGAN',
   };
 
   const prevGroupW = cols.prevS1 + cols.prevS2 + cols.prevT;
   const currGroupW = cols.currS1 + cols.currS2 + cols.currT;
-  const prevGroupStartX = 44 + cols.nama + cols.area;
+  const prevGroupStartX = 44 + cols.nama + cols.area + cols.satuan + cols.threshold;
   const currGroupStartX = prevGroupStartX + prevGroupW;
   const prevLabel = `SO ${previousSOInfo?.tanggal || '-'} ${(previousSOInfo?.shift || '').toUpperCase()}`.trim();
   const currLabel = `SO ${input.tanggalOperasional || '-'} ${(input.shift || '').toUpperCase()}`.trim();
@@ -242,7 +248,9 @@ export async function generateSOReportPdf(input: SOReportInput): Promise<{
     doc.text(item.namaBarang || '', x, yPos + 3, { width: cols.nama }); x += cols.nama;
     doc.fontSize(6.5).fillColor('#6B778C');
     doc.text(item.area || '-', x, yPos + 3, { width: cols.area }); x += cols.area;
+    doc.text(item.satuan || '-', x, yPos + 3, { width: cols.satuan }); x += cols.satuan;
     doc.fontSize(7).fillColor('#44546F');
+    doc.text(item.threshold != null && item.threshold > 0 ? String(item.threshold) : '-', x, yPos + 3, { width: cols.threshold, align: 'right' }); x += cols.threshold;
 
     // SO Sebelumnya
     doc.text(item.prevStep1 != null ? String(item.prevStep1) : '-', x, yPos + 3, { width: cols.prevS1, align: 'right' }); x += cols.prevS1;
@@ -267,6 +275,13 @@ export async function generateSOReportPdf(input: SOReportInput): Promise<{
     }
     x += cols.penggunaan;
 
+    // Status
+    doc.rect(x, yPos, cols.status, 13).fill(STATUS_BG[status]);
+    doc.fontSize(6).font('Helvetica-Bold').fillColor(STATUS_COLOR[status]);
+    doc.text(status.toUpperCase(), x, yPos + 3.5, { width: cols.status, align: 'center' });
+    x += cols.status;
+    doc.font('Helvetica').fontSize(7).fillColor('#172B4D');
+
     // Keterangan
     const ket = item.keterangan || '';
     doc.fontSize(6).fillColor('#44546F').text(ket, x, yPos + 3, { width: cols.ket, lineBreak: false });
@@ -279,39 +294,6 @@ export async function generateSOReportPdf(input: SOReportInput): Promise<{
 
     yPos += 13;
     rowCount++;
-  }
-
-  // ── SECTION: ITEM KRITIS DETAIL ──────────────────────────
-  const kritisItems = sortedItems.filter(i => getStatus(i) === 'Kritis');
-  if (kritisItems.length > 0) {
-    yPos += 8;
-    if (yPos > 720) {
-      doc.addPage();
-      yPos = 40;
-    }
-
-    doc.fontSize(9).font('Helvetica-Bold').fillColor('#CA3521');
-    doc.text(`⚠ DAFTAR ITEM KRITIS (${kritisItems.length} ITEM)`, 40, yPos, { width: pageWidth });
-    yPos += 12;
-
-    kritisItems.forEach((item, idx) => {
-      if (yPos > 760) { doc.addPage(); yPos = 40; }
-      const total = Number(item.step1) + Number(item.step2);
-      const deficit = Number(item.threshold) - total;
-      const bg = idx % 2 === 0 ? '#FFEBE6' : '#FFF5F3';
-      doc.rect(40, yPos, pageWidth, 12).fill(bg);
-      doc.fontSize(7).font('Helvetica').fillColor('#172B4D');
-      doc.text(`${idx + 1}. ${item.namaBarang}`, 44, yPos + 2, { width: 200 });
-      doc.fillColor('#44546F').text(`Area: ${item.area || '-'}`, 244, yPos + 2, { width: 100 });
-      doc.fillColor('#CA3521').font('Helvetica-Bold');
-      doc.text(`Stok: ${total} | Min: ${item.threshold} | Kekurangan: ${deficit}`, 344, yPos + 2, { width: pageWidth - 310 });
-      if (item.keterangan) {
-        yPos += 12;
-        doc.fontSize(6.5).font('Helvetica').fillColor('#6B778C');
-        doc.text(`   Ket: ${item.keterangan}`, 44, yPos, { width: pageWidth - 8 });
-      }
-      yPos += 13;
-    });
   }
 
   // ── FOOTER on every page ─────────────────────────────────

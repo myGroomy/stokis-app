@@ -14,6 +14,7 @@ interface LaporanRow {
   Shift: string;
   Petugas: string;
   Link_PDF?: string;
+  Link_XLSX?: string;
   Status?: string;
 }
 
@@ -24,6 +25,7 @@ interface SaveLaporanPayload {
   petugas?: string;
   items?: SaveLaporanItem[];
   linkPdf?: string;
+  linkXlsx?: string;
   previousSOInfo?: { tanggal?: string; shift?: string } | null;
 }
 
@@ -228,6 +230,26 @@ export async function updateLaporanPdfLink(
   if (targetIndex === -1) return { updated: false };
   const rowNumber = targetIndex + 2; // 1-based, +1 utk header
   await writeRow(spreadsheetId, `Laporan_PDF!G${rowNumber}`, [linkPdf]);
+  return { updated: true };
+}
+
+/**
+ * Simpan link XLSX yang sudah di-upload ke Drive ke baris Laporan_PDF.
+ * Kolom K = Link_XLSX (kolom ke-11, 1-based).
+ */
+export async function updateLaporanXlsxLink(
+  cabangId: string,
+  sesiId: string,
+  laporanId: string,
+  linkXlsx: string
+): Promise<{ updated: boolean }> {
+  const { spreadsheetId } = await resolveCabang(cabangId);
+  const { rows } = await readSheetData(spreadsheetId, 'Laporan_PDF');
+  const bySesi = findRowIndex(rows, 1, sesiId);
+  const targetIndex = bySesi.index !== -1 ? bySesi.index : findRowIndex(rows, 0, laporanId).index;
+  if (targetIndex === -1) return { updated: false };
+  const rowNumber = targetIndex + 2;
+  await writeRow(spreadsheetId, `Laporan_PDF!K${rowNumber}`, [linkXlsx]);
   return { updated: true };
 }
 

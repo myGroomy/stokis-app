@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Check, FileText, User, Calendar, Clock } from 'lucide-react';
+import { X, Copy, Check, FileText, User, Calendar, Clock, Table } from 'lucide-react';
 import { fadeIn, scaleIn } from './PageTransition';
 
 interface WATemplateModalProps {
@@ -16,10 +16,17 @@ interface WATemplateModalProps {
   jumlahKritis: number;
   jumlahHampirHabis: number;
   linkPDF: string;
+  linkXLSX?: string;
 }
+
+type FileChoice = 'pdf' | 'xlsx';
 
 export function WATemplateModal({ isOpen, onClose, ...data }: WATemplateModalProps) {
   const [copied, setCopied] = React.useState(false);
+  const [fileChoice, setFileChoice] = React.useState<FileChoice>('pdf');
+
+  const activeLink = fileChoice === 'xlsx' ? (data.linkXLSX || data.linkPDF) : data.linkPDF;
+  const fileLabel = fileChoice === 'xlsx' ? 'XLSX' : 'PDF';
 
   const templateText = `
 *LAPORAN STOCK OPNAME*
@@ -34,8 +41,8 @@ Total Item       : ${data.totalItem}
 Status Kritis    : ${data.jumlahKritis}
 Status Hampir Habis : ${data.jumlahHampirHabis}
 
-Laporan PDF:
-${data.linkPDF}
+Laporan ${fileLabel}:
+${activeLink}
 `.trim();
 
   const handleCopy = () => {
@@ -73,7 +80,7 @@ ${data.linkPDF}
             </div>
             <div>
               <h2 className="font-semibold text-base-content text-base">Siapkan Pesan WhatsApp</h2>
-              <p className="text-xs text-base-content/60">Salin teks laporan untuk dikirim</p>
+              <p className="text-xs text-base-content/60">Pilih file & salin teks laporan untuk dikirim</p>
             </div>
           </div>
           <button onClick={onClose} className="btn btn-ghost btn-sm text-base-content/60 hover:text-error">
@@ -82,6 +89,39 @@ ${data.linkPDF}
         </div>
 
         <div className="p-5 space-y-4">
+          {/* File type selector */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-base-content/60 uppercase">Format File</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setFileChoice('pdf')}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-semibold transition-all ${
+                  fileChoice === 'pdf'
+                    ? 'bg-primary/10 border-primary text-primary'
+                    : 'bg-base-200 border-base-300 text-base-content/60 hover:border-primary/50'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                PDF
+              </button>
+              <button
+                onClick={() => setFileChoice('xlsx')}
+                disabled={!data.linkXLSX}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-semibold transition-all ${
+                  fileChoice === 'xlsx'
+                    ? 'bg-primary/10 border-primary text-primary'
+                    : 'bg-base-200 border-base-300 text-base-content/60 hover:border-primary/50'
+                } ${!data.linkXLSX ? 'opacity-40 cursor-not-allowed' : ''}`}
+              >
+                <Table className="w-4 h-4" />
+                XLSX
+              </button>
+            </div>
+            {!data.linkXLSX && (
+              <p className="text-[11px] text-base-content/40">File XLSX belum tersedia untuk laporan ini.</p>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-xs font-bold text-base-content/60 uppercase">

@@ -15,6 +15,7 @@ import {
   ShieldAlert,
   Filter,
   AlertTriangle,
+  Table,
 } from 'lucide-react';
 import { WATemplateModal } from '@/components/WATemplateModal';
 import { QuantumLoaderFull } from '@/components/ui/QuantumLoader';
@@ -27,6 +28,7 @@ interface LaporanItem {
   Petugas: string;
   Waktu_Dibuat: string;
   Link_PDF: string;
+  Link_XLSX: string;
   Jumlah_Kritis: number;
   Jumlah_Hampir_Habis: number;
   Status_Kirim_WA: string;
@@ -287,6 +289,17 @@ export default function LaporanPage() {
                             <ExternalLink className="w-4 h-4" />
                           </a>
                         )}
+                        {row.Link_XLSX && (
+                          <a
+                            href={row.Link_XLSX}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Buka Berkas XLSX di Google Drive"
+                            className="btn btn-ghost btn-xs text-base-content/60 hover:text-secondary"
+                          >
+                            <Table className="w-4 h-4" />
+                          </a>
+                        )}
                         <button
                           onClick={() => handleOpenWATemplate(row)}
                           title="Siapkan Pesan WhatsApp"
@@ -317,6 +330,7 @@ export default function LaporanPage() {
             jumlahKritis={selectedLaporan.Jumlah_Kritis}
             jumlahHampirHabis={selectedLaporan.Jumlah_Hampir_Habis}
             linkPDF={selectedLaporan.Link_PDF || ''}
+            linkXLSX={selectedLaporan.Link_XLSX || ''}
           />
         )}
       </AnimatePresence>

@@ -578,7 +578,7 @@ export default function InputSOPage() {
       // Generate PDF (non-critical)
       setGenStep('pdf');
       try {
-        const pdfRes = await fetch(`/api/so/${laporanId || formState.sesiId}/pdf`, {
+        await fetch(`/api/so/${laporanId || formState.sesiId}/pdf`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -592,14 +592,29 @@ export default function InputSOPage() {
             previousSOInfo,
           }),
         });
-
-        if (pdfRes.ok) {
-          const blob = await pdfRes.blob();
-          const url = URL.createObjectURL(blob);
-          window.open(url, '_blank');
-        }
       } catch {
         // PDF generation is non-critical
+      }
+
+      // Generate XLSX (non-critical)
+      setGenStep('xlsx');
+      try {
+        await fetch(`/api/so/${laporanId || formState.sesiId}/xlsx`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: formState.items,
+            cabangId: selectedCabang.Cabang_ID,
+            cabangNama: formState.cabangNama,
+            cabangKode: formState.cabangKode,
+            tanggalOperasional: formState.tanggalOperasional,
+            shift: formState.shift,
+            petugas: formState.petugas,
+            previousSOInfo,
+          }),
+        });
+      } catch {
+        // XLSX generation is non-critical
       }
 
       // Submit sukses → hapus draft sementara

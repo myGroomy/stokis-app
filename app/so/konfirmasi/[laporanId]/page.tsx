@@ -15,7 +15,8 @@ import {
   Loader2,
   ShieldCheck,
   AlertTriangle,
-  Send
+  Send,
+  Table
 } from 'lucide-react';
 import { WATemplateModal } from '@/components/WATemplateModal';
 
@@ -171,7 +172,20 @@ export default function KonfirmasiLaporanPage() {
                 className="btn btn-primary gap-2 px-5 py-3 min-h-[44px]"
               >
                 <FileText className="w-4 h-4" />
-                <span>Buka File PDF Drive</span>
+                <span>Buka File PDF</span>
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
+
+            {laporan?.Link_XLSX && (
+              <a
+                href={laporan.Link_XLSX}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary gap-2 px-5 py-3 min-h-[44px]"
+              >
+                <Table className="w-4 h-4" />
+                <span>Buka File XLSX</span>
                 <ExternalLink className="w-4 h-4" />
               </a>
             )}
@@ -226,6 +240,7 @@ export default function KonfirmasiLaporanPage() {
             jumlahKritis={laporan.Jumlah_Kritis}
             jumlahHampirHabis={laporan.Jumlah_Hampir_Habis}
             linkPDF={laporan.Link_PDF || ''}
+            linkXLSX={laporan.Link_XLSX || ''}
           />
         )}
       </AnimatePresence>

@@ -5,7 +5,6 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
-  APPS_SCRIPT_URL: z.string().url('APPS_SCRIPT_URL harus berupa URL valid'),
   STOKIS_API_KEY: z.string().min(32, 'STOKIS_API_KEY terlalu pendek (minimal 32 karakter)'),
 });
 

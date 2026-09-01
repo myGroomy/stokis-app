@@ -1,12 +1,54 @@
 // lib/appsscript.ts
-// Berjalan di Server Function / API Routes Vercel
+// DISPATCHER LOKAL — pengganti panggilan Google Apps Script.
+//
+// Sebelumnya modul ini melakukan fetch ke endpoint GAS. Kini seluruh logika
+// bisnis dijalankan langsung sebagai TypeScript di server Vercel memakai
+// Google Sheets API + Google Drive API (Service Account). Dengan begini:
+//   - Tidak ada deployment GAS / consent / 404 / clasp.
+//   - Semua route yang memanggil callAppsScript tetap bekerja tanpa perubahan.
+//
+// Kontrak dipelihara identik dengan GAS: { success, data?, error? }.
 
-import { getEnv } from '@/lib/env';
-
-const env = getEnv();
-const APPS_SCRIPT_URL = env.APPS_SCRIPT_URL;
-const API_KEY = env.STOKIS_API_KEY;
-const REQUEST_TIMEOUT_MS = 120_000; // GAS cold start + write batch bisa lambat
+import {
+  getCabangList as cabangList,
+  createCabang as createCabangSvc,
+  updateCabang as updateCabangSvc,
+  setCabangActive as setCabangActiveSvc,
+} from '@/lib/domain/cabang-service';
+import {
+  getMasterItems,
+  addItem,
+  updateThreshold,
+  setItemActive,
+} from '@/lib/domain/master-item-service';
+import {
+  getPetugasList,
+  addPetugas,
+  updatePetugas,
+  setPetugasActive,
+} from '@/lib/domain/petugas-service';
+import {
+  login as loginSvc,
+  getUsers,
+  addUser,
+  updateUser,
+  setUserActive,
+} from '@/lib/domain/users-service';
+import {
+  submitSO,
+  getPreviousSO,
+} from '@/lib/domain/so-service';
+import {
+  saveLaporan as saveLaporanSvc,
+  searchLaporan,
+  getShareWhatsAppLink,
+  updateStatusKirimWA,
+} from '@/lib/domain/laporan-service';
+import {
+  getDashboardHarian,
+  getDashboardMingguan,
+} from '@/lib/domain/dashboard-service';
+import { toApiError, isApiError } from '@/lib/domain/errors';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface ApiResponse<T = any> {
@@ -18,50 +60,61 @@ export interface ApiResponse<T = any> {
   };
 }
 
+function ok<T>(data: T): ApiResponse<T> {
+  return { success: true, data };
+}
+
+function fail(err: unknown): ApiResponse<never> {
+  const apiErr = isApiError(err) ? err : toApiError(err);
+  return { success: false, error: { code: apiErr.code, message: apiErr.message } };
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function callAppsScript<T = any>(
   action: string,
   cabangId?: string,
   payload?: Record<string, unknown>
 ): Promise<ApiResponse<T>> {
+  const p = payload || {};
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const body: Record<string, any> = {
-      'x-api-key': API_KEY,
-      action: action,
-    };
-    if (cabangId) body.cabangId = cabangId;
-    if (payload) body.payload = payload;
+    switch (action) {
+      // Cabang
+      case 'getCabangList':        return ok<T>(await cabangList() as T);
+      case 'createCabang':         return ok<T>(await createCabangSvc(p as never) as T);
+      case 'updateCabang':         return ok<T>(await updateCabangSvc(cabangId!, p as never) as T);
+      case 'setCabangActive':      return ok<T>(await setCabangActiveSvc(cabangId!, p.aktif) as T);
+      // Master Item
+      case 'getMasterItems':       return ok<T>(await getMasterItems(cabangId!) as T);
+      case 'addItem':              return ok<T>(await addItem(cabangId!, p as never) as T);
+      case 'updateThreshold':      return ok<T>(await updateThreshold(cabangId!, String(p.itemId), p.threshold) as T);
+      case 'setItemActive':        return ok<T>(await setItemActive(cabangId!, String(p.itemId), p.aktif) as T);
+      // Petugas
+      case 'getPetugasList':       return ok<T>(await getPetugasList(cabangId!) as T);
+      case 'addPetugas':           return ok<T>(await addPetugas(cabangId!, p as never) as T);
+      case 'updatePetugas':        return ok<T>(await updatePetugas(cabangId!, String(p.petugasId), p as never) as T);
+      case 'setPetugasActive':     return ok<T>(await setPetugasActive(cabangId!, String(p.petugasId), p.aktif) as T);
+      // Users (autentikasi)
+      case 'login':                return ok<T>(await loginSvc(p as never) as T);
+      case 'getUsers':             return ok<T>(await getUsers(cabangId || '') as T);
+      case 'addUser':              return ok<T>(await addUser(p as never) as T);
+      case 'updateUser':           return ok<T>(await updateUser(String(p.userId), p as never) as T);
+      case 'setUserActive':        return ok<T>(await setUserActive(String(p.userId), p.aktif) as T);
+      // SO
+      case 'submitSO':             return ok<T>(await submitSO(cabangId!, p) as T);
+      case 'getPreviousSO':        return ok<T>(await getPreviousSO(cabangId!) as T);
+      // Laporan
+      case 'saveLaporan':          return ok<T>(await saveLaporanSvc(cabangId!, p as never) as T);
+      case 'searchLaporan':        return ok<T>(await searchLaporan(cabangId!, p as never) as T);
+      case 'getShareWhatsAppLink': return ok<T>(await getShareWhatsAppLink(cabangId!, String(p.laporanId)) as T);
+      case 'updateStatusKirimWA':  return ok<T>(await updateStatusKirimWA(cabangId!, String(p.laporanId)) as T);
+      // Dashboard
+      case 'getDashboardHarian':   return ok<T>(await getDashboardHarian(cabangId!, String(p.tanggal || '')) as T);
+      case 'getDashboardMingguan': return ok<T>(await getDashboardMingguan(cabangId!, String(p.dari || ''), String(p.sampai || '')) as T);
 
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      redirect: 'follow',
-      cache: 'no-store',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
-
-    const text = await res.text();
-    try {
-      const data = JSON.parse(text);
-      return data as ApiResponse<T>;
-    } catch {
-      const isConsentPage = text.includes('consent') || text.includes('oauth_v2') || text.includes('ppConfig');
-      const hint = isConsentPage
-        ? ' | Deployment access mungkin belum "Anyone". Buka Apps Script Editor > Deploy > Manage deployments > Edit > Who has access: Anyone.'
-        : '';
-      return {
-        success: false,
-        error: { code: 'PARSE_ERROR', message: 'Respon dari Apps Script bukan format JSON valid: ' + text.substring(0, 150) + hint }
-      };
+      default:
+        return { success: false, error: { code: 'invalid_action', message: 'Action tidak dikenal: ' + action } };
     }
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: { code: 'FETCH_ERROR', message: err instanceof Error ? err.message : 'Gagal memanggil API Apps Script' }
-    };
+  } catch (err) {
+    return fail(err) as ApiResponse<T>;
   }
 }

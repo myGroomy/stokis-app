@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, assertCabangAccess } from '@/lib/auth';
 import PDFDocument from 'pdfkit';
 import { PassThrough } from 'stream';
+import { resolveCabang } from '@/lib/google/registry';
+import { uploadPdfToDrive } from '@/lib/google/drive';
+import { updateLaporanPdfLink } from '@/lib/domain/laporan-service';
 
 interface ItemData {
   itemId: string;
@@ -73,7 +76,7 @@ function drawTableHeader(
 export const POST = withAuth(async (req: NextRequest, { params }, session) => {
   const { laporanId } = await params;
   const body = await req.json();
-  const { items, cabangId, cabangNama, cabangKode, tanggalOperasional, shift, petugas, previousSOInfo } = body;
+  const { items, cabangId, cabangNama, cabangKode, tanggalOperasional, shift, petugas, previousSOInfo, sesiId } = body;
 
   if (!cabangId || typeof cabangId !== 'string') {
     return NextResponse.json(
@@ -346,6 +349,19 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
     chunks.push(chunk);
   }
   const pdfBuffer = Buffer.concat(chunks);
+
+  // Upload PDF ke Google Drive + catat link ke Laporan_PDF (best-effort,
+  // non-critical — jangan membatalkan respons PDF bila upload gagal).
+  const keySesi = typeof sesiId === 'string' && sesiId ? sesiId : laporanId;
+  try {
+    const { folderId } = await resolveCabang(cabangId);
+    if (folderId) {
+      const res = await uploadPdfToDrive(folderId, fileName, pdfBuffer);
+      await updateLaporanPdfLink(cabangId, keySesi, laporanId, res.webViewLink || res.downloadUrl);
+    }
+  } catch {
+    // upload Drive bersifat opsional; PDF tetap dikirim untuk diunduh browser
+  }
 
   return new NextResponse(pdfBuffer, {
     headers: {

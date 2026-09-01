@@ -228,7 +228,10 @@ export default function InputSOPage() {
   const petugas = user?.nama || 'Tidak diketahui';
 
   useEffect(() => {
-    if (!selectedCabang) return;
+    if (!selectedCabang) {
+      setLoadingData(false);
+      return;
+    }
 
     const fetchData = async () => {
       try {
@@ -453,16 +456,21 @@ export default function InputSOPage() {
 
   const buildPayloadItems = (): SOItemPayload[] => {
     return items.map((it) => {
-      const c = counts[it.Item_ID] || { step1: '0', step2: '0', keterangan: '' };
+      const c = counts[it.Item_ID] || { step1: '', step2: '', keterangan: '' };
       const prev = previousSO[it.Nama_Barang];
+      // Jika step kosong, ambil nilai dari SO sebelumnya yang dipilih.
+      const step1Str = String(c.step1).trim();
+      const step2Str = String(c.step2).trim();
+      const step1 = step1Str === '' ? (prev?.step1 ?? 0) : Number(step1Str);
+      const step2 = step2Str === '' ? (prev?.step2 ?? 0) : Number(step2Str);
       return {
         itemId: it.Item_ID,
         namaBarang: it.Nama_Barang,
         satuan: it.Satuan,
         area: it.Area,
         threshold: it.Threshold,
-        step1: Number(c.step1) || 0,
-        step2: Number(c.step2) || 0,
+        step1,
+        step2,
         keterangan: c.keterangan || '',
         prevStep1: prev?.step1 ?? null,
         prevStep2: prev?.step2 ?? null,
@@ -475,28 +483,6 @@ export default function InputSOPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validasi wajib isi (Google Form style): semua kolom isian harus terisi.
-    // Jika ada kolom kosong, arahkan langsung ke item tsb.
-    const missing = filteredItems.find((item) => {
-      const c = counts[item.Item_ID] || { step1: '', step2: '', keterangan: '' };
-      return !(String(c.step1).trim() !== '' && String(c.step2).trim() !== '');
-    });
-
-    if (missing) {
-      setErrorMsg(
-        `Item "${missing.Nama_Barang}" belum lengkap. Isi kolom Step 1 dan Step 2 pada semua item terlebih dahulu.`,
-      );
-      requestAnimationFrame(() => {
-        const container = itemsSectionRef.current;
-        if (!container) return;
-        const el = container.querySelector<HTMLElement>(`[data-item-id="${missing.Item_ID}"]`);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        const firstEmpty = el?.querySelector<HTMLInputElement>('input[type="number"]');
-        firstEmpty?.focus();
-      });
-      return;
-    }
 
     if (!sesiIdRef.current) {
       sesiIdRef.current = generateSesiId();

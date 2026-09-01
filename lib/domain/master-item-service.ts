@@ -19,7 +19,7 @@ export async function getMasterItems(cabangId: string) {
   const { spreadsheetId } = await resolveCabang(cabangId);
   const { headers, rows } = await readSheetData(spreadsheetId, 'Master_Item');
   const list = sheetToObjects(headers, rows);
-  return list.filter((r) => r['Aktif'] === true || r['Aktif'] === 'true');
+  return list.filter((r) => r['Aktif'] === true || r['Aktif'] === 'true' || r['Aktif'] === 'TRUE' || r['Aktif'] === 'True');
 }
 
 export async function addItem(cabangId: string, payload: MasterItemPayload): Promise<{ itemId: string }> {

@@ -6,6 +6,7 @@ import React, {
   useState,
   useEffect,
   useRef,
+  useCallback,
 } from "react";
 import { useAuth } from "./AuthContext";
 
@@ -23,8 +24,8 @@ export interface Cabang {
 interface CabangContextType {
   selectedCabang: Cabang | null;
   setSelectedCabang: (c: Cabang | null) => void;
-  cabangList: Cabang[]; // Ini akan mengembalikan cabangList yang sudah difilter
-  allCabangList: Cabang[]; // Menyimpan semua cabang dari API (untuk kebutuhan admin global)
+  cabangList: Cabang[];
+  allCabangList: Cabang[];
   loading: boolean;
   refreshCabangList: () => Promise<void>;
 }
@@ -39,37 +40,45 @@ const CabangContext = createContext<CabangContextType>({
 });
 
 export function CabangProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-  const [selectedCabang, setSelectedCabangState] = useState<Cabang | null>(
-    null,
-  );
+  const { user, loading: authLoading } = useAuth();
+  const [selectedCabang, setSelectedCabangState] = useState<Cabang | null>(null);
   const [allCabangs, setAllCabangs] = useState<Cabang[]>([]);
   const [filteredCabangs, setFilteredCabangs] = useState<Cabang[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const initialized = useRef(false);
+  const fetchIdRef = useRef(0);
 
-  const fetchCabangList = async () => {
+  const fetchCabangList = useCallback(async () => {
+    const id = ++fetchIdRef.current;
     try {
       setLoading(true);
       const res = await fetch("/api/cabang");
       const json = await res.json();
+      if (id !== fetchIdRef.current) return;
       if (json.success && Array.isArray(json.data)) {
         setAllCabangs(json.data);
       }
     } catch (e) {
       console.error("Error fetching cabang list:", e);
     } finally {
-      setLoading(false);
+      if (id === fetchIdRef.current) {
+        setLoading(false);
+      }
     }
-  };
-
-  useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-    fetchCabangList();
   }, []);
 
-  // Filter cabang berdasarkan user yang login
+  useEffect(() => {
+    if (authLoading) return;
+    fetchCabangList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading]);
+
+  useEffect(() => {
+    if (!authLoading && user && allCabangs.length === 0) {
+      fetchCabangList();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
   useEffect(() => {
     if (!user) {
       setFilteredCabangs([]);
@@ -79,10 +88,8 @@ export function CabangProvider({ children }: { children: React.ReactNode }) {
 
     let allowed: Cabang[] = [];
     if (user.role === "admin" && !user.cabangId) {
-      // Admin global bisa melihat semua cabang
       allowed = allCabangs;
     } else {
-      // Petugas atau admin cabang spesifik
       const allowedIds = user.cabangId
         ? user.cabangId.split(",").map((id) => id.trim().toUpperCase())
         : [];
@@ -93,7 +100,6 @@ export function CabangProvider({ children }: { children: React.ReactNode }) {
 
     setFilteredCabangs(allowed);
 
-    // Otomatis tentukan selected cabang
     if (allowed.length === 1) {
       setSelectedCabangState(allowed[0]);
     } else if (allowed.length > 0) {
@@ -109,11 +115,11 @@ export function CabangProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, allCabangs]);
 
-  const setSelectedCabang = (c: Cabang | null) => {
+  const setSelectedCabang = useCallback((c: Cabang | null) => {
     setSelectedCabangState(c);
     if (c) localStorage.setItem("stokis_selected_cabang_id", c.Cabang_ID);
     else localStorage.removeItem("stokis_selected_cabang_id");
-  };
+  }, []);
 
   return (
     <CabangContext.Provider
@@ -122,7 +128,7 @@ export function CabangProvider({ children }: { children: React.ReactNode }) {
         setSelectedCabang,
         cabangList: filteredCabangs,
         allCabangList: allCabangs,
-        loading,
+        loading: authLoading || loading,
         refreshCabangList: fetchCabangList,
       }}
     >

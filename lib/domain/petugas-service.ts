@@ -15,7 +15,7 @@ export async function getPetugasList(cabangId: string) {
   const { spreadsheetId } = await resolveCabang(cabangId);
   const { headers, rows } = await readSheetData(spreadsheetId, 'Petugas');
   const list = sheetToObjects(headers, rows);
-  return list.filter((r) => r['Aktif'] === true || r['Aktif'] === 'true');
+  return list.filter((r) => r['Aktif'] === true || r['Aktif'] === 'true' || r['Aktif'] === 'TRUE' || r['Aktif'] === 'True');
 }
 
 export async function addPetugas(cabangId: string, payload: PetugasPayload): Promise<{ petugasId: string }> {

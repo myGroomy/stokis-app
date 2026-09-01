@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useAuth } from "@/lib/AuthContext";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import LoginPage from "@/app/login/page";
 
 const PUBLIC_PATHS = ["/login", "/"];
@@ -11,6 +11,25 @@ const ADMIN_ONLY_PATHS = ["/master-item", "/petugas", "/cabang"];
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading, isAdmin } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    mounted.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!mounted.current || loading) return;
+
+    if (pathname === "/login" && user) {
+      router.replace("/");
+      return;
+    }
+
+    if (user && !isAdmin && ADMIN_ONLY_PATHS.some((p) => pathname.startsWith(p))) {
+      router.replace("/");
+    }
+  }, [loading, user, isAdmin, pathname, router]);
 
   if (loading) {
     return (
@@ -27,24 +46,18 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Jika path publik, izinkan akses langsung
   if (PUBLIC_PATHS.includes(pathname)) {
-    // Tapi jika di /login dan user sudah masuk, alihkan ke /
     if (pathname === "/login" && user) {
-      window.location.href = "/";
       return null;
     }
     return <>{children}</>;
   }
 
-  // Jika bukan path publik dan belum login, tampilkan halaman login
   if (!user) {
     return <LoginPage />;
   }
 
-  // Guard admin saja
   if (!isAdmin && ADMIN_ONLY_PATHS.some((p) => pathname.startsWith(p))) {
-    window.location.href = "/";
     return null;
   }
 

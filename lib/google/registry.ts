@@ -46,7 +46,10 @@ export async function getCabangList(): Promise<CabangRecord[]> {
   const registryId = getRegistrySpreadsheetId();
   const { headers, rows } = await readSheetData(registryId, 'Daftar_Cabang');
   const list = sheetToObjects(headers, rows) as CabangRecord[];
-  _cabangListCache = list.filter((r) => r['Aktif'] === true || r['Aktif'] === 'true');
+  _cabangListCache = list.filter((r) => {
+    const v = r['Aktif'];
+    return v === true || v === 'true' || v === 'TRUE' || v === 'True';
+  });
   return _cabangListCache;
 }
 
@@ -66,7 +69,8 @@ export async function resolveCabang(cabangId: string): Promise<{
   const list = sheetToObjects(headers, rows) as CabangRecord[];
   const cabang = list.find((r) => r['Cabang_ID'] === cabangId);
   if (!cabang) throw new Error('CABANG_TIDAK_DITEMUKAN: ' + cabangId);
-  if (!(cabang['Aktif'] === true || cabang['Aktif'] === 'true')) {
+  const isAktif = (v: unknown) => v === true || v === 'true' || v === 'TRUE' || v === 'True';
+  if (!isAktif(cabang['Aktif'])) {
     throw new Error('CABANG_TIDAK_AKTIF: ' + cabangId);
   }
 

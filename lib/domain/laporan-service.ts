@@ -2,8 +2,8 @@
 // Operasi laporan — port dari Laporan.js. Menggunakan Google Sheets API.
 
 import { resolveCabang } from '@/lib/google/registry';
-import { readSheetData, sheetToObjects, findRowIndex, appendRows, writeRow, ensureSheet } from '@/lib/google/sheets';
-import { calculateStatus } from './so';
+import { readSheetData, sheetToObjects, findRowIndex, appendRows, writeRow, ensureSheet, columnIndexToLetter } from '@/lib/google/sheets';
+import { calculateStatus, parseThreshold } from './so';
 import { ApiError } from './errors';
 import { randomToken, buildLaporanId, formatDate } from './ids';
 
@@ -73,8 +73,8 @@ export async function saveLaporan(
   let jumlahHampirHabis = 0;
   (payload.items || []).forEach((it) => {
     const total = (Number(it.step1) || 0) + (Number(it.step2) || 0);
-    const threshold = Number(it.threshold) || 0;
-    if (!threshold || threshold <= 0) return;
+    const threshold = parseThreshold(it.threshold);
+    if (threshold === null) return;
     const s = calculateStatus(total, threshold);
     if (s === 'Kritis') jumlahKritis++;
     else if (s === 'Hampir Habis') jumlahHampirHabis++;
@@ -143,8 +143,8 @@ async function saveLaporanDetail(
     const total = step1 + step2;
     const prevTotal = it.prevTotal != null ? Number(it.prevTotal) : null;
     const penggunaan = prevTotal != null ? prevTotal - total : null;
-    const threshold = Number(it.threshold) || 0;
-    const status = !threshold ? 'Tidak Dipantau' : calculateStatus(total, threshold);
+    const threshold = parseThreshold(it.threshold);
+    const status = calculateStatus(total, threshold);
     return [
       data.laporanId,
       data.tanggalOperasional,
@@ -154,7 +154,7 @@ async function saveLaporanDetail(
       it.namaBarang || '',
       it.area || '',
       it.satuan || '',
-      threshold || null,
+      threshold != null ? threshold : null,
       it.prevStep1 != null ? Number(it.prevStep1) : null,
       it.prevStep2 != null ? Number(it.prevStep2) : null,
       prevTotal,
@@ -223,12 +223,17 @@ export async function updateLaporanXlsxLink(
   linkXlsx: string
 ): Promise<{ updated: boolean }> {
   const { spreadsheetId } = await resolveCabang(cabangId);
-  const { rows } = await readSheetData(spreadsheetId, 'Laporan_PDF');
+  const { headers, rows } = await readSheetData(spreadsheetId, 'Laporan_PDF');
   const bySesi = findRowIndex(rows, 1, sesiId);
   const targetIndex = bySesi.index !== -1 ? bySesi.index : findRowIndex(rows, 0, laporanId).index;
   if (targetIndex === -1) return { updated: false };
+
+  const colIndex = headers.findIndex((h) => h === 'Link_XLSX');
+  if (colIndex === -1) return { updated: false };
+
   const rowNumber = targetIndex + 2;
-  await writeRow(spreadsheetId, `Laporan_PDF!K${rowNumber}`, [linkXlsx]);
+  const colLetter = columnIndexToLetter(colIndex);
+  await writeRow(spreadsheetId, `Laporan_PDF!${colLetter}${rowNumber}`, [linkXlsx]);
   return { updated: true };
 }
 

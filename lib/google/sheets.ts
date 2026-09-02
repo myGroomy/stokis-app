@@ -168,3 +168,16 @@ export async function ensureSheet(
     await writeRow(spreadsheetId, `${sheetTitle}!A1`, headers);
   }
 }
+
+/** Konversi index kolom 0-based menjadi huruf kolom Sheets (0 -> A, 10 -> K, 26 -> AA, dst). */
+export function columnIndexToLetter(index: number): string {
+  let n = index + 1;
+  let letters = '';
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    letters = String.fromCharCode(65 + rem) + letters;
+    n = Math.floor((n - 1) / 26);
+  }
+  return letters;
+}
+

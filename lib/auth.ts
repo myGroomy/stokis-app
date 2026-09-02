@@ -66,7 +66,13 @@ export function assertCabangAccess(
   cabangId: string
 ): NextResponse | null {
   if (session.role === 'admin') return null;
-  if (!cabangId || cabangId.trim() === session.cabangId) return null;
+  const reqCabang = (cabangId || '').trim().toUpperCase();
+  if (!reqCabang) return null;
+  const allowedCabangs = (session.cabangId || '')
+    .split(',')
+    .map((c) => c.trim().toUpperCase())
+    .filter(Boolean);
+  if (allowedCabangs.includes(reqCabang)) return null;
   return NextResponse.json(
     {
       success: false,

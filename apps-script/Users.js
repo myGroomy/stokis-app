@@ -144,3 +144,13 @@ function setUserActive(userId, aktif) {
   sheet.getRange(rowIdx + 1, 7).setValue(aktif === true || aktif === 'true');
   return { userId: userId, aktif: aktif };
 }
+
+// Hapus permanen baris user dari sheet Users.
+function deleteUser(userId) {
+  var sheet = getUsersSheet_();
+  var rows = sheet.getDataRange().getValues();
+  var rowIdx = rows.findIndex(function(r, i) { return i > 0 && r[0] === userId; });
+  if (rowIdx === -1) throw ApiError_('not_found', 'User ' + userId + ' tidak ditemukan');
+  sheet.deleteRow(rowIdx + 1);
+  return { userId: userId };
+}

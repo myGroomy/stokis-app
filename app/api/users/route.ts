@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callAppsScript } from '@/lib/appsscript';
-import { withAuth, assertCabangAccess } from '@/lib/auth';
+import { withAuth } from '@/lib/auth';
 
-export const GET = withAuth(async (req: NextRequest, _context, session) => {
+export const GET = withAuth(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const cabangId = searchParams.get('cabang') || '';
-
-  const guard = assertCabangAccess(session, cabangId);
-  if (guard) return guard;
-
   const result = await callAppsScript('getUsers', cabangId);
   return NextResponse.json(result, { status: result.success ? 200 : 400 });
 });

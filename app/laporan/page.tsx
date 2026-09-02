@@ -279,7 +279,6 @@ export default function LaporanPage() {
                       key={row.Laporan_ID}
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 8 }}
                       transition={{ duration: 0.15 }}
                       className="transition-colors border-b border-base-300 hover:bg-base-200"
                     >

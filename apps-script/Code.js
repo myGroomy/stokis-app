@@ -77,6 +77,7 @@ function routeAction_(action, cabangId, payload, params) {
     case 'addUser':              return jsonResponse_({ success: true, data: addUser(payload) });
     case 'updateUser':           return jsonResponse_({ success: true, data: updateUser(payload.userId, payload) });
     case 'setUserActive':        return jsonResponse_({ success: true, data: setUserActive(payload.userId, payload.aktif) });
+    case 'deleteUser':           return jsonResponse_({ success: true, data: deleteUser(payload.userId) });
     // SO
     case 'submitSO':             return jsonResponse_({ success: true, data: submitSO(cabangId, payload) });
     case 'getPreviousSO':        return jsonResponse_({ success: true, data: getPreviousSO(cabangId) });

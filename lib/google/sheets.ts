@@ -107,6 +107,45 @@ export async function setCellValue(
 }
 
 /**
+ * Hapus 1 baris data pada index (1-based, termasuk header = baris 1).
+ * Menggunakan deleteDimension untuk menghapus baris secara permanen.
+ */
+export async function deleteRow(
+  spreadsheetId: string,
+  sheetName: string,
+  rowNumber1Based: number
+): Promise<void> {
+  const sheets = getSheetsClient();
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId,
+    fields: 'sheets.properties(sheetId,title)',
+  });
+  const target = (meta.data.sheets || []).find(
+    (s) => s.properties?.title === sheetName
+  );
+  if (!target?.properties?.sheetId) {
+    throw new Error('Sheet tidak ditemukan: ' + sheetName);
+  }
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId: target.properties.sheetId,
+              dimension: 'ROWS',
+              startIndex: rowNumber1Based - 1,
+              endIndex: rowNumber1Based,
+            },
+          },
+        },
+      ],
+    },
+  });
+}
+
+/**
  * Append beberapa baris sekaligus ke bagian bawah sheet (batch write).
  * Mempertahankan pola `setValues` 1 batch daripada 1 write per baris.
  */

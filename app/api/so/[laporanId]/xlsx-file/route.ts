@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveCabang } from '@/lib/google/registry';
 import { readSheetData, sheetToObjects } from '@/lib/google/sheets';
-import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
 
 function fmtDateValue(v: unknown): string {
   const d = normalizeDate(v);
@@ -126,28 +126,38 @@ export async function GET(
     };
   });
 
-  const wb = XLSX.utils.book_new();
-  const summaryData: Record<string, unknown>[] = [
-    { 'Field': 'Cabang', 'Value': cabangNama },
-    { 'Field': 'Kode Cabang', 'Value': cabangKode },
-    { 'Field': 'Tanggal Operasional', 'Value': tanggalOperasional },
-    { 'Field': 'Shift', 'Value': shift },
-    { 'Field': 'Petugas', 'Value': petugas },
-    { 'Field': 'Total Item', 'Value': items.length },
-    { 'Field': 'Laporan ID', 'Value': laporanId },
-    { 'Field': 'Waktu Dibuat', 'Value': new Date().toLocaleString('id-ID') },
+  const wb = new ExcelJS.Workbook();
+
+  const summaryData: { Field: string; Value: unknown }[] = [
+    { Field: 'Cabang', Value: cabangNama },
+    { Field: 'Kode Cabang', Value: cabangKode },
+    { Field: 'Tanggal Operasional', Value: tanggalOperasional },
+    { Field: 'Shift', Value: shift },
+    { Field: 'Petugas', Value: petugas },
+    { Field: 'Total Item', Value: items.length },
+    { Field: 'Laporan ID', Value: laporanId },
+    { Field: 'Waktu Dibuat', Value: new Date().toLocaleString('id-ID') },
   ];
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryData), 'Ringkasan');
+  const wsSummary = wb.addWorksheet('Ringkasan');
+  wsSummary.columns = [{ header: 'Field', key: 'Field', width: 24 }, { header: 'Value', key: 'Value', width: 40 }];
+  summaryData.forEach((r) => wsSummary.addRow(r));
 
   if (items.length > 0) {
-    const ws = XLSX.utils.json_to_sheet(items);
-    ws['!cols'] = Object.keys(items[0]).map((k) => ({
-      wch: Math.max(k.length + 2, ...items.map((r) => String((r as Record<string, unknown>)[k] ?? '').length + 2)),
+    const wsDetail = wb.addWorksheet('Detail SO');
+    const first = items[0];
+    const keys = Object.keys(first);
+    wsDetail.columns = keys.map((k) => ({
+      header: k,
+      key: k,
+      width: Math.max(k.length + 2, ...items.map((r) => String((r as Record<string, unknown>)[k] ?? '').length + 2)),
     }));
-    XLSX.utils.book_append_sheet(wb, ws, 'Detail SO');
+    items.forEach((r) => wsDetail.addRow(r as Record<string, unknown>));
   }
 
-  const xlsxBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  const xlsxBuffer = await wb.xlsx.writeBuffer();
+  const raw = new Uint8Array(xlsxBuffer);
+  const byteArray = new Uint8Array(raw.byteLength);
+  byteArray.set(raw);
   const kode = cabangKode.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
   const tgl = /^\d{2}\/\d{2}\/\d{4}$/.test(tanggalOperasional)
     ? tanggalOperasional.split('/').join('-')
@@ -156,7 +166,7 @@ export async function GET(
   const petugasLabel = petugas.replace(/[/\\:*?"<>|]/g, '').trim() || 'Petugas';
   const fileName = `${kode} - ${tgl} - ${shiftLabel} - ${petugasLabel}.xlsx`;
 
-  return new NextResponse(new Uint8Array(xlsxBuffer), {
+  return new NextResponse(byteArray, {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `inline; filename="${fileName}"`,

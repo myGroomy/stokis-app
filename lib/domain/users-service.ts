@@ -3,7 +3,7 @@
 //
 // CATATAN KEAMANAN: PIN di-hash SHA-256. Login mendukung migrasi plaintext→hash.
 
-import { readSheetData, sheetToObjects, findRowIndex, appendRows, writeRow } from '@/lib/google/sheets';
+import { readSheetData, sheetToObjects, findRowIndex, appendRows, writeRow, deleteRow } from '@/lib/google/sheets';
 import { ApiError } from './errors';
 import { hashPin, secureKeyEqual, randomToken } from './ids';
 
@@ -149,4 +149,13 @@ export async function setUserActive(
   const val = aktif === true || aktif === 'true';
   await writeRow(registryId(), `Users!G${rowNumber}`, [val]);
   return { userId, aktif: val };
+}
+
+export async function deleteUser(userId: string): Promise<{ userId: string }> {
+  const { rows } = await readSheetData(registryId(), USERS_SHEET);
+  const found = findRowIndex(rows, 0, userId);
+  if (found.index === -1) throw new ApiError('not_found', 'User ' + userId + ' tidak ditemukan');
+  const rowNumber = found.index + 2; // +1 header, +1 1-based
+  await deleteRow(registryId(), USERS_SHEET, rowNumber);
+  return { userId };
 }

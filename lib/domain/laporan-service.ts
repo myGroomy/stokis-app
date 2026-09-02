@@ -2,7 +2,7 @@
 // Operasi laporan — port dari Laporan.js. Menggunakan Google Sheets API.
 
 import { resolveCabang } from '@/lib/google/registry';
-import { readSheetData, sheetToObjects, findRowIndex, appendRows, writeRow, ensureSheet, columnIndexToLetter } from '@/lib/google/sheets';
+import { readSheetData, sheetToObjects, findRowIndex, appendRows, writeRow, setCellValue, ensureSheet, columnIndexToLetter } from '@/lib/google/sheets';
 import { calculateStatus, parseThreshold } from './so';
 import { ApiError } from './errors';
 import { randomToken, buildLaporanId, formatDate } from './ids';
@@ -215,6 +215,10 @@ export async function updateStatusKirimWA(
 /**
  * Simpan link XLSX yang sudah di-upload ke Drive ke baris Laporan_PDF.
  * Kolom K = Link_XLSX (kolom ke-11, 1-based).
+ *
+ * Self-healing: bila header 'Link_XLSX' belum ada di sheet, kolom tersebut
+ * dibuat otomatis di posisi K agar link permanen tersimpan (mencegah upload
+ * berhasil tapi link tidak tercatat karena kolomnya tidak ada).
  */
 export async function updateLaporanXlsxLink(
   cabangId: string,
@@ -228,8 +232,12 @@ export async function updateLaporanXlsxLink(
   const targetIndex = bySesi.index !== -1 ? bySesi.index : findRowIndex(rows, 0, laporanId).index;
   if (targetIndex === -1) return { updated: false };
 
-  const colIndex = headers.findIndex((h) => h === 'Link_XLSX');
-  if (colIndex === -1) return { updated: false };
+  let colIndex = headers.findIndex((h) => h === 'Link_XLSX');
+  if (colIndex === -1) {
+    // Kolom Link_XLSX belum ada → buat di posisi K (index 10) + tulis header.
+    colIndex = 10;
+    await setCellValue(spreadsheetId, 'Laporan_PDF!K1', 'Link_XLSX');
+  }
 
   const rowNumber = targetIndex + 2;
   const colLetter = columnIndexToLetter(colIndex);

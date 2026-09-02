@@ -35,6 +35,7 @@ import {
   addUser,
   updateUser,
   setUserActive,
+  deleteUser,
 } from '@/lib/domain/users-service';
 import {
   submitSO,
@@ -101,6 +102,7 @@ export async function callAppsScript<T = any>(
       case 'addUser':              return ok<T>(await addUser(p as never) as T);
       case 'updateUser':           return ok<T>(await updateUser(String(p.userId), p as never) as T);
       case 'setUserActive':        return ok<T>(await setUserActive(String(p.userId), p.aktif) as T);
+      case 'deleteUser':           return ok<T>(await deleteUser(String(p.userId)) as T);
       // SO
       case 'submitSO':             return ok<T>(await submitSO(cabangId!, p) as T);
       case 'getPreviousSO':        return ok<T>(await getPreviousSO(cabangId!) as T);

@@ -176,111 +176,182 @@ const [errorMsg, setErrorMsg] = useState<string>('');
   const xlsxLink = getXlsxLink();
 
   return (
-    <div className="max-w-2xl mx-auto py-10 px-4 space-y-6">
+    <div className="max-w-lg mx-auto py-8 px-4 space-y-6">
       <AnimatePresence mode="wait">
         <motion.div
           key="success"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.2 }}
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -15 }}
+          transition={{ duration: 0.25 }}
+          className="space-y-6"
         >
-          <div className="inline-flex p-4 rounded-full bg-success/10 text-success mb-2">
-            <CheckCircle2 className="w-10 h-10" />
-          </div>
-
-          <div className="space-y-1.5">
-            <h1 className="text-2xl sm:text-3xl font-semibold text-base-content tracking-tight">
-              Stock Opname Berhasil Disimpan
-            </h1>
-            <p className="text-base-content/60 text-sm max-w-md mx-auto">
-              Data transaksi telah tercatat di spreadsheet cabang dan berkas XLSX telah tersimpan di Google Drive.
-            </p>
-          </div>
-
-          <div className="card bg-base-100 border border-base-300 p-6 text-left space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-base-300">
-              <span className="text-sm text-base-content/60 font-semibold">Nomor Laporan</span>
-              <span className="font-mono text-sm font-semibold text-base-content bg-base-200 px-2.5 py-1 rounded">
-                {laporanId}
-              </span>
+          {/* Bill / Transaction Receipt Card */}
+          <div className="relative bg-base-100 border border-base-300 shadow-2xl rounded-2xl overflow-hidden">
+            {/* Top Receipt Header */}
+            <div className="bg-base-200/50 p-6 text-center border-b border-base-300 space-y-3">
+              <div className="inline-flex p-3 rounded-full bg-success/15 text-success shadow-inner">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+              <div>
+                <div className="text-[11px] font-black tracking-widest uppercase text-base-content/50">
+                  {selectedCabang?.Nama_Cabang || 'MOCHIKIN'}
+                </div>
+                <h1 className="text-xl font-extrabold text-base-content tracking-tight uppercase">
+                  Struk Stock Opname
+                </h1>
+                <p className="text-xs text-base-content/60 mt-0.5">
+                  Transaksi Berhasil Diisi & Tersimpan
+                </p>
+              </div>
             </div>
 
-            {laporan && (
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-base-content/60">Tanggal dan Shift:</span>
-                  <span className="font-semibold text-base-content">{laporan.Tanggal_Operasional} ({laporan.Shift})</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-base-content/60">Petugas Penanggung Jawab:</span>
-                  <span className="font-semibold text-base-content">{laporan.Petugas}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-base-content/60">Item Status Kritis:</span>
-                  <span className="font-bold text-error tabular-nums">{laporan.Jumlah_Kritis} Item</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-base-content/60">Item Status Hampir Habis:</span>
-                  <span className="font-bold text-warning tabular-nums">{laporan.Jumlah_Hampir_Habis} Item</span>
-                </div>
-              </div>
-            )}
-          </div>
+            {/* Receipt Cutout Divider Line */}
+            <div className="relative flex items-center justify-between -my-3 z-10">
+              <div className="-ml-3 w-6 h-6 rounded-full bg-base-200 border-r border-base-300 shadow-inner"></div>
+              <div className="w-full border-t-2 border-dashed border-base-300/80"></div>
+              <div className="-mr-3 w-6 h-6 rounded-full bg-base-200 border-l border-base-300 shadow-inner"></div>
+            </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-              {hasXlsxLink ? (
-                <a href={xlsxLink} target="_blank" rel="noopener noreferrer" className="btn btn-primary gap-2 px-5 py-3 min-h-[44px]">
-                  <Table className="w-4 h-4" />
-                  <span>Buka File XLSX</span>
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              ) : (
-                <button disabled className="btn btn-ghost gap-2 px-5 py-3 min-h-[44px] cursor-not-allowed opacity-50" title="File XLSX belum tersedia di Google Drive">
-                  <Table className="w-4 h-4" />
-                  <span>File XLSX Belum Tersedia</span>
-                </button>
+            {/* Receipt Body Details */}
+            <div className="p-6 space-y-4 text-xs font-mono">
+              <div className="flex items-center justify-between pb-2 border-b border-dashed border-base-300">
+                <span className="text-base-content/60 font-semibold uppercase">No. Laporan</span>
+                <span className="font-bold text-primary bg-primary/10 px-2 py-0.5 rounded text-[11px] border border-primary/20">
+                  {laporanId}
+                </span>
+              </div>
+
+              {laporan && (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-base-content/60 uppercase">Tanggal</span>
+                    <span className="font-semibold text-base-content">{laporan.Tanggal_Operasional}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-base-content/60 uppercase">Shift</span>
+                    <span className="font-semibold text-base-content uppercase">{laporan.Shift}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-base-content/60 uppercase">Petugas</span>
+                    <span className="font-semibold text-base-content">{laporan.Petugas}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-base-content/60 uppercase">Total Master Item</span>
+                    <span className="font-semibold text-base-content">{totalItem || 136} Item</span>
+                  </div>
+
+                  <div className="border-t border-dashed border-base-300 pt-2.5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-base-content/60 uppercase">Status Kritis</span>
+                      <span className="font-bold text-error bg-error/10 px-2 py-0.5 rounded tabular-nums">
+                        {laporan.Jumlah_Kritis} Item
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-base-content/60 uppercase">Status Hampir Habis</span>
+                      <span className="font-bold text-warning bg-warning/10 px-2 py-0.5 rounded tabular-nums">
+                        {laporan.Jumlah_Hampir_Habis} Item
+                      </span>
+                    </div>
+                  </div>
+                </div>
               )}
 
-              {/* Always enabled Share WA button */}
-              <button onClick={handleShareWhatsApp} className="btn btn-success gap-2 px-6 py-3 min-h-[44px]">
-                <Share2 className="w-4 h-4" />
-                <span>{waSent ? 'Kirim Ulang ke WhatsApp' : 'Siapkan Pesan WhatsApp'}</span>
-              </button>
-
-              {/* Regenerate button always shown, disabled when link is ready or loading */}
-              <button
-                onClick={triggerRegenerate}
-                disabled={hasXlsxLink || isRegenerating}
-                className={`btn btn-warning gap-2 px-5 py-3 min-h-[44px] ${hasXlsxLink ? 'btn-ghost opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {isRegenerating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <RefreshCcw className="w-4 h-4" />
-                )}
-                <span>Regenerate Spreadsheet</span>
-              </button>
+              {/* Receipt Barcode Graphic */}
+              <div className="pt-4 border-t border-dashed border-base-300 flex flex-col items-center space-y-1.5 opacity-60">
+                <div className="flex items-center gap-0.5 h-7">
+                  <div className="w-1 h-full bg-base-content"></div>
+                  <div className="w-0.5 h-full bg-base-content"></div>
+                  <div className="w-2 h-full bg-base-content"></div>
+                  <div className="w-1 h-full bg-base-content"></div>
+                  <div className="w-0.5 h-full bg-base-content"></div>
+                  <div className="w-1.5 h-full bg-base-content"></div>
+                  <div className="w-0.5 h-full bg-base-content"></div>
+                  <div className="w-2 h-full bg-base-content"></div>
+                  <div className="w-1 h-full bg-base-content"></div>
+                  <div className="w-0.5 h-full bg-base-content"></div>
+                  <div className="w-1.5 h-full bg-base-content"></div>
+                  <div className="w-1 h-full bg-base-content"></div>
+                  <div className="w-0.5 h-full bg-base-content"></div>
+                  <div className="w-2 h-full bg-base-content"></div>
+                </div>
+                <div className="text-[10px] tracking-widest uppercase text-base-content/50">
+                  *** LAPORAN STRUK RESMI MOCHIKIN ***
+                </div>
+              </div>
             </div>
 
-          {/* Status XLSX Badge */}
-          <div className="pt-1 flex items-center justify-center">
-            {hasXlsxLink ? (
-              <div className="flex items-center gap-1.5 text-xs text-success font-semibold">
-                <CheckCircle2 className="w-3 h-3" />
-                <span>File XLSX tersedia di Google Drive</span>
+            {/* Receipt Footer Actions */}
+            <div className="bg-base-200/40 p-6 border-t border-base-300 space-y-3">
+              <div className="flex flex-col gap-2.5">
+                {hasXlsxLink ? (
+                  <a
+                    href={xlsxLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary w-full gap-2 min-h-[44px] shadow-sm"
+                  >
+                    <Table className="w-4 h-4" />
+                    <span>Buka File XLSX</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                ) : (
+                  <button
+                    disabled
+                    className="btn btn-ghost w-full gap-2 min-h-[44px] cursor-not-allowed opacity-50 border border-base-300"
+                    title="File XLSX belum tersedia di Google Drive"
+                  >
+                    <Table className="w-4 h-4" />
+                    <span>File XLSX Belum Tersedia</span>
+                  </button>
+                )}
+
+                {/* Always enabled Share WA button */}
+                <button
+                  onClick={handleShareWhatsApp}
+                  className="btn btn-success w-full gap-2 min-h-[44px] shadow-sm"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>{waSent ? 'Kirim Ulang ke WhatsApp' : 'Siapkan Pesan WhatsApp'}</span>
+                </button>
+
+                {/* Regenerate button always shown, disabled when link is ready or loading */}
+                <button
+                  onClick={triggerRegenerate}
+                  disabled={hasXlsxLink || isRegenerating}
+                  className={`btn btn-warning w-full gap-2 min-h-[44px] ${
+                    hasXlsxLink ? 'btn-ghost opacity-50 cursor-not-allowed border border-base-300' : ''
+                  }`}
+                >
+                  {isRegenerating ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCcw className="w-4 h-4" />
+                  )}
+                  <span>Regenerate Spreadsheet</span>
+                </button>
               </div>
-            ) : null}
+
+              {/* Status XLSX Badge */}
+              {hasXlsxLink && (
+                <div className="flex items-center justify-center gap-1.5 text-xs text-success font-semibold pt-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>File XLSX tersedia di Google Drive</span>
+                </div>
+              )}
+
+              {waSent && (
+                <div className="alert alert-success text-xs py-2 mt-2" role="alert">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Status laporan telah diperbarui: Sudah Dikirim</span>
+                </div>
+              )}
+            </div>
           </div>
 
-          {waSent && (
-            <div className="alert alert-success text-sm py-2 mt-2" role="alert">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Status laporan telah diperbarui: Sudah Dikirim</span>
-            </div>
-          )}
-
-          <div className="pt-6 border-t border-base-300 flex items-center justify-between text-sm">
+          {/* Navigation Links */}
+          <div className="pt-2 flex items-center justify-between text-sm">
             <Link
               href="/laporan"
               className="inline-flex items-center gap-1.5 text-base-content/60 hover:text-base-content font-semibold transition-colors"

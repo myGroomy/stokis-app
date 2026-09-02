@@ -175,62 +175,6 @@ function clearDraft(cabangId: string): void {
   }
 }
 
-/**
- * Verify that Link_XLSX has been saved to database and contains valid Drive link.
- * Poll /api/laporan/{laporanId}/wa-link endpoint until Link_XLSX is populated (max 5 retries, 2s interval).
- * 
- * Returns:
- *   - laporanId if verification succeeds and Link_XLSX is a valid Drive link
- *   - throws error if verification fails after all retries
- */
-async function verifyXlsxLinkSaved(
-  laporanId: string,
-  cabangId: string,
-  maxRetries: number = 5,
-  intervalMs: number = 2000
-): Promise<string> {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      // Use /api/laporan/{laporanId}/wa-link endpoint which is available
-      const res = await fetch(`/api/laporan/${laporanId}/wa-link?cabang=${cabangId}`, { credentials: 'include' });
-      // Ensure we received JSON; otherwise treat as not ready
-      let json: any = null;
-      try {
-        const contentType = res.headers.get('content-type') || '';
-        if (!res.ok || !contentType.includes('application/json')) {
-          throw new Error('Non‑JSON or error response');
-        }
-        json = await res.json();
-      } catch (e) {
-        console.warn(`[Verify] Attempt ${attempt}/${maxRetries}: failed to parse JSON –`, e);
-        json = null;
-      }
-
-      if (json && json.success && json.data?.laporan?.Link_XLSX) {
-        const link = json.data.laporan.Link_XLSX;
-        // Verify it's a Drive link, not fallback API link
-        if (link.includes('drive.google.com') || link.includes('drivesdk')) {
-          console.log(`✅ Link_XLSX verified: ${link}`);
-          return laporanId;
-        }
-      }
-
-      console.log(`[Verify] Attempt ${attempt}/${maxRetries}: Link_XLSX not yet ready, retrying...`);
-
-      if (attempt < maxRetries) {
-        await new Promise(r => setTimeout(r, intervalMs));
-      }
-    } catch (err) {
-      console.error(`[Verify] Attempt ${attempt}/${maxRetries} failed:`, err);
-      if (attempt < maxRetries) {
-        await new Promise(r => setTimeout(r, intervalMs));
-      }
-    }
-  }
-  
-  throw new Error(`Link_XLSX tidak terupdate di database setelah ${maxRetries} percobaan`);
-}
-
 export default function InputSOPage() {
   const router = useRouter();
   const { selectedCabang, loading: cabangLoading } = useCabang();
@@ -631,7 +575,7 @@ export default function InputSOPage() {
         // catatan laporan bersifat non-critical; laporanId fallback ke sesiId
       }
 
-      // Generate XLSX dan simpan ke Drive - HARUS SELESAI sebelum redirect
+      // Generate XLSX dan simpan ke Drive
       setGenStep('xlsx');
       try {
         const xlsxRes = await fetch(`/api/so/${laporanId || formState.sesiId}/xlsx`, {
@@ -649,30 +593,9 @@ export default function InputSOPage() {
             sesiId: formState.sesiId,
           }),
         });
-        
-        // PENTING: Tunggu XLSX benar-benar selesai di-generate dan di-upload
-        const xlsxBlob = await xlsxRes.blob();
-        console.log('✅ XLSX berhasil di-generate:', xlsxBlob.size, 'bytes');
-        
-      } catch (xlsxErr) {
-        console.error('❌ XLSX generation gagal:', xlsxErr);
-        // Tetap lanjut ke halaman konfirmasi meski XLSX gagal (non-critical)
-      }
-
-      // Verify Link_XLSX was saved before redirecting
-      setGenStep('verifikasi');
-      try {
-        const verifiedLaporanId = await verifyXlsxLinkSaved(
-          laporanId || formState.sesiId,
-          selectedCabang.Cabang_ID
-        );
-        setGenStep('selesai');
-        router.push(`/so/konfirmasi/${verifiedLaporanId}`);
-      } catch (verifyErr) {
-        // Verification failed, but still redirect - UI will show error badge
-        console.warn('Link_XLSX verification failed, redirecting anyway:', verifyErr);
-        setGenStep('selesai');
-        router.push(`/so/konfirmasi/${laporanId || formState.sesiId}`);
+        // Tidak perlu menunggu response body, yang penting proses upload jalan
+      } catch {
+        // XLSX generation is non-critical
       }
 
       // Submit sukses → hapus draft sementara
@@ -680,6 +603,9 @@ export default function InputSOPage() {
         clearDraft(selectedCabang.Cabang_ID);
         setPendingDraft(null);
       }
+
+      setGenStep('selesai');
+      router.push(`/so/konfirmasi/${laporanId || formState.sesiId}`);
     } catch (err) {
       setErrorMsg(
         'Terjadi kendala jaringan setelah beberapa percobaan: ' +

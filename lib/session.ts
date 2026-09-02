@@ -79,11 +79,13 @@ export function getSessionFromRequest(request: NextRequest): SessionData | null 
  * Set-Cookie header for login
  */
 export function setSessionCookieHeader(token: string): string {
+  const isProd = process.env.NODE_ENV === 'production';
   return [
     `${COOKIE_NAME}=${token}`,
     'Path=/',
     'HttpOnly',
-    'Secure',
+    // Secure flag only in production (HTTPS) environments
+    ...(isProd ? ['Secure'] : []),
     'SameSite=Strict',
     `Max-Age=${SESSION_MAX_AGE}`,
   ].join('; ');

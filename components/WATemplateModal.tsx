@@ -22,6 +22,9 @@ export function WATemplateModal({ isOpen, onClose, ...data }: WATemplateModalPro
   const [copied, setCopied] = React.useState(false);
 
   const activeLink = data.linkXLSX || '';
+  const fallbackLink = typeof window !== 'undefined' ? 
+    `${window.location.origin}/api/so/[LAPORAN_ID]/xlsx-file?cabang=[CABANG_ID]` : 
+    '';
 
   const templateText = `
 *LAPORAN STOCK OPNAME*
@@ -37,7 +40,7 @@ Status Kritis    : ${data.jumlahKritis}
 Status Hampir Habis : ${data.jumlahHampirHabis}
 
 Laporan XLSX:
-${activeLink}
+${activeLink || fallbackLink.replace('[LAPORAN_ID]', '[ID_LAPORAN]').replace('[CABANG_ID]', '[ID_CABANG]')}
 `.trim();
 
   const handleCopy = () => {

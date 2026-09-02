@@ -480,8 +480,15 @@ export default function InputSOPage() {
     setPendingDraft(null);
   };
 
-  const getStatusBadge = (total: number, threshold: number) => {
-    if (!threshold || threshold <= 0) {
+  const getStatusBadge = (total: number, thresholdRaw: unknown) => {
+    let threshold: number | null = null;
+    if (thresholdRaw !== undefined && thresholdRaw !== null && String(thresholdRaw).trim() !== '') {
+      const s = String(thresholdRaw).replace(',', '.').trim();
+      const n = parseFloat(s);
+      if (!isNaN(n)) threshold = n;
+    }
+
+    if (threshold === null || threshold < 0) {
       return (
         <span className="badge badge-ghost text-[11px] font-medium gap-1">
           <HelpCircle className="w-3 h-3" />
@@ -497,7 +504,7 @@ export default function InputSOPage() {
         </span>
       );
     }
-    if (total <= threshold * 2) {
+    if (threshold > 0 && total <= threshold * 2) {
       return (
         <span className="badge badge-warning text-[11px] font-bold gap-1">
           <AlertCircle className="w-3 h-3" />

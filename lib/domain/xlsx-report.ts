@@ -17,11 +17,13 @@ export interface XlsxItem {
 
 type StatusType = 'KRITIS' | 'HAMPIR HABIS' | 'AMAN' | 'Tidak Dipantau';
 
-function getStatus(step1: number, step2: number, threshold: number): StatusType {
+function getStatus(step1: number, step2: number, threshold: number | null | undefined): StatusType {
   const total = step1 + step2;
-  if (!threshold || threshold <= 0) return 'Tidak Dipantau';
+  if (threshold === null || threshold === undefined || isNaN(threshold) || threshold < 0) {
+    return 'Tidak Dipantau';
+  }
   if (total <= threshold) return 'KRITIS';
-  if (total <= threshold * 2) return 'HAMPIR HABIS';
+  if (threshold > 0 && total <= threshold * 2) return 'HAMPIR HABIS';
   return 'AMAN';
 }
 
@@ -157,11 +159,12 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
     const s2 = Number(it.step2) || 0;
     const total = s1 + s2;
     const threshold = parseThreshold(it.threshold);
+    const thresholdCell = threshold != null ? threshold : '';
     const prevTotal = it.prevTotal != null ? Number(it.prevTotal) : null;
     const penggunaan = prevTotal != null ? prevTotal - total : null;
     const status = getStatus(s1, s2, threshold);
 
-    const newRow = ws.insertRow(idx + 9, [idx + 1, it.namaBarang || '', it.area || '', it.satuan || '', threshold || '', it.prevStep1 ?? '', it.prevStep2 ?? '', prevTotal ?? '', s1, s2, total, penggunaan ?? '', status, it.keterangan || '']);
+    const newRow = ws.insertRow(idx + 9, [idx + 1, it.namaBarang || '', it.area || '', it.satuan || '', thresholdCell, it.prevStep1 ?? '', it.prevStep2 ?? '', prevTotal ?? '', s1, s2, total, penggunaan ?? '', status, it.keterangan || '']);
     const rowBg = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF8FAFC';
 
     newRow.eachCell((cell, colNum) => {

@@ -74,7 +74,7 @@ export async function saveLaporan(
   (payload.items || []).forEach((it) => {
     const total = (Number(it.step1) || 0) + (Number(it.step2) || 0);
     const threshold = parseThreshold(it.threshold);
-    if (!threshold || threshold <= 0) return;
+    if (threshold === null) return;
     const s = calculateStatus(total, threshold);
     if (s === 'Kritis') jumlahKritis++;
     else if (s === 'Hampir Habis') jumlahHampirHabis++;
@@ -144,7 +144,7 @@ async function saveLaporanDetail(
     const prevTotal = it.prevTotal != null ? Number(it.prevTotal) : null;
     const penggunaan = prevTotal != null ? prevTotal - total : null;
     const threshold = parseThreshold(it.threshold);
-    const status = !threshold ? 'Tidak Dipantau' : calculateStatus(total, threshold);
+    const status = calculateStatus(total, threshold);
     return [
       data.laporanId,
       data.tanggalOperasional,
@@ -154,7 +154,7 @@ async function saveLaporanDetail(
       it.namaBarang || '',
       it.area || '',
       it.satuan || '',
-      threshold || null,
+      threshold != null ? threshold : null,
       it.prevStep1 != null ? Number(it.prevStep1) : null,
       it.prevStep2 != null ? Number(it.prevStep2) : null,
       prevTotal,

@@ -18,11 +18,21 @@ export const SO_COL = {
   Keterangan: 13,
 } as const;
 
-export function calculateStatus(total: number, threshold: number): string {
-  if (!threshold || threshold <= 0) return 'Tidak Dipantau';
+export function calculateStatus(total: number, threshold: number | null | undefined): string {
+  if (threshold === null || threshold === undefined || isNaN(threshold) || threshold < 0) {
+    return 'Tidak Dipantau';
+  }
   if (total <= threshold) return 'Kritis';
-  if (total <= threshold * 2) return 'Hampir Habis';
+  if (threshold > 0 && total <= threshold * 2) return 'Hampir Habis';
   return 'Aman';
+}
+
+export function parseThreshold(v: unknown): number | null {
+  if (v === undefined || v === null || String(v).trim() === '') return null;
+  if (typeof v === 'number') return isNaN(v) ? null : v;
+  const s = String(v).replace(',', '.').trim();
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
 }
 
 export interface SOItem {
@@ -54,14 +64,6 @@ export function normalizeCount(v: unknown): number {
   if (v === undefined || v === null || v === '') return 0;
   const n = Number(v);
   return isFinite(n) && n >= 0 ? n : 0;
-}
-
-export function parseThreshold(v: unknown): number {
-  if (v === undefined || v === null || v === '') return 0;
-  if (typeof v === 'number') return isNaN(v) ? 0 : v;
-  const s = String(v).replace(',', '.').trim();
-  const n = parseFloat(s);
-  return isFinite(n) && n > 0 ? n : 0;
 }
 
 export interface ValidationError {

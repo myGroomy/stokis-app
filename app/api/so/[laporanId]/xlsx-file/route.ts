@@ -36,11 +36,15 @@ function normalizeDate(v: unknown): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function getStatus(step1: number, step2: number, threshold: number): string {
+import { parseThreshold } from '@/lib/domain/so';
+
+function getStatus(step1: number, step2: number, threshold: number | null | undefined): string {
   const total = step1 + step2;
-  if (!threshold || threshold <= 0) return 'Tidak Dipantau';
+  if (threshold === null || threshold === undefined || isNaN(threshold) || threshold < 0) {
+    return 'Tidak Dipantau';
+  }
   if (total <= threshold) return 'Kritis';
-  if (total <= threshold * 2) return 'Hampir Habis';
+  if (threshold > 0 && total <= threshold * 2) return 'Hampir Habis';
   return 'Aman';
 }
 
@@ -99,7 +103,7 @@ export async function GET(
     const step1 = Number(r['Step1']) || 0;
     const step2 = Number(r['Step2']) || 0;
     const total = step1 + step2;
-    const threshold = Number(r['Threshold']) || 0;
+    const threshold = parseThreshold(r['Threshold']);
     const prevTotal = r['Prev_Total'] != null && String(r['Prev_Total']) !== '' ? Number(r['Prev_Total']) : null;
     const penggunaan = prevTotal != null ? prevTotal - total : null;
     return {
@@ -107,7 +111,7 @@ export async function GET(
       'Nama Barang': String(r['Nama_Barang'] || ''),
       'Area': String(r['Area'] || ''),
       'Satuan': String(r['Satuan'] || ''),
-      'Batas Min': threshold || '',
+      'Batas Min': threshold != null ? threshold : '',
       'SO Sebelumnya (S1)': r['Prev_Step1'] != null && String(r['Prev_Step1']) !== '' ? Number(r['Prev_Step1']) : '',
       'SO Sebelumnya (S2)': r['Prev_Step2'] != null && String(r['Prev_Step2']) !== '' ? Number(r['Prev_Step2']) : '',
       'SO Sebelumnya (Total)': prevTotal ?? '',

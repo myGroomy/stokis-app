@@ -1,4 +1,5 @@
 import * as ExcelJS from 'exceljs';
+import { parseThreshold } from './so';
 
 export interface XlsxItem {
   itemId?: string;
@@ -155,7 +156,7 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
     const s1 = Number(it.step1) || 0;
     const s2 = Number(it.step2) || 0;
     const total = s1 + s2;
-    const threshold = Number(it.threshold) || 0;
+    const threshold = parseThreshold(it.threshold);
     const prevTotal = it.prevTotal != null ? Number(it.prevTotal) : null;
     const penggunaan = prevTotal != null ? prevTotal - total : null;
     const status = getStatus(s1, s2, threshold);

@@ -56,6 +56,14 @@ export function normalizeCount(v: unknown): number {
   return isFinite(n) && n >= 0 ? n : 0;
 }
 
+export function parseThreshold(v: unknown): number {
+  if (v === undefined || v === null || v === '') return 0;
+  if (typeof v === 'number') return isNaN(v) ? 0 : v;
+  const s = String(v).replace(',', '.').trim();
+  const n = parseFloat(s);
+  return isFinite(n) && n > 0 ? n : 0;
+}
+
 export interface ValidationError {
   code: string;
   message: string;

@@ -6,6 +6,8 @@ import { readSheetData, sheetToObjects, findRowIndex, appendRows, writeRow } fro
 import { ApiError } from './errors';
 import { randomToken, buildItemId } from './ids';
 
+import { parseThreshold } from './so';
+
 export interface MasterItemPayload {
   Nama_Barang: string;
   Area: string;
@@ -19,7 +21,12 @@ export async function getMasterItems(cabangId: string) {
   const { spreadsheetId } = await resolveCabang(cabangId);
   const { headers, rows } = await readSheetData(spreadsheetId, 'Master_Item');
   const list = sheetToObjects(headers, rows);
-  return list.filter((r) => r['Aktif'] === true || r['Aktif'] === 'true' || r['Aktif'] === 'TRUE' || r['Aktif'] === 'True');
+  return list
+    .filter((r) => r['Aktif'] === true || r['Aktif'] === 'true' || r['Aktif'] === 'TRUE' || r['Aktif'] === 'True')
+    .map((r) => ({
+      ...r,
+      Threshold: parseThreshold(r['Threshold']),
+    }));
 }
 
 export async function addItem(cabangId: string, payload: MasterItemPayload): Promise<{ itemId: string }> {
@@ -32,7 +39,7 @@ export async function addItem(cabangId: string, payload: MasterItemPayload): Pro
     payload.Satuan,
     payload.Konversi_Isi || '',
     payload.Konversi_Keterangan || '',
-    Number(payload.Threshold) || 0,
+    parseThreshold(payload.Threshold),
     true,
     new Date(),
   ]]);
@@ -49,7 +56,7 @@ export async function updateThreshold(
   const found = findRowIndex(rows, 0, itemId);
   if (found.index === -1) throw new ApiError('not_found', 'Item ' + itemId + ' tidak ditemukan');
   const rowNumber = found.index + 2;
-  const th = Number(threshold) || 0;
+  const th = parseThreshold(threshold);
   await writeRow(spreadsheetId, `Master_Item!G${rowNumber}`, [th]);
   return { itemId, threshold: th };
 }

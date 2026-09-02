@@ -3,7 +3,7 @@
 
 import { resolveCabang } from '@/lib/google/registry';
 import { readSheetData, sheetToObjects, findRowIndex, appendRows, writeRow, ensureSheet, columnIndexToLetter } from '@/lib/google/sheets';
-import { calculateStatus } from './so';
+import { calculateStatus, parseThreshold } from './so';
 import { ApiError } from './errors';
 import { randomToken, buildLaporanId, formatDate } from './ids';
 
@@ -73,7 +73,7 @@ export async function saveLaporan(
   let jumlahHampirHabis = 0;
   (payload.items || []).forEach((it) => {
     const total = (Number(it.step1) || 0) + (Number(it.step2) || 0);
-    const threshold = Number(it.threshold) || 0;
+    const threshold = parseThreshold(it.threshold);
     if (!threshold || threshold <= 0) return;
     const s = calculateStatus(total, threshold);
     if (s === 'Kritis') jumlahKritis++;
@@ -143,7 +143,7 @@ async function saveLaporanDetail(
     const total = step1 + step2;
     const prevTotal = it.prevTotal != null ? Number(it.prevTotal) : null;
     const penggunaan = prevTotal != null ? prevTotal - total : null;
-    const threshold = Number(it.threshold) || 0;
+    const threshold = parseThreshold(it.threshold);
     const status = !threshold ? 'Tidak Dipantau' : calculateStatus(total, threshold);
     return [
       data.laporanId,

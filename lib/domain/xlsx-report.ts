@@ -95,12 +95,6 @@ const COLORS = {
 };
 
 export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buffer: Buffer; fileName: string }> {
-  const sortedItems = [...input.items].sort((a, b) => {
-    const statusA = getStatus(Number(a.step1) || 0, Number(a.step2) || 0, Number(a.threshold) || 0);
-    const statusB = getStatus(Number(b.step1) || 0, Number(b.step2) || 0, Number(b.threshold) || 0);
-    return STATUS_ORDER[statusA] - STATUS_ORDER[statusB];
-  });
-
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('Detail SO');
 
@@ -157,7 +151,7 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
   }
   ws.getRow(8).height = 18;
 
-  sortedItems.forEach((it, idx) => {
+  input.items.forEach((it, idx) => {
     const s1 = Number(it.step1) || 0;
     const s2 = Number(it.step2) || 0;
     const total = s1 + s2;

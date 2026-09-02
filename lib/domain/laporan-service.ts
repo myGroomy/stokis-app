@@ -2,7 +2,7 @@
 // Operasi laporan — port dari Laporan.js. Menggunakan Google Sheets API.
 
 import { resolveCabang } from '@/lib/google/registry';
-import { readSheetData, sheetToObjects, findRowIndex, appendRows, writeRow, ensureSheet } from '@/lib/google/sheets';
+import { readSheetData, sheetToObjects, findRowIndex, appendRows, writeRow, ensureSheet, columnIndexToLetter } from '@/lib/google/sheets';
 import { calculateStatus } from './so';
 import { ApiError } from './errors';
 import { randomToken, buildLaporanId, formatDate } from './ids';
@@ -223,12 +223,17 @@ export async function updateLaporanXlsxLink(
   linkXlsx: string
 ): Promise<{ updated: boolean }> {
   const { spreadsheetId } = await resolveCabang(cabangId);
-  const { rows } = await readSheetData(spreadsheetId, 'Laporan_PDF');
+  const { headers, rows } = await readSheetData(spreadsheetId, 'Laporan_PDF');
   const bySesi = findRowIndex(rows, 1, sesiId);
   const targetIndex = bySesi.index !== -1 ? bySesi.index : findRowIndex(rows, 0, laporanId).index;
   if (targetIndex === -1) return { updated: false };
+
+  const colIndex = headers.findIndex((h) => h === 'Link_XLSX');
+  if (colIndex === -1) return { updated: false };
+
   const rowNumber = targetIndex + 2;
-  await writeRow(spreadsheetId, `Laporan_PDF!K${rowNumber}`, [linkXlsx]);
+  const colLetter = columnIndexToLetter(colIndex);
+  await writeRow(spreadsheetId, `Laporan_PDF!${colLetter}${rowNumber}`, [linkXlsx]);
   return { updated: true };
 }
 

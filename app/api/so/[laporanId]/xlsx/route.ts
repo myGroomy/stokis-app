@@ -49,20 +49,23 @@ async function uploadFileToGASDriveWithRetry(
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
       const errorMsg = lastError.message;
+      const causeStr = lastError.cause ? (typeof lastError.cause === 'object' ? JSON.stringify(lastError.cause) : String(lastError.cause)) : '';
+      const fullErrorText = `${errorMsg} ${causeStr} ${lastError.stack || ''}`;
 
       // Determine if error is retryable
       const isRetryable = 
-        errorMsg.includes('timeout') ||
-        errorMsg.includes('ECONNREFUSED') ||
-        errorMsg.includes('ECONNRESET') ||
-        errorMsg.includes('ETIMEDOUT') ||
-        errorMsg.includes('500') ||
-        errorMsg.includes('502') ||
-        errorMsg.includes('503') ||
-        errorMsg.includes('504') ||
-        errorMsg.includes('429') ||
-        errorMsg.includes('temporary') ||
-        errorMsg.includes('transient');
+        fullErrorText.includes('fetch failed') ||
+        fullErrorText.includes('timeout') ||
+        fullErrorText.includes('ECONNREFUSED') ||
+        fullErrorText.includes('ECONNRESET') ||
+        fullErrorText.includes('ETIMEDOUT') ||
+        fullErrorText.includes('500') ||
+        fullErrorText.includes('502') ||
+        fullErrorText.includes('503') ||
+        fullErrorText.includes('504') ||
+        fullErrorText.includes('429') ||
+        fullErrorText.includes('temporary') ||
+        fullErrorText.includes('transient');
 
       console.error(`[XLSX RETRY] Attempt ${attempt}/${maxAttempts} - FAILED: ${errorMsg} (retryable: ${isRetryable})`);
 

@@ -154,7 +154,20 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
   }
   ws.getRow(8).height = 18;
 
-  input.items.forEach((it, idx) => {
+  const sortedItems = [...input.items].sort((a, b) => {
+    const sa = getStatus(Number(a.step1) || 0, Number(a.step2) || 0, parseThreshold(a.threshold));
+    const sb = getStatus(Number(b.step1) || 0, Number(b.step2) || 0, parseThreshold(b.threshold));
+    return STATUS_ORDER[sa] - STATUS_ORDER[sb];
+  });
+
+  const ROW_COLORS: Record<StatusType, { bg: string; text: string }> = {
+    'KRITIS':          { bg: COLORS.kritisBg, text: COLORS.kritisText },
+    'HAMPIR HABIS':    { bg: COLORS.hampirBg, text: COLORS.hampirText },
+    'AMAN':            { bg: COLORS.amanBg,   text: COLORS.amanText },
+    'Tidak Dipantau':  { bg: 'FFFFFFFF',      text: COLORS.textDark },
+  };
+
+  sortedItems.forEach((it, idx) => {
     const s1 = Number(it.step1) || 0;
     const s2 = Number(it.step2) || 0;
     const total = s1 + s2;
@@ -163,24 +176,15 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
     const prevTotal = it.prevTotal != null ? Number(it.prevTotal) : null;
     const penggunaan = prevTotal != null ? prevTotal - total : null;
     const status = getStatus(s1, s2, threshold);
+    const rc = ROW_COLORS[status];
 
     const newRow = ws.insertRow(idx + 9, [idx + 1, it.namaBarang || '', it.area || '', it.satuan || '', thresholdCell, it.prevStep1 ?? '', it.prevStep2 ?? '', prevTotal ?? '', s1, s2, total, penggunaan ?? '', status, it.keterangan || '']);
-    const rowBg = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF8FAFC';
 
     newRow.eachCell((cell, colNum) => {
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rowBg } } as any;
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rc.bg } } as any;
       cell.alignment = { horizontal: [1, 5, 6, 7, 8, 9, 10, 11, 12].includes(colNum) ? 'center' : 'left', vertical: 'middle', wrapText: true };
       if (colNum === 13) {
-        if (status === 'KRITIS') {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.kritisBg } } as any;
-          cell.font = { bold: true, color: { argb: COLORS.kritisText }, size: 9 };
-        } else if (status === 'HAMPIR HABIS') {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.hampirBg } } as any;
-          cell.font = { bold: true, color: { argb: COLORS.hampirText }, size: 9 };
-        } else if (status === 'AMAN') {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.amanBg } } as any;
-          cell.font = { bold: true, color: { argb: COLORS.amanText }, size: 9 };
-        }
+        cell.font = { bold: true, color: { argb: rc.text }, size: 9 };
       }
     });
     newRow.height = 16;

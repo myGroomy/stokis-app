@@ -57,8 +57,8 @@ export async function updateThreshold(
   if (found.index === -1) throw new ApiError('not_found', 'Item ' + itemId + ' tidak ditemukan');
   const rowNumber = found.index + 2;
   const th = parseThreshold(threshold);
-  await writeRow(spreadsheetId, `Master_Item!G${rowNumber}`, [th]);
-  return { itemId, threshold: th };
+  await writeRow(spreadsheetId, `Master_Item!G${rowNumber}`, [th ?? '']);
+  return { itemId, threshold: th ?? 0 };
 }
 
 export async function setItemActive(

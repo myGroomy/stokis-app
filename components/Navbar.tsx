@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useCabang } from "@/lib/CabangContext";
 import { useAuth } from "@/lib/AuthContext";
 import { useTour } from "@/lib/TourContext";
+import { useLanguage } from "@/lib/LanguageContext";
 import {
   ClipboardCheck,
   Package,
@@ -18,6 +19,8 @@ import {
   Home,
   LogOut,
   HelpCircle,
+  BookOpen,
+  Globe,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -25,28 +28,31 @@ type UserRole = "admin" | "petugas";
 
 interface NavItem {
   name: string;
+  nameEn?: string;
   href: string;
   icon: LucideIcon;
   roles?: UserRole[];
 }
 
 const bottomNavItems: NavItem[] = [
-  { name: "Beranda", href: "/", icon: Home },
-  { name: "Input SO", href: "/so/input", icon: ClipboardCheck },
-  { name: "Laporan", href: "/laporan", icon: FileText },
-  { name: "Item", href: "/master-item", icon: Package, roles: ["admin"] },
-  { name: "Lainnya", href: "/cabang", icon: Building2, roles: ["admin"] },
-  { name: "Tutor", href: "/tutorial", icon: HelpCircle },
-  { name: "Keluar", href: "/logout", icon: LogOut },
+  { name: "Beranda", nameEn: "Home", href: "/", icon: Home },
+  { name: "Input SO", nameEn: "Input SO", href: "/so/input", icon: ClipboardCheck },
+  { name: "Laporan", nameEn: "Reports", href: "/laporan", icon: FileText },
+  { name: "Panduan", nameEn: "Guide", href: "/panduan", icon: BookOpen },
+  { name: "Item", nameEn: "Items", href: "/master-item", icon: Package, roles: ["admin"] },
+  { name: "Lainnya", nameEn: "More", href: "/cabang", icon: Building2, roles: ["admin"] },
+  { name: "Tutor", nameEn: "Tutor", href: "/tutorial", icon: HelpCircle },
+  { name: "Keluar", nameEn: "Logout", href: "/logout", icon: LogOut },
 ];
 
 const desktopNavItems: NavItem[] = [
-  { name: "Input SO", href: "/so/input", icon: ClipboardCheck },
-  { name: "Laporan", href: "/laporan", icon: FileText },
-  { name: "Item", href: "/master-item", icon: Package, roles: ["admin"] },
-  { name: "Petugas", href: "/petugas", icon: Users, roles: ["admin"] },
-  { name: "Cabang", href: "/cabang", icon: Building2, roles: ["admin"] },
-  { name: "Dashboard", href: "/dashboard/harian", icon: BarChart3 },
+  { name: "Input SO", nameEn: "Input SO", href: "/so/input", icon: ClipboardCheck },
+  { name: "Laporan", nameEn: "Reports", href: "/laporan", icon: FileText },
+  { name: "Panduan", nameEn: "Guide", href: "/panduan", icon: BookOpen },
+  { name: "Item", nameEn: "Items", href: "/master-item", icon: Package, roles: ["admin"] },
+  { name: "Petugas", nameEn: "Staff", href: "/petugas", icon: Users, roles: ["admin"] },
+  { name: "Cabang", nameEn: "Branches", href: "/cabang", icon: Building2, roles: ["admin"] },
+  { name: "Dashboard", nameEn: "Dashboard", href: "/dashboard/harian", icon: BarChart3 },
 ];
 
 export function Navbar() {
@@ -54,6 +60,7 @@ export function Navbar() {
   const { selectedCabang, cabangList, setSelectedCabang } = useCabang();
   const { user, logout } = useAuth();
   const { openTour } = useTour();
+  const { lang, toggleLang } = useLanguage();
   const role = user?.role || "petugas";
 
   const isVisible = (item: NavItem) => !item.roles || item.roles.includes(role);
@@ -88,7 +95,7 @@ export function Navbar() {
                   STOKIS
                 </span>
                 <span className="text-[10px] font-semibold tracking-wide uppercase mt-0.5 text-base-content/50">
-                  Operasional
+                  {lang === 'en' ? 'Operations' : 'Operasional'}
                 </span>
               </div>
             </Link>
@@ -98,6 +105,7 @@ export function Navbar() {
               {filteredDesktop.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);
+                const label = lang === 'en' && item.nameEn ? item.nameEn : item.name;
                 return (
                   <Link
                     key={item.name}
@@ -110,7 +118,7 @@ export function Navbar() {
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
-                    <span>{item.name}</span>
+                    <span>{label}</span>
                   </Link>
                 );
               })}
@@ -118,6 +126,16 @@ export function Navbar() {
 
             {/* Right side */}
             <div className="flex items-center gap-2">
+              {/* Language Switcher */}
+              <button
+                onClick={toggleLang}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-md transition-colors duration-150 text-base-content/80 bg-base-200 hover:bg-base-300 font-mono text-xs font-bold border border-base-300"
+                title={lang === 'id' ? 'Switch to English' : 'Ubah ke Bahasa Indonesia'}
+              >
+                <Globe className="w-3.5 h-3.5 text-primary" />
+                <span>{lang.toUpperCase()}</span>
+              </button>
+
               {/* Branch Selector */}
               <div data-onboard="cabang" className="flex items-center rounded-md px-2.5 py-1.5 bg-base-200 border border-base-300 max-w-[160px] sm:max-w-none">
                 <Store className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 text-primary" />
@@ -131,7 +149,7 @@ export function Navbar() {
                   className="bg-transparent text-xs font-semibold focus:outline-none pr-3 appearance-none border-none outline-none py-0 truncate cursor-pointer text-base-content"
                 >
                   {cabangList.length === 0 ? (
-                    <option value="">Pilih Cabang...</option>
+                    <option value="">{lang === 'en' ? 'Select Branch...' : 'Pilih Cabang...'}</option>
                   ) : (
                     cabangList.map((c) => (
                       <option key={c.Cabang_ID} value={c.Cabang_ID}>
@@ -149,20 +167,20 @@ export function Navbar() {
               <button
                 onClick={openTour}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-colors duration-150 text-base-content/50 hover:text-primary hover:bg-primary/10"
-                title="Lihat tutorial"
+                title={lang === 'en' ? 'View tutorial' : 'Lihat tutorial'}
               >
                 <HelpCircle className="w-3.5 h-3.5" />
-                <span className="text-xs font-semibold hidden sm:inline">Tutorial</span>
+                <span className="text-xs font-semibold hidden sm:inline">{lang === 'en' ? 'Tutorial' : 'Tutorial'}</span>
               </button>
 
               {/* Logout */}
               <button
                 onClick={logout}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-colors duration-150 text-base-content/50 hover:text-error hover:bg-error/10"
-                title="Keluar"
+                title={lang === 'en' ? 'Logout' : 'Keluar'}
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span className="text-xs font-semibold hidden sm:inline">Keluar</span>
+                <span className="text-xs font-semibold hidden sm:inline">{lang === 'en' ? 'Logout' : 'Keluar'}</span>
               </button>
             </div>
           </div>

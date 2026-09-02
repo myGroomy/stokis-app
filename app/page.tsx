@@ -25,6 +25,7 @@ import {
   Info,
   Calculator,
 } from "lucide-react";
+import { useLanguage } from "@/lib/LanguageContext";
 
 const features = [
   {
@@ -108,13 +109,15 @@ export default function HomePage() {
 }
 
 function MarketingLanding() {
+  const { lang, t } = useLanguage();
+
   return (
     <main className="overflow-x-hidden w-full max-w-full bg-base-100">
       {/* Hero */}
       <section className="px-8 pt-32 mx-auto md:px-12 lg:px-24 max-w-7xl relative">
         <div className="max-w-3xl text-center mx-auto lg:text-balance mb-10">
           <p className="text-sm leading-normal font-bold uppercase text-primary">
-            Sistem Stock Opname Multi Cabang
+            {t('Sistem Stock Opname Multi Cabang', 'Multi-Branch Stock Opname System')}
           </p>
           <h1
             className="mt-4 font-semibold text-base-content"
@@ -124,26 +127,34 @@ function MarketingLanding() {
               letterSpacing: "-0.02em",
             }}
           >
-            Kelola Stok Lebih Cepat, Laporan Lebih Akurat
+            {t('Kelola Stok Lebih Cepat, Laporan Lebih Akurat', 'Manage Stock Faster, Report More Accurately')}
           </h1>
           <p className="text-base leading-normal mt-5 text-base-content/60 font-medium max-w-xl mx-auto">
-            Satu platform untuk input stock opname, generate laporan XLSX, dan
-            distribusi ke WhatsApp. Terisolasi per cabang, aman, dan mobile
-            friendly.
+            {t(
+              'Satu platform untuk input stock opname, generate laporan XLSX, dan distribusi ke WhatsApp. Terisolasi per cabang, aman, dan mobile friendly.',
+              'One unified platform for stock opname input, XLSX report generation, and instant WhatsApp sharing. Isolated per branch, secure, and mobile friendly.'
+            )}
           </p>
           <div className="flex flex-wrap items-center gap-3 justify-center mx-auto mt-10">
             <Link
               href="/login"
               className="inline-flex items-center justify-center transition-all duration-200 focus:ring-2 focus:outline-none text-white bg-primary hover:bg-primary/90 focus:ring-primary/50 h-10 px-6 text-sm font-medium rounded-lg"
             >
-              Mulai Sekarang
+              {t('Mulai Sekarang', 'Get Started')}
               <ArrowRight className="ml-2 w-4 h-4" />
+            </Link>
+            <Link
+              href="/panduan"
+              className="inline-flex items-center justify-center transition-all duration-200 focus:ring-2 focus:outline-none text-primary bg-primary/10 hover:bg-primary/20 focus:ring-primary/50 h-10 px-6 text-sm font-semibold rounded-lg gap-2"
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>{t('Learn how to use', 'Learn how to use')}</span>
             </Link>
             <a
               href="#fitur"
               className="inline-flex items-center justify-center transition-all duration-200 focus:ring-2 focus:outline-none text-base-content/70 bg-base-200 hover:bg-base-300 hover:text-base-content ring-1 ring-base-300 focus:ring-primary/30 h-10 px-6 text-sm font-medium rounded-lg"
             >
-              Lihat Fitur
+              {t('Lihat Fitur', 'View Features')}
             </a>
           </div>
         </div>

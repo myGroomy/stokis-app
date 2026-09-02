@@ -4,6 +4,7 @@ import './globals.css';
 import { CabangProvider } from '@/lib/CabangContext';
 import { AuthProvider } from '@/lib/AuthContext';
 import { TourProvider } from '@/lib/TourContext';
+import { LanguageProvider } from '@/lib/LanguageContext';
 import { AuthGuard } from '@/components/AuthGuard';
 import { Navbar } from '@/components/Navbar';
 
@@ -32,14 +33,16 @@ export default function RootLayout({
       <body data-theme="stokis" className="min-h-screen flex flex-col antialiased bg-base-200 text-base-content">
         <AuthProvider>
           <CabangProvider>
-            <AuthGuard>
-              <TourProvider>
-                <Navbar />
-                <main className="flex-1 w-full overflow-x-hidden">
-                  {children}
-                </main>
-              </TourProvider>
-            </AuthGuard>
+            <LanguageProvider>
+              <AuthGuard>
+                <TourProvider>
+                  <Navbar />
+                  <main className="flex-1 w-full overflow-x-hidden">
+                    {children}
+                  </main>
+                </TourProvider>
+              </AuthGuard>
+            </LanguageProvider>
           </CabangProvider>
         </AuthProvider>
       </body>

@@ -26,6 +26,10 @@ export function WATemplateModal({ isOpen, onClose, ...data }: WATemplateModalPro
     `${window.location.origin}/api/so/[LAPORAN_ID]/xlsx-file?cabang=[CABANG_ID]` : 
     '';
 
+  const totalItemNum = Number(data.totalItem) || 0;
+  const kritisNum = Number(data.jumlahKritis) || 0;
+  const hampirNum = Number(data.jumlahHampirHabis) || 0;
+
   const templateText = `
 *LAPORAN STOCK OPNAME*
 ------------------------
@@ -35,9 +39,9 @@ Tanggal   : ${data.tanggal}
 Shift     : ${data.shift.toUpperCase()}
 Petugas   : ${data.petugas}
 
-Total Item       : ${data.totalItem}
-Status Kritis    : ${data.jumlahKritis}
-Status Hampir Habis : ${data.jumlahHampirHabis}
+Total Item       : ${totalItemNum}
+Status Kritis    : ${kritisNum}
+Status Hampir Habis : ${hampirNum}
 
 Laporan XLSX:
 ${activeLink || fallbackLink.replace('[LAPORAN_ID]', '[ID_LAPORAN]').replace('[CABANG_ID]', '[ID_CABANG]')}

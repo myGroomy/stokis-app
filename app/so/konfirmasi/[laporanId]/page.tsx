@@ -81,11 +81,10 @@ const [errorMsg, setErrorMsg] = useState<string>('');
       try {
         const res = await fetch(`/api/master-item?cabang=${selectedCabang.Cabang_ID}`);
         const json = await res.json();
-        if (json.success && Array.isArray(json.data?.items)) {
+        if (json.success && Array.isArray(json.data)) {
+          setTotalItem(json.data.length);
+        } else if (json.success && Array.isArray(json.data?.items)) {
           setTotalItem(json.data.items.length);
-        } else if (json.success && typeof json.data?.totalCount === 'number') {
-          // fallback if API returns totalCount directly
-          setTotalItem(json.data.totalCount);
         }
       } catch (e) {
         console.error('Failed to fetch total items', e);
@@ -310,7 +309,7 @@ const [errorMsg, setErrorMsg] = useState<string>('');
             tanggal={laporan.Tanggal_Operasional}
             shift={laporan.Shift}
             petugas={laporan.Petugas}
-            totalItem={laporan.Detail?.length || 0}
+            totalItem={totalItem || 136}
             jumlahKritis={laporan.Jumlah_Kritis}
             jumlahHampirHabis={laporan.Jumlah_Hampir_Habis}
             linkXLSX={xlsxLink}

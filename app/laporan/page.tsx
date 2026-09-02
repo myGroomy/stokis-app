@@ -71,6 +71,19 @@ export default function LaporanPage() {
   const [showWATemplate, setShowWATemplate] = useState<boolean>(false);
   const [selectedLaporan, setSelectedLaporan] = useState<LaporanItem | null>(null);
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
+  const [totalMasterItems, setTotalMasterItems] = useState<number>(0);
+
+  useEffect(() => {
+    if (!selectedCabang?.Cabang_ID) return;
+    fetch(`/api/master-item?cabang=${selectedCabang.Cabang_ID}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          setTotalMasterItems(json.data.length);
+        }
+      })
+      .catch((e) => console.error('Error loading master item count:', e));
+  }, [selectedCabang?.Cabang_ID]);
   const fetchLaporan = async () => {
     if (!selectedCabang) return;
     try {
@@ -358,7 +371,7 @@ export default function LaporanPage() {
             tanggal={selectedLaporan.Tanggal_Operasional}
             shift={selectedLaporan.Shift}
             petugas={selectedLaporan.Petugas}
-            totalItem={selectedLaporan.Jumlah_Kritis + selectedLaporan.Jumlah_Hampir_Habis}
+            totalItem={totalMasterItems || 136}
             jumlahKritis={selectedLaporan.Jumlah_Kritis}
             jumlahHampirHabis={selectedLaporan.Jumlah_Hampir_Habis}
             linkXLSX={selectedLaporan.Link_XLSX || ''}

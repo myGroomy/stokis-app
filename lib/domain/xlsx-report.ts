@@ -116,7 +116,7 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
   const currHeader = ws.insertRow(2, ['INFORMASI LAPORAN HARI INI']);
   currHeader.getCell(1).font = { bold: true, size: 11, color: { argb: COLORS.white } };
   currHeader.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerInfo } } as any;
-  ws.mergeCells('A2:N2');
+  ws.mergeCells('A2:O2');
   ws.getRow(2).height = 16;
 
   const currInfo = ws.insertRow(3, ['Cabang', input.cabangKode + ' (' + input.cabangNama + ')', 'Tanggal', currTgl, 'Shift', input.shift, 'Petugas', input.petugas]);
@@ -126,7 +126,7 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
   const prevHeader = ws.insertRow(4, ['INFORMASI STOCK OPNAME SEBELUMNYA']);
   prevHeader.getCell(1).font = { bold: true, size: 11, color: { argb: COLORS.white } };
   prevHeader.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerPrev } } as any;
-  ws.mergeCells('A4:N4');
+  ws.mergeCells('A4:O4');
   ws.getRow(4).height = 16;
 
   const prevInfo = ws.insertRow(5, ['Tanggal', prevTgl, 'Shift', prevShift, 'Petugas', prevPetugas]);
@@ -135,11 +135,11 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
 
   ws.insertRow(6, []);
 
-  const row7 = ws.insertRow(7, ['INFORMASI BARANG', '', '', '', '', 'SO SEBELUMNYA', '', '', 'SO SEKARANG', '', '', 'HASIL & ANALISIS', '', '']);
+  const row7 = ws.insertRow(7, ['INFORMASI BARANG', '', '', '', '', 'SO SEBELUMNYA', '', '', 'SO SEKARANG', '', '', 'HASIL & ANALISIS', '', '', '']);
   ws.mergeCells('A7:E7');
   ws.mergeCells('F7:H7');
   ws.mergeCells('I7:K7');
-  ws.mergeCells('L7:N7');
+  ws.mergeCells('L7:O7');
 
   ['A7', 'F7', 'I7', 'L7'].forEach((cell, idx) => {
     const colors = [COLORS.headerInfo, COLORS.headerPrev, COLORS.headerCurr, COLORS.headerHasil];

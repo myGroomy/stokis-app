@@ -4,7 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveCabang } from '@/lib/google/registry';
 import { readSheetData, sheetToObjects } from '@/lib/google/sheets';
-import * as ExcelJS from 'exceljs';
+import { generateXlsxReport, type XlsxItem } from '@/lib/domain/xlsx-report';
+import { parseThreshold } from '@/lib/domain/so';
 
 function fmtDateValue(v: unknown): string {
   const d = normalizeDate(v);
@@ -34,18 +35,6 @@ function normalizeDate(v: unknown): Date | null {
   }
   const d = new Date(s);
   return Number.isNaN(d.getTime()) ? null : d;
-}
-
-import { parseThreshold } from '@/lib/domain/so';
-
-function getStatus(step1: number, step2: number, threshold: number | null | undefined): string {
-  const total = step1 + step2;
-  if (threshold === null || threshold === undefined || isNaN(threshold) || threshold < 0) {
-    return 'Tidak Dipantau';
-  }
-  if (total <= threshold) return 'Kritis';
-  if (threshold > 0 && total <= threshold * 2) return 'Hampir Habis';
-  return 'Aman';
 }
 
 export async function GET(
@@ -95,79 +84,40 @@ export async function GET(
   const tanggalOperasional = fmtDateValue(laporan['Tanggal_Operasional']);
   const shift = String(laporan['Shift'] || '');
   const petugas = String(laporan['Petugas'] || '');
-  const prevTanggal = detail[0]?.['Prev_Tanggal'] ? fmtDateValue(detail[0]['Prev_Tanggal']) : '';
-  const prevShift = String(detail[0]?.['Prev_Shift'] || '');
 
-  // Build XLSX rows
-  const items = detail.map((r, idx) => {
-    const step1 = Number(r['Step1']) || 0;
-    const step2 = Number(r['Step2']) || 0;
-    const total = step1 + step2;
-    const threshold = parseThreshold(r['Threshold']);
-    const prevTotal = r['Prev_Total'] != null && String(r['Prev_Total']) !== '' ? Number(r['Prev_Total']) : null;
-    const penggunaan = prevTotal != null ? prevTotal - total : null;
-    return {
-      'No': idx + 1,
-      'Nama Barang': String(r['Nama_Barang'] || ''),
-      'Area': String(r['Area'] || ''),
-      'Satuan': String(r['Satuan'] || ''),
-      'Batas Min': threshold != null ? threshold : '',
-      'SO Sebelumnya (S1)': r['Prev_Step1'] != null && String(r['Prev_Step1']) !== '' ? Number(r['Prev_Step1']) : '',
-      'SO Sebelumnya (S2)': r['Prev_Step2'] != null && String(r['Prev_Step2']) !== '' ? Number(r['Prev_Step2']) : '',
-      'SO Sebelumnya (Total)': prevTotal ?? '',
-      'Tanggal SO Sebelumnya': (r['Prev_Tanggal'] ? fmtDateValue(r['Prev_Tanggal']) : '') || prevTanggal,
-      'Shift SO Sebelumnya': String(r['Prev_Shift'] || '') || prevShift,
-      'SO Sekarang (S1)': step1,
-      'SO Sekarang (S2)': step2,
-      'SO Sekarang (Total)': total,
-      'Penggunaan': penggunaan ?? '',
-      'Keterangan Sebelumnya': String(r['Prev_Keterangan'] || ''),
-      'Keterangan': String(r['Keterangan'] || ''),
-      'Status': getStatus(step1, step2, threshold),
-    };
+  // Build XlsxItem[]
+  const items: XlsxItem[] = detail.map((r) => ({
+    itemId: String(r['Item_ID'] || ''),
+    namaBarang: String(r['Nama_Barang'] || ''),
+    area: String(r['Area'] || ''),
+    satuan: String(r['Satuan'] || ''),
+    threshold: parseThreshold(r['Threshold']) ?? undefined,
+    step1: Number(r['Step1']) || 0,
+    step2: Number(r['Step2']) || 0,
+    keterangan: String(r['Keterangan'] || ''),
+    prevStep1: r['Prev_Step1'] != null && String(r['Prev_Step1']) !== '' ? Number(r['Prev_Step1']) : null,
+    prevStep2: r['Prev_Step2'] != null && String(r['Prev_Step2']) !== '' ? Number(r['Prev_Step2']) : null,
+    prevTotal: r['Prev_Total'] != null && String(r['Prev_Total']) !== '' ? Number(r['Prev_Total']) : null,
+    prevKeterangan: String(r['Prev_Keterangan'] || ''),
+  }));
+
+  const previousSOInfo = {
+    tanggal: detail[0]?.['Prev_Tanggal'] ? fmtDateValue(detail[0]['Prev_Tanggal']) : '',
+    shift: String(detail[0]?.['Prev_Shift'] || ''),
+  };
+
+  const { buffer, fileName } = await generateXlsxReport({
+    laporanId,
+    cabangNama,
+    cabangKode,
+    tanggalOperasional,
+    shift,
+    petugas,
+    items,
+    previousSOInfo,
   });
 
-  const wb = new ExcelJS.Workbook();
-
-  const summaryData: { Field: string; Value: unknown }[] = [
-    { Field: 'Cabang', Value: cabangNama },
-    { Field: 'Kode Cabang', Value: cabangKode },
-    { Field: 'Tanggal Operasional', Value: tanggalOperasional },
-    { Field: 'Shift', Value: shift },
-    { Field: 'Petugas', Value: petugas },
-    { Field: 'Total Item', Value: items.length },
-    { Field: 'Laporan ID', Value: laporanId },
-    { Field: 'Waktu Dibuat', Value: new Date().toLocaleString('id-ID') },
-  ];
-  const wsSummary = wb.addWorksheet('Ringkasan');
-  wsSummary.columns = [{ header: 'Field', key: 'Field', width: 24 }, { header: 'Value', key: 'Value', width: 40 }];
-  summaryData.forEach((r) => wsSummary.addRow(r));
-
-  if (items.length > 0) {
-    const wsDetail = wb.addWorksheet('Detail SO');
-    const first = items[0];
-    const keys = Object.keys(first);
-    wsDetail.columns = keys.map((k) => ({
-      header: k,
-      key: k,
-      width: Math.max(k.length + 2, ...items.map((r) => String((r as Record<string, unknown>)[k] ?? '').length + 2)),
-    }));
-    items.forEach((r) => wsDetail.addRow(r as Record<string, unknown>));
-  }
-
-  const xlsxBuffer = await wb.xlsx.writeBuffer();
-  const raw = new Uint8Array(xlsxBuffer);
-  const byteArray = new Uint8Array(raw.byteLength);
-  byteArray.set(raw);
-  const kode = cabangKode.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-  const tgl = /^\d{2}\/\d{2}\/\d{4}$/.test(tanggalOperasional)
-    ? tanggalOperasional.split('/').join('-')
-    : tanggalOperasional;
-  const shiftLabel = (shift || 'SO').toUpperCase();
-  const petugasLabel = petugas.replace(/[/\\:*?"<>|]/g, '').trim() || 'Petugas';
-  const fileName = `${kode} - ${tgl} - ${shiftLabel} - ${petugasLabel}.xlsx`;
-
-  return new NextResponse(byteArray, {
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `inline; filename="${fileName}"`,

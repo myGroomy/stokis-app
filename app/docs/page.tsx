@@ -12,6 +12,7 @@ import {
   HelpCircle,
   FileText,
   ArrowRight,
+  Search,
 } from "lucide-react";
 import { useLanguage } from "@/lib/LanguageContext";
 
@@ -74,6 +75,13 @@ const sections = [
   },
 ];
 
+const quickLinks = [
+  { label: "Stock Opname", href: "/docs/user-guide/stock-opname" },
+  { label: "Laporan", href: "/docs/user-guide/laporan" },
+  { label: "Dashboard", href: "/docs/user-guide/dashboard" },
+  { label: "FAQ", href: "/docs/faq" },
+];
+
 export default function DocsIndexPage() {
   const { lang, t } = useLanguage();
 
@@ -95,7 +103,7 @@ export default function DocsIndexPage() {
       {/* Quick start */}
       <Link
         href="/docs/getting-started"
-        className="flex items-center gap-3 p-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors group"
+        className="flex items-center gap-3 p-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 hover:shadow-sm transition-all group"
       >
         <Rocket className="w-5 h-5 text-primary flex-shrink-0" />
         <div className="flex-1">
@@ -106,36 +114,76 @@ export default function DocsIndexPage() {
             {t("Quick start dalam 5 menit", "Quick start in 5 minutes")}
           </p>
         </div>
-        <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+        <ArrowRight className="w-4 h-4 text-primary transition-transform group-hover:translate-x-0.5" />
       </Link>
 
-      {/* Sections */}
-      <div className="space-y-2">
-        {sections.map((section) => {
-          const Icon = section.icon;
-          return (
-            <Link
-              key={section.href}
-              href={section.href}
-              className="flex items-start gap-3 p-4 rounded-xl border border-base-200 hover:border-primary/20 hover:bg-base-200/30 transition-all group"
-            >
-              <div className="p-2 rounded-lg bg-base-200 group-hover:bg-primary/10 text-base-content/30 group-hover:text-primary transition-colors">
-                <Icon className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-base-content group-hover:text-primary transition-colors">
-                  {section.title}
-                </p>
-                <p className="text-xs text-base-content/45 mt-0.5 leading-relaxed">
-                  {lang === "en" && section.descriptionEn
-                    ? section.descriptionEn
-                    : section.description}
-                </p>
-              </div>
-              <ArrowRight className="w-4 h-4 text-base-content/15 group-hover:text-primary/60 mt-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all" />
-            </Link>
-          );
-        })}
+      <div className="flex flex-col xl:flex-row gap-8">
+        {/* Sections */}
+        <div className="flex-1 space-y-2">
+          {sections.map((section) => {
+            const Icon = section.icon;
+            return (
+              <Link
+                key={section.href}
+                href={section.href}
+                className="flex items-start gap-3 p-4 rounded-xl border border-base-200 hover:border-primary/20 hover:bg-base-200/30 hover:shadow-sm transition-all group"
+              >
+                <div className="p-2 rounded-lg bg-base-200 group-hover:bg-primary/10 text-base-content/30 group-hover:text-primary transition-colors">
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-base-content group-hover:text-primary transition-colors">
+                    {section.title}
+                  </p>
+                  <p className="text-xs text-base-content/45 mt-0.5 leading-relaxed">
+                    {lang === "en" && section.descriptionEn
+                      ? section.descriptionEn
+                      : section.description}
+                  </p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-base-content/15 group-hover:text-primary/60 mt-1.5 flex-shrink-0 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Right sidebar - Quick Links */}
+        <div className="xl:w-56 flex-shrink-0 space-y-6">
+          <div>
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-base-content/40 mb-3">
+              {t("Topik Populer", "Popular Topics")}
+            </h3>
+            <ul className="space-y-1">
+              {quickLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-base-content/60 hover:text-primary hover:bg-primary/5 transition-colors group"
+                  >
+                    <span className="w-1 h-1 rounded-full bg-base-content/20 group-hover:bg-primary transition-colors" />
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="p-4 rounded-xl border border-base-200 bg-base-50">
+            <h3 className="text-xs font-bold text-base-content mb-1">
+              {t("Butuh bantuan?", "Need help?")}
+            </h3>
+            <p className="text-[11px] text-base-content/50 leading-relaxed mb-3">
+              {t(
+                "Cari di dokumentasi atau hubungi admin.",
+                "Search the docs or contact admin."
+              )}
+            </p>
+            <div className="flex items-center gap-2 text-[11px] text-primary font-medium">
+              <Search className="w-3 h-3" />
+              <span>{t("Gunakan pencarian di atas", "Use the search above")}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

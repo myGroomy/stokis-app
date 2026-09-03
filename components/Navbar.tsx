@@ -46,13 +46,13 @@ const bottomNavItems: NavItem[] = [
 ];
 
 const desktopNavItems: NavItem[] = [
+  { name: "Dashboard", nameEn: "Dashboard", href: "/dashboard/harian", icon: BarChart3 },
   { name: "Input SO", nameEn: "Input SO", href: "/so/input", icon: ClipboardCheck },
   { name: "Laporan", nameEn: "Reports", href: "/laporan", icon: FileText },
   { name: "Dokumentasi", nameEn: "Docs", href: "/docs", icon: BookOpen },
   { name: "Item", nameEn: "Items", href: "/master-item", icon: Package, roles: ["admin"] },
   { name: "Petugas", nameEn: "Staff", href: "/petugas", icon: Users, roles: ["admin"] },
   { name: "Cabang", nameEn: "Branches", href: "/cabang", icon: Building2, roles: ["admin"] },
-  { name: "Dashboard", nameEn: "Dashboard", href: "/dashboard/harian", icon: BarChart3 },
 ];
 
 export function Navbar() {

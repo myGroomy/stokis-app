@@ -54,7 +54,7 @@ export function DocsLayout({ children }: DocsLayoutProps) {
   return (
     <div className="min-h-[100dvh] bg-base-100">
       {/* Docs top bar */}
-      <div className="sticky top-[60px] z-20 bg-base-100/80 backdrop-blur-lg border-b border-base-200">
+      <div className="sticky top-[60px] z-30 bg-base-100/95 backdrop-blur-lg border-b border-base-200">
         <div className="max-w-screen-2xl mx-auto px-3 sm:px-6 h-11 flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -95,7 +95,7 @@ export function DocsLayout({ children }: DocsLayoutProps) {
         />
 
         <div className="flex-1 min-w-0 flex">
-          <main className="flex-1 min-w-0 px-4 py-6 sm:px-6 lg:px-10 xl:px-12 max-w-4xl pb-24 md:pb-6">
+          <main className="flex-1 min-w-0 px-4 pt-8 pb-24 md:pb-6 sm:px-6 lg:px-10 xl:px-12 max-w-4xl">
             {children}
           </main>
           <DocsTOC items={tocItems} />

@@ -19,6 +19,8 @@ export function DocsTOC({ items }: DocsTOCProps) {
   const [activeId, setActiveId] = useState<string>("");
 
   useEffect(() => {
+    if (items.length === 0) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -41,7 +43,7 @@ export function DocsTOC({ items }: DocsTOCProps) {
   if (items.length === 0) return null;
 
   return (
-    <nav className="hidden xl:block sticky top-24 w-56 flex-shrink-0">
+    <nav className="hidden xl:block sticky top-24 w-56 flex-shrink-0 self-start">
       <p className="text-[10px] font-bold uppercase tracking-wider text-base-content/40 mb-3 px-1">
         {lang === "en" ? "On this page" : "Di halaman ini"}
       </p>

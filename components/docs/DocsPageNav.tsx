@@ -24,7 +24,7 @@ export function DocsPageNav({ prev, next }: DocsPageNavProps) {
       {prev ? (
         <Link
           href={prev.href}
-          className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border border-base-200 hover:border-primary/20 hover:bg-base-200/30 transition-all group min-w-0"
+          className="flex-1 flex items-center gap-2 px-3 sm:px-4 py-3 rounded-xl border border-base-200 hover:border-primary/20 hover:bg-base-200/30 transition-all group min-w-0"
         >
           <ChevronLeft className="w-4 h-4 text-base-content/30 group-hover:text-primary flex-shrink-0 transition-colors" />
           <div className="min-w-0">
@@ -42,7 +42,7 @@ export function DocsPageNav({ prev, next }: DocsPageNavProps) {
       {next ? (
         <Link
           href={next.href}
-          className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border border-base-200 hover:border-primary/20 hover:bg-base-200/30 transition-all group text-right min-w-0"
+          className="flex-1 flex items-center gap-2 px-3 sm:px-4 py-3 rounded-xl border border-base-200 hover:border-primary/20 hover:bg-base-200/30 transition-all group text-right min-w-0"
         >
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-medium uppercase tracking-wider text-base-content/30">

@@ -2,16 +2,16 @@
 
 import React, { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Menu, BookOpen, ExternalLink, ArrowLeft } from "lucide-react";
+import { Menu, BookOpen, ArrowLeft } from "lucide-react";
 import { DocsSidebar } from "@/components/docs/DocsSidebar";
 import { DocsTOC } from "@/components/docs/DocsTOC";
 import { DocsSearch } from "@/components/docs/DocsSearch";
+import { useDocsTOC } from "@/lib/DocsTOCContext";
 import { useLanguage } from "@/lib/LanguageContext";
 import Link from "next/link";
 
 interface DocsLayoutProps {
   children: React.ReactNode;
-  tocItems?: { id: string; label: string; labelEn?: string; level: number }[];
 }
 
 function Breadcrumb({ pathname }: { pathname: string }) {
@@ -19,7 +19,7 @@ function Breadcrumb({ pathname }: { pathname: string }) {
   if (segments.length === 0) return null;
 
   return (
-    <nav className="flex items-center gap-1.5 text-[11px] text-base-content/40">
+    <nav className="flex items-center gap-1.5 text-[11px] text-base-content/40 min-w-0">
       <span className="text-base-content/25">/</span>
       {segments.map((seg, i) => {
         const isLast = i === segments.length - 1;
@@ -27,13 +27,13 @@ function Breadcrumb({ pathname }: { pathname: string }) {
           .replace(/-/g, " ")
           .replace(/\b\w/g, (c) => c.toUpperCase());
         return (
-          <span key={i} className="flex items-center gap-1.5">
+          <span key={i} className="flex items-center gap-1.5 min-w-0">
             <span
-              className={
+              className={`truncate ${
                 isLast
                   ? "text-base-content/60 font-medium"
                   : "text-base-content/35"
-              }
+              }`}
             >
               {label}
             </span>
@@ -45,25 +45,26 @@ function Breadcrumb({ pathname }: { pathname: string }) {
   );
 }
 
-export function DocsLayout({ children, tocItems = [] }: DocsLayoutProps) {
+export function DocsLayout({ children }: DocsLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const { t } = useLanguage();
+  const { tocItems } = useDocsTOC();
 
   return (
-    <div className="min-h-screen bg-base-100">
+    <div className="min-h-[100dvh] bg-base-100">
       {/* Docs top bar */}
       <div className="sticky top-[60px] z-20 bg-base-100/80 backdrop-blur-lg border-b border-base-200">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 h-11 flex items-center gap-3">
+        <div className="max-w-screen-2xl mx-auto px-3 sm:px-6 h-11 flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-base-200 text-base-content/50 transition-colors"
+            className="lg:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-base-200 text-base-content/50 transition-colors flex-shrink-0"
             aria-label="Open sidebar"
           >
             <Menu className="w-4 h-4" />
           </button>
 
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <Link
               href="/docs"
               className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors flex-shrink-0"
@@ -94,7 +95,7 @@ export function DocsLayout({ children, tocItems = [] }: DocsLayoutProps) {
         />
 
         <div className="flex-1 min-w-0 flex">
-          <main className="flex-1 min-w-0 px-4 py-6 sm:px-6 lg:px-10 xl:px-12 max-w-4xl">
+          <main className="flex-1 min-w-0 px-4 py-6 sm:px-6 lg:px-10 xl:px-12 max-w-4xl pb-24 md:pb-6">
             {children}
           </main>
           <DocsTOC items={tocItems} />

@@ -162,7 +162,7 @@ export function DocsSearch({ onClose }: DocsSearchProps) {
     <div className="relative">
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-base-300 bg-base-200/50 text-xs text-base-content/50 hover:border-primary/30 hover:text-base-content/70 transition-colors"
+        className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg border border-base-300 bg-base-200/50 text-xs text-base-content/50 hover:border-primary/30 hover:text-base-content/70 transition-colors"
       >
         <Search className="w-3.5 h-3.5" />
         <span className="hidden sm:inline">{t("Cari dokumentasi...", "Search docs...")}</span>
@@ -180,7 +180,7 @@ export function DocsSearch({ onClose }: DocsSearchProps) {
               setQuery("");
             }}
           />
-          <div className="fixed top-[15%] left-1/2 -translate-x-1/2 w-[90%] max-w-lg z-50 bg-base-100 rounded-2xl border border-base-300 shadow-2xl overflow-hidden">
+          <div className="fixed top-[10%] sm:top-[15%] left-1/2 -translate-x-1/2 w-[92%] sm:w-[90%] max-w-lg z-50 bg-base-100 rounded-2xl border border-base-300 shadow-2xl overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-base-300">
               <Search className="w-4 h-4 text-base-content/40" />
               <input
@@ -202,7 +202,7 @@ export function DocsSearch({ onClose }: DocsSearchProps) {
               </button>
             </div>
 
-            <div className="max-h-80 overflow-y-auto p-2">
+            <div className="max-h-72 sm:max-h-80 overflow-y-auto p-2">
               {query.trim() === "" ? (
                 <p className="text-center text-xs text-base-content/40 py-8">
                   {t(
@@ -231,7 +231,7 @@ export function DocsSearch({ onClose }: DocsSearchProps) {
                         className="flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-base-200 transition-colors group"
                       >
                         <FileText className="w-4 h-4 text-base-content/30 mt-0.5 flex-shrink-0 group-hover:text-primary" />
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-xs font-semibold text-base-content group-hover:text-primary transition-colors">
                             {lang === "en" && entry.titleEn
                               ? entry.titleEn

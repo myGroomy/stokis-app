@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { DocsLayout } from "@/components/docs/DocsLayout";
 import { DocsPageNav } from "@/components/docs/DocsPageNav";
+import { useDocsTOC } from "@/lib/DocsTOCContext";
+import { useEffect } from "react";
 
 interface DocsPageProps {
   children: React.ReactNode;
@@ -17,12 +18,17 @@ export function DocsPage({
   prev,
   next,
 }: DocsPageProps) {
+  const { setTOCItems } = useDocsTOC();
+
+  useEffect(() => {
+    setTOCItems(tocItems);
+    return () => setTOCItems([]);
+  }, [tocItems, setTOCItems]);
+
   return (
-    <DocsLayout tocItems={tocItems}>
-      <div className="space-y-6">
-        {children}
-        <DocsPageNav prev={prev} next={next} />
-      </div>
-    </DocsLayout>
+    <div className="space-y-6">
+      {children}
+      <DocsPageNav prev={prev} next={next} />
+    </div>
   );
 }

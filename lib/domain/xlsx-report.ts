@@ -175,30 +175,22 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
     const thresholdCell = threshold != null ? threshold : '';
     const prevTotal = it.prevTotal != null ? Number(it.prevTotal) : null;
     const diff = prevTotal != null ? total - prevTotal : null;
-    let pemakaian: string;
-    if (diff === null || diff === undefined) {
-      pemakaian = '';
-    } else if (diff < 0) {
-      pemakaian = 'MINES';
-    } else if (diff > 0) {
-      pemakaian = 'PLUS';
-    } else {
-      pemakaian = '0';
-    }
+    const diffValue = diff ?? '';
     const status = getStatus(s1, s2, threshold);
     const rc = ROW_COLORS[status];
 
-    const newRow = ws.insertRow(idx + 9, [idx + 1, it.namaBarang || '', it.area || '', it.satuan || '', thresholdCell, it.prevStep1 ?? '', it.prevStep2 ?? '', prevTotal ?? '', s1, s2, total, pemakaian, status, it.keterangan || '']);
+    const newRow = ws.insertRow(idx + 9, [idx + 1, it.namaBarang || '', it.area || '', it.satuan || '', thresholdCell, it.prevStep1 ?? '', it.prevStep2 ?? '', prevTotal ?? '', s1, s2, total, diffValue, status, it.keterangan || '']);
 
     newRow.eachCell((cell, colNum) => {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rc.bg } } as any;
       cell.alignment = { horizontal: [1, 5, 6, 7, 8, 9, 10, 11, 12].includes(colNum) ? 'center' : 'left', vertical: 'middle', wrapText: true };
       if (colNum === 12) {
-        const isMines = pemakaian === 'MINES';
-        const isPlus = pemakaian === 'PLUS';
+        cell.numFmt = '+0;-0;0';
+        const isNeg = typeof diffValue === 'number' && diffValue < 0;
+        const isPos = typeof diffValue === 'number' && diffValue > 0;
         cell.font = {
           bold: true,
-          color: { argb: isMines ? COLORS.kritisText : isPlus ? COLORS.amanText : COLORS.textDark },
+          color: { argb: isNeg ? COLORS.kritisText : isPos ? COLORS.amanText : COLORS.textDark },
           size: 9,
         };
       }

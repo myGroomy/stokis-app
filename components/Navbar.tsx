@@ -38,7 +38,7 @@ const bottomNavItems: NavItem[] = [
   { name: "Beranda", nameEn: "Home", href: "/", icon: Home },
   { name: "Input SO", nameEn: "Input SO", href: "/so/input", icon: ClipboardCheck },
   { name: "Laporan", nameEn: "Reports", href: "/laporan", icon: FileText },
-  { name: "Panduan", nameEn: "Guide", href: "/panduan", icon: BookOpen },
+  { name: "Dokumentasi", nameEn: "Docs", href: "/docs", icon: BookOpen },
   { name: "Item", nameEn: "Items", href: "/master-item", icon: Package, roles: ["admin"] },
   { name: "Lainnya", nameEn: "More", href: "/cabang", icon: Building2, roles: ["admin"] },
   { name: "Tutor", nameEn: "Tutor", href: "/tutorial", icon: HelpCircle },
@@ -48,7 +48,7 @@ const bottomNavItems: NavItem[] = [
 const desktopNavItems: NavItem[] = [
   { name: "Input SO", nameEn: "Input SO", href: "/so/input", icon: ClipboardCheck },
   { name: "Laporan", nameEn: "Reports", href: "/laporan", icon: FileText },
-  { name: "Panduan", nameEn: "Guide", href: "/panduan", icon: BookOpen },
+  { name: "Dokumentasi", nameEn: "Docs", href: "/docs", icon: BookOpen },
   { name: "Item", nameEn: "Items", href: "/master-item", icon: Package, roles: ["admin"] },
   { name: "Petugas", nameEn: "Staff", href: "/petugas", icon: Users, roles: ["admin"] },
   { name: "Cabang", nameEn: "Branches", href: "/cabang", icon: Building2, roles: ["admin"] },

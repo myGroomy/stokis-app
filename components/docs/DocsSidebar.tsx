@@ -119,7 +119,7 @@ export function DocsSidebar({ isOpen, onClose }: DocsSidebarProps) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-72 bg-base-100 border-r border-base-300 transform transition-transform duration-200 ease-out lg:sticky lg:top-[60px] lg:h-[calc(100vh-60px)] lg:z-10 lg:translate-x-0 ${
+        className={`fixed top-0 left-0 z-50 h-full w-64 bg-base-100 border-r border-base-200 transform transition-transform duration-200 ease-out lg:sticky lg:top-[101px] lg:h-[calc(100vh-101px)] lg:z-10 lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -137,7 +137,7 @@ export function DocsSidebar({ isOpen, onClose }: DocsSidebarProps) {
         </div>
 
         {/* Nav items */}
-        <nav className="p-3 space-y-0.5 overflow-y-auto h-[calc(100%-60px)] lg:h-full">
+        <nav className="p-3 space-y-0.5 overflow-y-auto h-[calc(100%-52px)] lg:h-full lg:pt-4">
           {/* Docs home link */}
           <Link
             href="/docs"

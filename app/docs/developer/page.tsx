@@ -514,7 +514,7 @@ Max-Age: 7 days (604800 seconds)`}
                   </tr>
                   <tr>
                     <td className="font-bold">SO_Transaksi</td>
-                    <td>SO_ID, Tanggal, Shift, Item_ID, Stok_Display, Stok_Gudang, Selisih, Status</td>
+                    <td>SO_ID, Tanggal, Shift, Item_ID, S1 (Stock Utuh), S2 (Stock Terbuka), Total, Selisih, Status</td>
                   </tr>
                   <tr>
                     <td className="font-bold">Laporan_PDF</td>

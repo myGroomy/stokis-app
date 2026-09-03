@@ -28,8 +28,8 @@ const features = [
     icon: ClipboardCheck,
     title: "Stock Opname (SO)",
     titleEn: "Stock Opname (SO)",
-    description: "Form multi-step untuk menghitung stok fisik barang di dua lokasi (S1 display & S2 gudang).",
-    descriptionEn: "Multi-step form for counting physical stock at two locations (S1 display & S2 warehouse).",
+    description: "Form multi-step untuk menghitung stok fisik barang (S1 stock utuh & S2 stock terbuka).",
+    descriptionEn: "Multi-step form for counting physical stock (S1 whole stock & S2 opened stock).",
     href: "/docs/user-guide/stock-opname",
   },
   {

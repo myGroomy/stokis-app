@@ -14,7 +14,6 @@ import {
   ChevronRight,
   Package,
   ArrowRight,
-  ArrowUpRight,
   AlertCircle,
   TrendingUp,
   Store,
@@ -24,45 +23,6 @@ import {
   BookOpen,
 } from "lucide-react";
 import { useLanguage } from "@/lib/LanguageContext";
-
-const features = [
-  {
-    icon: ClipboardCheck,
-    title: "Input Stock Opname Cepat",
-    description:
-      "Form multi-step yang dirancang untuk input cepat. Step 1 & Step 2 dengan validasi real-time dan perbandingan data sebelumnya.",
-  },
-  {
-    icon: FileText,
-    title: "Laporan XLSX Otomatis",
-    description:
-      "Laporan XLSX tergenerate otomatis setelah submission. Threshold kritis, warna status, dan distribusi via WhatsApp langsung.",
-  },
-  {
-    icon: BarChart3,
-    title: "Dashboard Analitik",
-    description:
-      "Visualisasi data harian dan mingguan. Grafik interaktif untuk melihat tren stok, item kritis, dan perubahan inventaris.",
-  },
-  {
-    icon: Users,
-    title: "Multi Cabang",
-    description:
-      "Setiap cabang memiliki database Google Sheets terpisah. Data terisolasi tapi bisa dikelola dari satu panel admin.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Keamanan Berlapis",
-    description:
-      "PIN hash SHA-256, sesi HMAC-signed, otorisasi per-cabang, dan enkripsi data di rest. Tidak ada plaintext password.",
-  },
-  {
-    icon: Smartphone,
-    title: "Mobile Friendly",
-    description:
-      "Responsif di semua ukuran layar. Bottom navigation di mobile, floating nav di SO input, dan card layout untuk tabel.",
-  },
-];
 
 const steps = [
   {
@@ -107,7 +67,7 @@ export default function HomePage() {
 }
 
 function MarketingLanding() {
-  const { lang, t } = useLanguage();
+  const { t } = useLanguage();
 
   return (
     <main className="overflow-x-hidden w-full max-w-full bg-base-100">
@@ -142,7 +102,7 @@ function MarketingLanding() {
               <ArrowRight className="ml-2 w-4 h-4" />
             </Link>
             <Link
-              href="/panduan"
+              href="/docs"
               className="inline-flex items-center justify-center transition-all duration-200 focus:ring-2 focus:outline-none text-primary bg-primary/10 hover:bg-primary/20 focus:ring-primary/50 h-10 px-6 text-sm font-semibold rounded-lg gap-2"
             >
               <BookOpen className="w-4 h-4" />
@@ -634,6 +594,41 @@ const quickActions = [
     color: "text-success",
     bg: "bg-success/10",
   },
+  {
+    href: "/docs",
+    icon: BookOpen,
+    title: "Dokumentasi",
+    desc: "Panduan & cara penggunaan",
+    color: "text-base-content/60",
+    bg: "bg-base-200",
+  },
+];
+
+const adminActions = [
+  {
+    href: "/master-item",
+    icon: Package,
+    title: "Master Item",
+    desc: "Kelola daftar barang & threshold",
+    color: "text-warning",
+    bg: "bg-warning/10",
+  },
+  {
+    href: "/petugas",
+    icon: Users,
+    title: "Petugas",
+    desc: "Kelola akun & hak akses",
+    color: "text-secondary",
+    bg: "bg-secondary/10",
+  },
+  {
+    href: "/cabang",
+    icon: Store,
+    title: "Cabang",
+    desc: "Kelola data cabang",
+    color: "text-info",
+    bg: "bg-info/10",
+  },
 ];
 
 function UserHome() {
@@ -713,27 +708,67 @@ function UserHome() {
         </Link>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {quickActions.map((a) => {
-          const Icon = a.icon;
-          return (
-            <Link
-              key={a.href}
-              href={a.href}
-              className="card bg-base-100 border border-base-300 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4"
-            >
-              <div className={`p-3 rounded-lg ${a.bg} ${a.color}`}>
-                <Icon className="w-6 h-6" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-base-content">{a.title}</h3>
-                <p className="text-xs text-base-content/60">{a.desc}</p>
-              </div>
-              <ArrowUpRight className={`w-5 h-5 ${a.color}`} />
-            </Link>
-          );
-        })}
+      {/* Quick Actions Grid */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider">
+          Layanan
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {quickActions.map((a) => {
+            const Icon = a.icon;
+            return (
+              <Link
+                key={a.href}
+                href={a.href}
+                className="group flex flex-col items-center gap-2.5 p-4 rounded-xl border border-base-200 hover:border-primary/20 hover:bg-primary/5 transition-all text-center"
+              >
+                <div className={`p-2.5 rounded-xl ${a.bg} ${a.color} group-hover:scale-110 transition-transform`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold text-base-content group-hover:text-primary transition-colors">
+                    {a.title}
+                  </h3>
+                  <p className="text-[10px] text-base-content/45 mt-0.5 leading-tight">
+                    {a.desc}
+                  </p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        {isAdmin && (
+          <>
+            <h2 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider pt-2">
+              Administrasi
+            </h2>
+            <div className="grid grid-cols-3 gap-3">
+              {adminActions.map((a) => {
+                const Icon = a.icon;
+                return (
+                  <Link
+                    key={a.href}
+                    href={a.href}
+                    className="group flex flex-col items-center gap-2.5 p-4 rounded-xl border border-base-200 hover:border-primary/20 hover:bg-primary/5 transition-all text-center"
+                  >
+                    <div className={`p-2.5 rounded-xl ${a.bg} ${a.color} group-hover:scale-110 transition-transform`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-semibold text-base-content group-hover:text-primary transition-colors">
+                        {a.title}
+                      </h3>
+                      <p className="text-[10px] text-base-content/45 mt-0.5 leading-tight">
+                        {a.desc}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Stock Summary */}
@@ -793,26 +828,6 @@ function UserHome() {
           <span>Silakan pilih cabang aktif melalui dropdown di navbar untuk melihat ringkasan stok dan laporan.</span>
         </div>
       )}
-
-      {/* Dokumentasi CTA */}
-      <Link href="/docs" className="block group">
-        <div className="card bg-base-100 border border-base-300 p-5 sm:p-6 hover:border-primary/20 hover:bg-primary/5 transition-all">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-primary/10 text-primary rounded-xl group-hover:bg-primary/20 transition-colors">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <div className="flex-1">
-              <h2 className="font-semibold text-base-content text-base group-hover:text-primary transition-colors">
-                Dokumentasi & Panduan
-              </h2>
-              <p className="text-xs text-base-content/60">
-                Pelajari cara menggunakan Stokis — dari input SO hingga troubleshooting.
-              </p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-base-content/30 group-hover:text-primary group-hover:translate-x-1 transition-all" />
-          </div>
-        </div>
-      </Link>
 
       {/* Recent Laporan */}
       <div className="space-y-4">

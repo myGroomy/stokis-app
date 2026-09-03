@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import LoginPage from "@/app/login/page";
 
 const PUBLIC_PATHS = ["/login", "/"];
+const PUBLIC_PREFIXES = ["/docs"];
 const ADMIN_ONLY_PATHS = ["/master-item", "/petugas", "/cabang"];
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -46,7 +47,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (PUBLIC_PATHS.includes(pathname)) {
+  if (PUBLIC_PATHS.includes(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {
     if (pathname === "/login" && user) {
       return null;
     }

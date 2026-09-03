@@ -90,38 +90,38 @@ export default function FAQPage() {
         <div className="p-4 rounded-xl border border-base-300 space-y-3">
           <p className="text-sm text-base-content/70">
             {t(
-              "Setiap barang dihitung di dua lokasi:",
-              "Each item is counted at two locations:"
+              "Setiap barang dihitung berdasarkan dua jenis stok:",
+              "Each item is counted based on two stock types:"
             )}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="p-3 rounded-xl border border-primary/20 bg-primary/5">
               <p className="text-xs font-bold text-primary">
-                {t("Display (S1)", "Display (S1)")}
+                {t("S1 — Stock Utuh", "S1 — Whole Stock")}
               </p>
               <p className="text-[11px] text-base-content/60 mt-1">
                 {t(
-                  "Jumlah barang yang terlihat oleh pelanggan di rak display.",
-                  "Number of items visible to customers on the display shelf."
+                  "Jumlah stok dalam kemasan utuh / belum dibuka.",
+                  "Stock count in intact / unopened packaging."
                 )}
               </p>
             </div>
-            <div className="p-3 rounded-xl border border-primary/20 bg-primary/5">
-              <p className="text-xs font-bold text-primary">
-                {t("Gudang (S1)", "Warehouse (S1)")}
+            <div className="p-3 rounded-xl border border-info/20 bg-info/5">
+              <p className="text-xs font-bold text-info">
+                {t("S2 — Stock Terbuka", "S2 — Opened Stock")}
               </p>
               <p className="text-[11px] text-base-content/60 mt-1">
                 {t(
-                  "Jumlah barang tersimpan di gudang atau back storage.",
-                  "Number of items stored in the warehouse or back storage."
+                  "Jumlah stok yang sudah dibuka / dipakai sebagian.",
+                  "Stock count that has been opened / partially used."
                 )}
               </p>
             </div>
           </div>
           <p className="text-sm text-base-content/70">
             {t(
-              "Proses yang sama diulang untuk shift S2 (Closing). Total stok = Display + Gudang.",
-              "The same process is repeated for shift S2 (Closing). Total stock = Display + Warehouse."
+              "Total stok = S1 + S2. Proses penghitungan dilakukan saat shift Opening dan juga saat shift Closing.",
+              "Total stock = S1 + S2. Counting process is done during Opening shift and also during Closing shift."
             )}
           </p>
         </div>
@@ -136,38 +136,38 @@ export default function FAQPage() {
         <div className="p-4 rounded-xl border border-base-300 space-y-3">
           <p className="text-sm text-base-content/70">
             {t(
-              "S1 dan S2 merujuk pada shift kerja:",
-              "S1 and S2 refer to work shifts:"
+              "S1 dan S2 adalah jenis stok, bukan shift:",
+              "S1 and S2 are stock types, not shifts:"
             )}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="p-3 rounded-xl border border-base-300">
+            <div className="p-3 rounded-xl border border-primary/20 bg-primary/5">
               <p className="text-xs font-bold text-primary">
-                S1 (Opening)
+                S1 — Stock Utuh
               </p>
               <p className="text-[11px] text-base-content/60 mt-1">
                 {t(
-                  "Dihitung saat shift pagi dimulai. Mencatat stok awal hari sebagai baseline.",
-                  "Counted when morning shift starts. Records opening stock as daily baseline."
+                  "Stok dalam kemasan utuh yang belum dibuka. Misal: dus masih segel, bungkus belum terjual.",
+                  "Stock in intact packaging that hasn't been opened. Examples: sealed boxes, unsold packages."
                 )}
               </p>
             </div>
-            <div className="p-3 rounded-xl border border-base-300">
-              <p className="text-xs font-bold text-primary">
-                S2 (Closing)
+            <div className="p-3 rounded-xl border border-info/20 bg-info/5">
+              <p className="text-xs font-bold text-info">
+                S2 — Stock Terbuka
               </p>
               <p className="text-[11px] text-base-content/60 mt-1">
                 {t(
-                  "Dihitung saat shift sore/malam berakhir. Mencatat stok akhir hari.",
-                  "Counted when evening/night shift ends. Records closing stock."
+                  "Stok yang sudah dibuka atau dipakai sebagian. Misal: produk display yang sudah tidak utuh.",
+                  "Stock that has been opened or partially used. Examples: display products no longer intact."
                 )}
               </p>
             </div>
           </div>
           <p className="text-sm text-base-content/70">
             {t(
-              "Selisih antara S1 dan S2 membantu mendeteksi penyusutan stok (shrinkage) atau kehilangan.",
-              "The difference between S1 and S2 helps detect stock shrinkage or loss."
+              "Penghitungan S1 dan S2 dilakukan dua kali sehari: saat shift Opening (pagi) dan shift Closing (malam).",
+              "S1 and S2 counting is done twice daily: during Opening shift (morning) and Closing shift (evening)."
             )}
           </p>
         </div>

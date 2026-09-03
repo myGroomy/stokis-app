@@ -20,18 +20,18 @@ export function DocsPageNav({ prev, next }: DocsPageNavProps) {
   const { lang } = useLanguage();
 
   return (
-    <nav className="flex items-center justify-between pt-8 mt-8 border-t border-base-300">
+    <nav className="flex items-stretch justify-between gap-3 pt-8 mt-8 border-t border-base-200">
       {prev ? (
         <Link
           href={prev.href}
-          className="flex items-center gap-2 px-4 py-3 rounded-xl border border-base-300 hover:border-primary/30 hover:bg-primary/5 transition-colors group flex-1 max-w-xs"
+          className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border border-base-200 hover:border-primary/20 hover:bg-base-200/30 transition-all group min-w-0"
         >
-          <ChevronLeft className="w-4 h-4 text-base-content/40 group-hover:text-primary transition-colors" />
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-base-content/40">
+          <ChevronLeft className="w-4 h-4 text-base-content/30 group-hover:text-primary flex-shrink-0 transition-colors" />
+          <div className="min-w-0">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-base-content/30">
               {lang === "en" ? "Previous" : "Sebelumnya"}
             </p>
-            <p className="text-xs font-semibold text-base-content group-hover:text-primary transition-colors">
+            <p className="text-xs font-medium text-base-content/70 group-hover:text-primary truncate transition-colors">
               {lang === "en" && prev.labelEn ? prev.labelEn : prev.label}
             </p>
           </div>
@@ -42,17 +42,17 @@ export function DocsPageNav({ prev, next }: DocsPageNavProps) {
       {next ? (
         <Link
           href={next.href}
-          className="flex items-center gap-2 px-4 py-3 rounded-xl border border-base-300 hover:border-primary/30 hover:bg-primary/5 transition-colors group flex-1 max-w-xs text-right justify-end"
+          className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border border-base-200 hover:border-primary/20 hover:bg-base-200/30 transition-all group text-right min-w-0"
         >
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-base-content/40">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-base-content/30">
               {lang === "en" ? "Next" : "Selanjutnya"}
             </p>
-            <p className="text-xs font-semibold text-base-content group-hover:text-primary transition-colors">
+            <p className="text-xs font-medium text-base-content/70 group-hover:text-primary truncate transition-colors">
               {lang === "en" && next.labelEn ? next.labelEn : next.label}
             </p>
           </div>
-          <ChevronRight className="w-4 h-4 text-base-content/40 group-hover:text-primary transition-colors" />
+          <ChevronRight className="w-4 h-4 text-base-content/30 group-hover:text-primary flex-shrink-0 transition-colors" />
         </Link>
       ) : (
         <div />

@@ -164,8 +164,8 @@ export default function ProductPage() {
                 step: "1",
                 title: t("User mengisi form SO", "User fills SO form"),
                 desc: t(
-                  "Input stok display (S1/S2), stok gudang (S1/S2), dan catatan.",
-                  "Input display stock (S1/S2), warehouse stock (S1/S2), and notes."
+                  "Input stock utuh (S1), stock terbuka (S2), dan catatan.",
+                  "Input whole stock (S1), opened stock (S2), and notes."
                 ),
               },
               {
@@ -320,35 +320,41 @@ export default function ProductPage() {
 
         <div id="shift" className="scroll-mt-32">
           <h3 className="text-sm font-bold text-base-content mb-3">
-            {t("Shift (S1/S2)", "Shift (S1/S2)")}
+            {t("Jenis Stok & Shift", "Stock Types & Shifts")}
           </h3>
-          <div className="text-xs text-base-content/70 space-y-2">
+          <div className="text-xs text-base-content/70 space-y-3">
             <p>
               {t(
-                "Setiap form SO dibagi menjadi dua shift per hari:",
-                "Each SO form is divided into two shifts per day:"
+                "Penghitungan stok menggunakan dua jenis stok (S1 dan S2) yang dihitung dua kali sehari:",
+                "Stock counting uses two stock types (S1 and S2) counted twice daily:"
               )}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-3 rounded-xl border border-base-300">
-                <p className="text-xs font-bold text-primary">S1 (Opening)</p>
+              <div className="p-3 rounded-xl border border-primary/20 bg-primary/5">
+                <p className="text-xs font-bold text-primary">S1 — Stock Utuh</p>
                 <p className="text-[11px] text-base-content/50 mt-1">
                   {t(
-                    "Dihitung saat shift pagi dimulai. Stok awal hari.",
-                    "Counted when morning shift starts. Opening stock."
+                    "Stok dalam kemasan utuh / belum dibuka.",
+                    "Stock in intact / unopened packaging."
                   )}
                 </p>
               </div>
-              <div className="p-3 rounded-xl border border-base-300">
-                <p className="text-xs font-bold text-primary">S2 (Closing)</p>
+              <div className="p-3 rounded-xl border border-info/20 bg-info/5">
+                <p className="text-xs font-bold text-info">S2 — Stock Terbuka</p>
                 <p className="text-[11px] text-base-content/50 mt-1">
                   {t(
-                    "Dihitung saat shift sore/malam berakhir. Stok akhir hari.",
-                    "Counted when evening/night shift ends. Closing stock."
+                    "Stok yang sudah dibuka / dipakai sebagian.",
+                    "Stock that has been opened / partially used."
                   )}
                 </p>
               </div>
             </div>
+            <p className="text-[11px] text-base-content/50">
+              {t(
+                "Penghitungan dilakukan saat shift Opening (pagi) dan shift Closing (malam). Total = S1 + S2.",
+                "Counting is done during Opening shift (morning) and Closing shift (evening). Total = S1 + S2."
+              )}
+            </p>
           </div>
         </div>
       </section>

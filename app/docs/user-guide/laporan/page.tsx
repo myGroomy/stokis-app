@@ -175,8 +175,8 @@ export default function LaporanGuidePage() {
             <span className="badge badge-primary text-[10px] font-bold uppercase">XLSX</span>
             <p className="text-[11px] text-base-content/60">
               {t(
-                "Data lengkap per item: nama barang, satuan, area, S1, S2, total, threshold, status, dan keterangan.",
-                "Complete data per item: item name, unit, area, S1, S2, total, threshold, status, and notes."
+                "Data lengkap per item: nama barang, satuan, area, S1 (stock utuh), S2 (stock terbuka), total, threshold, status, dan keterangan.",
+                "Complete data per item: item name, unit, area, S1 (whole stock), S2 (opened stock), total, threshold, status, and notes."
               )}
             </p>
           </div>

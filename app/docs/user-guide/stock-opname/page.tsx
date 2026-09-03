@@ -194,31 +194,31 @@ export default function StockOpnameGuidePage() {
 
         <p className="text-sm text-base-content/70 leading-relaxed">
           {t(
-            "Setiap item memiliki dua lokasi penghitungan:",
-            "Each item has two counting locations:"
+            "Setiap item memiliki dua jenis stok yang dihitung secara terpisah:",
+            "Each item has two types of stock counted separately:"
           )}
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-2">
             <span className="badge badge-primary text-[10px] font-bold uppercase">
-              {t("S1 - Display", "S1 - Display")}
+              {t("S1 — Stock Utuh", "S1 — Whole Stock")}
             </span>
-            <p className="text-[11px] text-base-content/60">
+            <p className="text-[11px] text-base-content/60 leading-relaxed">
               {t(
-                "Area display / etalase / rak penjualan. Ini adalah stok yang terlihat oleh pelanggan.",
-                "Display area / showcase / sales shelf. This is the stock visible to customers."
+                "Jumlah stok dalam kemasan utuh / belum dibuka. Misal: dus belum dibuka, bungkus belum terjual, stok cadangan dalam kemasan asli.",
+                "Stock count in intact / unopened packaging. Examples: unopened boxes, unsold sealed packages, reserve stock in original packaging."
               )}
             </p>
           </div>
           <div className="p-4 rounded-xl border border-info/20 bg-info/5 space-y-2">
             <span className="badge badge-info text-[10px] font-bold uppercase">
-              {t("S2 - Gudang", "S2 - Warehouse")}
+              {t("S2 — Stock Terbuka", "S2 — Opened Stock")}
             </span>
-            <p className="text-[11px] text-base-content/60">
+            <p className="text-[11px] text-base-content/60 leading-relaxed">
               {t(
-                "Gudang / freezer / area penyimpanan belakang. Stok cadangan yang belum dipajang.",
-                "Warehouse / freezer / back storage area. Reserve stock not yet displayed."
+                "Jumlah stok yang sudah dibuka / dipakai sebagian. Misal: produk sudah dibuka untuk display, sisa stok di rak yang tidak utuh lagi.",
+                "Stock count that has been opened / partially used. Examples: products opened for display, remaining shelf stock that is no longer intact."
               )}
             </p>
           </div>

@@ -216,16 +216,20 @@ export async function getPreviousSO(cabangId: string): Promise<PreviousSOResult>
       const firstRow = sessionRows[0];
       const items: Record<string, PrevItem> = {};
       sessionRows.forEach((r) => {
-        items[String(r['Nama_Barang'])] = {
+        const itemObj: PrevItem = {
           step1: Number(r['Step1']) || 0,
           step2: Number(r['Step2']) || 0,
           total: Number(r['Total']) || 0,
           tanggal: fmtDate(r['Tanggal_Operasional']),
           shift: String(r['Shift'] || ''),
           petugas: String(r['Petugas'] || ''),
-          keterangan: String(r['Keterangan'] || ''),
+          keterangan: String(r['Keterangan'] ?? r['keterangan'] ?? r['KETERANGAN'] ?? '').trim(),
           waktu: fmtTime(r['Timestamp']),
         };
+        const name = String(r['Nama_Barang'] || '').trim();
+        const itemId = String(r['Item_ID'] || '').trim();
+        if (name) items[name] = itemObj;
+        if (itemId) items[itemId] = itemObj;
       });
       return {
         sesiId: s.sid,

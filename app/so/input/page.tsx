@@ -526,7 +526,7 @@ export default function InputSOPage() {
   const buildPayloadItems = (): SOItemPayload[] => {
     return items.map((it) => {
       const c = counts[it.Item_ID] || { step1: '', step2: '', keterangan: '' };
-      const prev = previousSO[it.Nama_Barang];
+      const prev = previousSO[it.Item_ID] || previousSO[it.Nama_Barang] || previousSO[it.Nama_Barang.trim()];
       // Jika step kosong, ambil nilai dari SO sebelumnya yang dipilih.
       const step1Str = String(c.step1).trim();
       const step2Str = String(c.step2).trim();
@@ -1049,7 +1049,7 @@ export default function InputSOPage() {
                     const step2Val = counts[item.Item_ID]?.step2 || '';
                     const keteranganVal = counts[item.Item_ID]?.keterangan || '';
                     const total = (Number(step1Val) || 0) + (Number(step2Val) || 0);
-                    const prev = previousSO[item.Nama_Barang];
+                    const prev = previousSO[item.Item_ID] || previousSO[item.Nama_Barang] || previousSO[item.Nama_Barang.trim()];
 
                     const hasPrev = Boolean(prev);
 
@@ -1161,17 +1161,19 @@ export default function InputSOPage() {
                             />
                             <input
                               type="text"
-                              placeholder={hasPrev && prev.keterangan ? `Sebelumnya: ${prev.keterangan}` : 'Keterangan (opsional)...'}
+                              placeholder={hasPrev && prev.keterangan ? `Default: ${prev.keterangan}` : 'Keterangan (opsional)...'}
                               value={keteranganVal}
                               onChange={(e) => handleCountChange(item.Item_ID, 'keterangan', e.target.value)}
                               className="w-full pl-8 pr-3 py-1.5 text-xs input input-bordered"
                             />
                           </div>
                         </div>
-                        {hasPrev && prev.keterangan && (
-                          <div className="mt-0.5 flex items-center gap-1.5">
-                            <span className="text-[10px] text-base-content/40">Keterangan sebelumnya:</span>
-                            <span className="text-[10px] font-medium text-base-content/60 italic">{prev.keterangan}</span>
+                        {hasPrev && (
+                          <div className="mt-1.5 px-2.5 py-1 rounded-md bg-base-200 border border-base-300/80 flex items-center gap-2 text-[11px]">
+                            <span className="font-semibold text-base-content/60">Keterangan SO Sebelumnya:</span>
+                            <span className="font-medium text-base-content/90 italic">
+                              {prev.keterangan ? prev.keterangan : '(tidak ada)'}
+                            </span>
                           </div>
                         )}
                       </div>

@@ -162,11 +162,11 @@ export function DocsSearch({ onClose }: DocsSearchProps) {
     <div className="relative">
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-base-300 bg-base-200/50 text-xs text-base-content/50 hover:border-primary/30 hover:text-base-content/70 transition-colors w-full sm:w-56"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-base-300 bg-base-200/50 text-xs text-base-content/50 hover:border-primary/30 hover:text-base-content/70 transition-colors"
       >
         <Search className="w-3.5 h-3.5" />
-        <span>{t("Cari dokumentasi...", "Search docs...")}</span>
-        <kbd className="hidden sm:inline ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded bg-base-300 text-base-content/40">
+        <span className="hidden sm:inline">{t("Cari dokumentasi...", "Search docs...")}</span>
+        <kbd className="hidden md:inline ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded bg-base-300 text-base-content/40">
           /
         </kbd>
       </button>

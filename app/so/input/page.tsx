@@ -46,6 +46,7 @@ interface PreviousSO {
   tanggal: string;
   shift: string;
   petugas: string;
+  keterangan: string;
 }
 
 export interface SOItemPayload {
@@ -56,12 +57,14 @@ export interface SOItemPayload {
   threshold: number;
   step1: number;
   step2: number;
+  total: number;
   keterangan: string;
   prevStep1: number | null;
   prevStep2: number | null;
   prevTotal: number | null;
   prevTanggal: string | null;
   prevShift: string | null;
+  prevKeterangan: string;
 }
 
 export interface SOFormState {
@@ -529,6 +532,9 @@ export default function InputSOPage() {
       const step2Str = String(c.step2).trim();
       const step1 = step1Str === '' ? (prev?.step1 ?? 0) : Number(step1Str);
       const step2 = step2Str === '' ? (prev?.step2 ?? 0) : Number(step2Str);
+      const total = step1 + step2;
+      const prevKeterangan = prev?.keterangan || '';
+      const keterangan = c.keterangan.trim() || prevKeterangan;
       return {
         itemId: it.Item_ID,
         namaBarang: it.Nama_Barang,
@@ -537,12 +543,14 @@ export default function InputSOPage() {
         threshold: it.Threshold,
         step1,
         step2,
-        keterangan: c.keterangan || '',
+        total,
+        keterangan,
         prevStep1: prev?.step1 ?? null,
         prevStep2: prev?.step2 ?? null,
         prevTotal: prev?.total ?? null,
         prevTanggal: prev?.tanggal ?? null,
         prevShift: prev?.shift ?? null,
+        prevKeterangan,
       };
     });
   };
@@ -1153,13 +1161,19 @@ export default function InputSOPage() {
                             />
                             <input
                               type="text"
-                              placeholder="Keterangan (opsional)..."
+                              placeholder={hasPrev && prev.keterangan ? `Sebelumnya: ${prev.keterangan}` : 'Keterangan (opsional)...'}
                               value={keteranganVal}
                               onChange={(e) => handleCountChange(item.Item_ID, 'keterangan', e.target.value)}
                               className="w-full pl-8 pr-3 py-1.5 text-xs input input-bordered"
                             />
                           </div>
                         </div>
+                        {hasPrev && prev.keterangan && (
+                          <div className="mt-0.5 flex items-center gap-1.5">
+                            <span className="text-[10px] text-base-content/40">Keterangan sebelumnya:</span>
+                            <span className="text-[10px] font-medium text-base-content/60 italic">{prev.keterangan}</span>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

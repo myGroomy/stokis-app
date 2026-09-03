@@ -121,6 +121,7 @@ export async function GET(
       'SO Sekarang (S2)': step2,
       'SO Sekarang (Total)': total,
       'Penggunaan': penggunaan ?? '',
+      'Keterangan Sebelumnya': String(r['Prev_Keterangan'] || ''),
       'Keterangan': String(r['Keterangan'] || ''),
       'Status': getStatus(step1, step2, threshold),
     };

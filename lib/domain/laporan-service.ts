@@ -43,6 +43,7 @@ interface SaveLaporanItem {
   prevTotal?: number | null;
   prevTanggal?: string | null;
   prevShift?: string | null;
+  prevKeterangan?: string;
 }
 
 /**
@@ -115,7 +116,7 @@ export const LAPORAN_DETAIL_SHEET = 'Laporan_SO';
 const LAPORAN_DETAIL_HEADERS = [
   'Laporan_ID', 'Tanggal_Operasional', 'Shift', 'Petugas',
   'Item_ID', 'Nama_Barang', 'Area', 'Satuan', 'Threshold',
-  'Prev_Step1', 'Prev_Step2', 'Prev_Total', 'Prev_Tanggal', 'Prev_Shift',
+  'Prev_Step1', 'Prev_Step2', 'Prev_Total', 'Prev_Tanggal', 'Prev_Shift', 'Prev_Keterangan',
   'Step1', 'Step2', 'Total',
   'Penggunaan', 'Keterangan', 'Status',
 ];
@@ -160,6 +161,7 @@ async function saveLaporanDetail(
       prevTotal,
       (it.prevTanggal || prevTanggal) as string | null,
       (it.prevShift || prevShift) as string | null,
+      it.prevKeterangan || '',
       step1,
       step2,
       total,

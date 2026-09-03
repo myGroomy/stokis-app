@@ -62,6 +62,7 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
     prevStep1: r['Prev_Step1'] != null && r['Prev_Step1'] !== '' ? Number(r['Prev_Step1']) : null,
     prevStep2: r['Prev_Step2'] != null && r['Prev_Step2'] !== '' ? Number(r['Prev_Step2']) : null,
     prevTotal: r['Prev_Total'] != null && r['Prev_Total'] !== '' ? Number(r['Prev_Total']) : null,
+    prevKeterangan: String(r['Prev_Keterangan'] || ''),
   }));
 
   const previousSOInfo = {

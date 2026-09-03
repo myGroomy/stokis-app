@@ -13,6 +13,7 @@ export interface XlsxItem {
   prevStep1?: number | null;
   prevStep2?: number | null;
   prevTotal?: number | null;
+  prevKeterangan?: string;
 }
 
 type StatusType = 'KRITIS' | 'HAMPIR HABIS' | 'AMAN' | 'Tidak Dipantau';
@@ -110,6 +111,8 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
   titleRow.getCell(1).font = { bold: true, size: 14 };
   ws.getRow(1).height = 24;
 
+  const thinBorder = { top: { style: 'thin' as const }, left: { style: 'thin' as const }, bottom: { style: 'thin' as const }, right: { style: 'thin' as const } };
+
   const currHeader = ws.insertRow(2, ['INFORMASI LAPORAN HARI INI']);
   currHeader.getCell(1).font = { bold: true, size: 11, color: { argb: COLORS.white } };
   currHeader.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerInfo } } as any;
@@ -118,6 +121,7 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
 
   const currInfo = ws.insertRow(3, ['Cabang', input.cabangKode + ' (' + input.cabangNama + ')', 'Tanggal', currTgl, 'Shift', input.shift, 'Petugas', input.petugas]);
   currInfo.height = 14;
+  for (let i = 1; i <= 8; i++) { currInfo.getCell(i).border = thinBorder; }
 
   const prevHeader = ws.insertRow(4, ['INFORMASI STOCK OPNAME SEBELUMNYA']);
   prevHeader.getCell(1).font = { bold: true, size: 11, color: { argb: COLORS.white } };
@@ -127,6 +131,7 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
 
   const prevInfo = ws.insertRow(5, ['Tanggal', prevTgl, 'Shift', prevShift, 'Petugas', prevPetugas]);
   prevInfo.height = 14;
+  for (let i = 1; i <= 6; i++) { prevInfo.getCell(i).border = thinBorder; }
 
   ws.insertRow(6, []);
 
@@ -142,15 +147,17 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
     c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors[idx] } } as any;
     c.font = { bold: true, color: { argb: COLORS.white }, size: 10 };
     c.alignment = { horizontal: 'center', vertical: 'middle' };
+    c.border = thinBorder;
   });
   ws.getRow(7).height = 18;
 
-  const row8 = ws.insertRow(8, ['No', 'Nama Barang', 'Area', 'Satuan', 'Batas Min', 'Step 1', 'Step 2', 'Total', 'Step 1', 'Step 2', 'Total', 'Pemakaian', 'Status', 'Keterangan']);
-  for (let i = 1; i <= 14; i++) {
+  const row8 = ws.insertRow(8, ['No', 'Nama Barang', 'Area', 'Satuan', 'Batas Min', 'Step 1', 'Step 2', 'Total', 'Step 1', 'Step 2', 'Total', 'Pemakaian', 'Status', 'Keterangan Sebelumnya', 'Keterangan']);
+  for (let i = 1; i <= 15; i++) {
     const cell = row8.getCell(i);
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.subHeader } } as any;
     cell.font = { bold: true, color: { argb: COLORS.textDark }, size: 9 };
     cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    cell.border = thinBorder;
   }
   ws.getRow(8).height = 18;
 
@@ -179,11 +186,12 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
     const status = getStatus(s1, s2, threshold);
     const rc = ROW_COLORS[status];
 
-    const newRow = ws.insertRow(idx + 9, [idx + 1, it.namaBarang || '', it.area || '', it.satuan || '', thresholdCell, it.prevStep1 ?? '', it.prevStep2 ?? '', prevTotal ?? '', s1, s2, total, diffValue, status, it.keterangan || '']);
+    const newRow = ws.insertRow(idx + 9, [idx + 1, it.namaBarang || '', it.area || '', it.satuan || '', thresholdCell, it.prevStep1 ?? '', it.prevStep2 ?? '', prevTotal ?? '', s1, s2, total, diffValue, status, it.prevKeterangan || '', it.keterangan || '']);
 
     newRow.eachCell((cell, colNum) => {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rc.bg } } as any;
       cell.alignment = { horizontal: [1, 5, 6, 7, 8, 9, 10, 11, 12].includes(colNum) ? 'center' : 'left', vertical: 'middle', wrapText: true };
+      cell.border = thinBorder;
       if (colNum === 12) {
         cell.numFmt = '+0;-0;0';
         const isNeg = typeof diffValue === 'number' && diffValue < 0;
@@ -201,7 +209,7 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
     newRow.height = 16;
   });
 
-  ws.columns = [{ width: 5 }, { width: 24 }, { width: 12 }, { width: 8 }, { width: 10 }, { width: 8 }, { width: 8 }, { width: 9 }, { width: 8 }, { width: 8 }, { width: 9 }, { width: 11 }, { width: 15 }, { width: 20 }];
+  ws.columns = [{ width: 5 }, { width: 24 }, { width: 12 }, { width: 8 }, { width: 10 }, { width: 8 }, { width: 8 }, { width: 9 }, { width: 8 }, { width: 8 }, { width: 9 }, { width: 11 }, { width: 15 }, { width: 20 }, { width: 20 }];
   ws.views = [{ state: 'frozen', xSplit: 2, ySplit: 8 }];
 
   const buffer = await wb.xlsx.writeBuffer() as any as Buffer;

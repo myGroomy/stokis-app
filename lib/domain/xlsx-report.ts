@@ -10,9 +10,9 @@ export interface XlsxItem {
   step1?: number;
   step2?: number;
   keterangan?: string;
-  prevStep1?: number | null;
-  prevStep2?: number | null;
-  prevTotal?: number | null;
+  prevStep1?: number | string | null;
+  prevStep2?: number | string | null;
+  prevTotal?: number | string | null;
   prevKeterangan?: string;
 }
 
@@ -180,13 +180,33 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
     const total = s1 + s2;
     const threshold = parseThreshold(it.threshold);
     const thresholdCell = threshold != null ? threshold : '';
-    const prevTotal = it.prevTotal != null ? Number(it.prevTotal) : null;
+    const p1 = it.prevStep1 != null && it.prevStep1 !== '' ? Number(it.prevStep1) : null;
+    const p2 = it.prevStep2 != null && it.prevStep2 !== '' ? Number(it.prevStep2) : null;
+    const prevTotal = it.prevTotal != null && it.prevTotal !== ''
+      ? Number(it.prevTotal)
+      : (p1 != null || p2 != null ? (p1 || 0) + (p2 || 0) : null);
     const diff = prevTotal != null ? total - prevTotal : null;
     const diffValue = diff ?? '';
     const status = getStatus(s1, s2, threshold);
     const rc = ROW_COLORS[status];
 
-    const newRow = ws.insertRow(idx + 9, [idx + 1, it.namaBarang || '', it.area || '', it.satuan || '', thresholdCell, it.prevStep1 ?? '', it.prevStep2 ?? '', prevTotal ?? '', s1, s2, total, diffValue, status, it.prevKeterangan || '', it.keterangan || '']);
+    const newRow = ws.insertRow(idx + 9, [
+      idx + 1,
+      it.namaBarang || '',
+      it.area || '',
+      it.satuan || '',
+      thresholdCell,
+      p1 ?? '',
+      p2 ?? '',
+      prevTotal ?? '',
+      s1,
+      s2,
+      total,
+      diffValue,
+      status,
+      it.prevKeterangan || '',
+      it.keterangan || '',
+    ]);
 
     newRow.eachCell((cell, colNum) => {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rc.bg } } as any;

@@ -35,6 +35,9 @@ interface PrevItem {
   petugas: string;
   keterangan: string;
   waktu: string;
+  statusIsi?: 'Isi' | 'Kosong' | '';
+  tglRefill?: string;
+  tglPakai?: string;
 }
 
 export interface PreviousSOResult {
@@ -134,6 +137,7 @@ export async function submitSO(
   const tanggal = String(payload.tanggalOperasional || '');
   const shift = String(payload.shift || '');
   const petugas = String(payload.petugas || '');
+  const note = typeof payload.note === 'string' ? payload.note.trim() : '';
 
   const rows: unknown[][] = [];
   items.forEach((it, idx) => {
@@ -153,6 +157,10 @@ export async function submitSO(
       petugas,
       sesiId,
       it.keterangan,
+      it.statusIsi || '',
+      it.tglRefill || '',
+      it.tglPakai || '',
+      note,
     ]);
   });
 
@@ -225,6 +233,9 @@ export async function getPreviousSO(cabangId: string): Promise<PreviousSOResult>
           petugas: String(r['Petugas'] || ''),
           keterangan: String(r['Keterangan'] ?? r['keterangan'] ?? r['KETERANGAN'] ?? '').trim(),
           waktu: fmtTime(r['Timestamp']),
+          statusIsi: (r['Status_Isi'] === 'Isi' || r['Status_Isi'] === 'Kosong') ? r['Status_Isi'] as 'Isi' | 'Kosong' : '',
+          tglRefill: fmtDate(r['Tgl_Refill']),
+          tglPakai: fmtDate(r['Tgl_Pakai']),
         };
         const name = String(r['Nama_Barang'] || '').trim();
         const itemId = String(r['Item_ID'] || '').trim();

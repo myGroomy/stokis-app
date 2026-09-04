@@ -30,6 +30,8 @@ import {
 import { QuantumLoaderFull, QuantumLoaderMini } from '@/components/ui/QuantumLoader';
 import { SOGeneratingOverlay, type SOGerStep } from '@/components/SOGeneratingOverlay';
 import { staggerContainer, staggerItem } from '@/components/PageTransition';
+import { parseTipeInput, hasTipe } from '@/lib/domain/so';
+import type { InputTipe } from '@/lib/domain/so';
 
 interface MasterItem {
   Item_ID: string;
@@ -37,6 +39,7 @@ interface MasterItem {
   Area: string;
   Satuan: string;
   Threshold: number;
+  Tipe_Input: string;
 }
 
 interface PreviousSO {
@@ -47,6 +50,9 @@ interface PreviousSO {
   shift: string;
   petugas: string;
   keterangan: string;
+  statusIsi?: 'Isi' | 'Kosong' | '';
+  tglRefill?: string;
+  tglPakai?: string;
 }
 
 export interface SOItemPayload {
@@ -65,6 +71,12 @@ export interface SOItemPayload {
   prevTanggal: string | null;
   prevShift: string | null;
   prevKeterangan: string;
+  statusIsi: 'Isi' | 'Kosong' | '';
+  tglRefill: string;
+  tglPakai: string;
+  prevStatusIsi: 'Isi' | 'Kosong' | '' | null;
+  prevTglRefill: string | null;
+  prevTglPakai: string | null;
 }
 
 export interface SOFormState {
@@ -75,6 +87,7 @@ export interface SOFormState {
   items: SOItemPayload[];
   cabangNama: string;
   cabangKode: string;
+  note?: string;
 }
 
 function generateSesiId(): string {
@@ -125,7 +138,7 @@ async function postWithRetry<T = SubmitSOResult>(
 const DRAFT_PREFIX = 'stokis_so_draft_';
 
 interface SODraft {
-  counts: Record<string, { step1: string; step2: string; keterangan: string }>;
+  counts: Record<string, { step1: string; step2: string; keterangan: string; statusIsi?: boolean; tglRefill?: string; tglPakai?: string }>;
   sesiId: string;
   tanggalOperasional: string;
   shift: string;
@@ -137,12 +150,13 @@ function getDraftKey(cabangId: string): string {
 }
 
 function countFilled(
-  counts: Record<string, { step1: string; step2: string; keterangan: string }>,
+  counts: Record<string, { step1: string; step2: string; keterangan: string; statusIsi?: boolean; tglRefill?: string; tglPakai?: string }>,
 ): number {
   return Object.keys(counts).reduce((n, k) => {
     const v = counts[k];
     const hasCount =
-      String(v?.step1 ?? '').trim() !== '' || String(v?.step2 ?? '').trim() !== '';
+      String(v?.step1 ?? '').trim() !== '' || String(v?.step2 ?? '').trim() !== '' ||
+      v?.statusIsi !== undefined || String(v?.tglRefill ?? '').trim() !== '' || String(v?.tglPakai ?? '').trim() !== '';
     return n + (hasCount ? 1 : 0);
   }, 0);
 }
@@ -259,8 +273,9 @@ export default function InputSOPage() {
   });
   const [shift, setShift] = useState<string>('Opening');
 
-  // Inputs: { [itemId]: { step1: string, step2: string, keterangan: string } }
-  const [counts, setCounts] = useState<Record<string, { step1: string; step2: string; keterangan: string }>>({});
+  // Inputs: { [itemId]: { step1: string, step2: string, keterangan: string, statusIsi: boolean | undefined, tglRefill: string, tglPakai: string } }
+  const [counts, setCounts] = useState<Record<string, { step1: string; step2: string; keterangan: string; statusIsi?: boolean; tglRefill?: string; tglPakai?: string }>>({});
+  const [note, setNote] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [genStep, setGenStep] = useState<SOGerStep>('simpan');
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -309,9 +324,9 @@ export default function InputSOPage() {
 
         if (dataItems.success && Array.isArray(dataItems.data)) {
           setItems(dataItems.data);
-          const initialCounts: Record<string, { step1: string; step2: string; keterangan: string }> = {};
+          const initialCounts: Record<string, { step1: string; step2: string; keterangan: string; statusIsi?: boolean; tglRefill?: string; tglPakai?: string }> = {};
           dataItems.data.forEach((item: MasterItem) => {
-            initialCounts[item.Item_ID] = { step1: '', step2: '', keterangan: '' };
+            initialCounts[item.Item_ID] = { step1: '', step2: '', keterangan: '', statusIsi: undefined, tglRefill: '', tglPakai: '' };
           });
           setCounts(initialCounts);
 
@@ -442,7 +457,7 @@ export default function InputSOPage() {
     return acc;
   }, {} as Record<string, MasterItem[]>);
 
-  const handleCountChange = (itemId: string, field: 'step1' | 'step2' | 'keterangan', value: string) => {
+  const handleCountChange = (itemId: string, field: 'step1' | 'step2' | 'keterangan' | 'statusIsi' | 'tglRefill' | 'tglPakai', value: string | boolean | undefined) => {
     setCounts((prev) => ({
       ...prev,
       [itemId]: {
@@ -468,7 +483,10 @@ export default function InputSOPage() {
           dc &&
           (String(dc.step1).trim() !== '' ||
             String(dc.step2).trim() !== '' ||
-            String(dc.keterangan).trim() !== '')
+            String(dc.keterangan).trim() !== '' ||
+            dc.statusIsi !== undefined ||
+            String(dc.tglRefill ?? '').trim() !== '' ||
+            String(dc.tglPakai ?? '').trim() !== '')
         ) {
           merged[k] = { ...dc };
         }
@@ -525,7 +543,7 @@ export default function InputSOPage() {
 
   const buildPayloadItems = (): SOItemPayload[] => {
     return items.map((it) => {
-      const c = counts[it.Item_ID] || { step1: '', step2: '', keterangan: '' };
+      const c = counts[it.Item_ID] || { step1: '', step2: '', keterangan: '', statusIsi: undefined, tglRefill: '', tglPakai: '' };
       const prev = previousSO[it.Item_ID] || previousSO[it.Nama_Barang] || previousSO[it.Nama_Barang.trim()];
       // Jika step kosong, ambil nilai dari SO sebelumnya yang dipilih.
       const step1Str = String(c.step1).trim();
@@ -535,6 +553,23 @@ export default function InputSOPage() {
       const total = step1 + step2;
       const prevKeterangan = prev?.keterangan || '';
       const keterangan = c.keterangan.trim() || prevKeterangan;
+
+      // NEW — boolean/date, independen per item
+      const tglRefillInput = (c.tglRefill || '').trim();
+      const tglRefill = tglRefillInput || prev?.tglRefill || '';
+
+      let statusIsi: 'Isi' | 'Kosong' | '';
+      if (tglRefillInput) {
+        statusIsi = 'Isi';
+      } else if (c.statusIsi !== undefined) {
+        statusIsi = c.statusIsi ? 'Isi' : 'Kosong';
+      } else {
+        statusIsi = prev?.statusIsi ?? '';
+      }
+
+      const tglPakaiInput = (c.tglPakai || '').trim();
+      const tglPakai = tglPakaiInput || prev?.tglPakai || '';
+
       return {
         itemId: it.Item_ID,
         namaBarang: it.Nama_Barang,
@@ -551,6 +586,12 @@ export default function InputSOPage() {
         prevTanggal: prev?.tanggal ?? null,
         prevShift: prev?.shift ?? null,
         prevKeterangan,
+        statusIsi,
+        tglRefill,
+        tglPakai,
+        prevStatusIsi: prev?.statusIsi ?? null,
+        prevTglRefill: prev?.tglRefill ?? null,
+        prevTglPakai: prev?.tglPakai ?? null,
       };
     });
   };
@@ -571,6 +612,7 @@ export default function InputSOPage() {
       items: payloadItems,
       cabangNama: selectedCabang.Nama_Cabang,
       cabangKode: selectedCabang.Cabang_ID,
+      note,
     };
     setPendingPayload(formState);
     setShowSummary(true);
@@ -593,6 +635,7 @@ export default function InputSOPage() {
         shift: formState.shift,
         petugas: formState.petugas,
         items: formState.items,
+        note: formState.note || '',
       };
 
       // Retry aman: payload memakai sesiId yang sama → idempotent di backend
@@ -635,6 +678,7 @@ export default function InputSOPage() {
             petugas: formState.petugas,
             items: formState.items,
             previousSOInfo,
+            note: formState.note || '',
           }),
         });
         const laporanJson = await laporanRes.json().catch(() => null);
@@ -662,6 +706,7 @@ export default function InputSOPage() {
             petugas: formState.petugas,
             previousSOInfo,
             sesiId: formState.sesiId,
+            note: formState.note || '',
           }),
         });
         
@@ -1048,10 +1093,21 @@ export default function InputSOPage() {
                     const step1Val = counts[item.Item_ID]?.step1 || '';
                     const step2Val = counts[item.Item_ID]?.step2 || '';
                     const keteranganVal = counts[item.Item_ID]?.keterangan || '';
+                    const statusIsiVal = counts[item.Item_ID]?.statusIsi;
                     const total = (Number(step1Val) || 0) + (Number(step2Val) || 0);
                     const prev = previousSO[item.Item_ID] || previousSO[item.Nama_Barang] || previousSO[item.Nama_Barang.trim()];
 
                     const hasPrev = Boolean(prev);
+                    const tipeInput: InputTipe[] = parseTipeInput(item.Tipe_Input);
+                    const isDual = hasTipe(tipeInput, 'dual');
+                    const isBoolean = hasTipe(tipeInput, 'boolean');
+                    const isDate = hasTipe(tipeInput, 'date');
+
+                    // Nilai efektif: input user kalau disentuh, else auto-carry dari prev.
+                    const effStatus = statusIsiVal !== undefined ? statusIsiVal : (prev?.statusIsi === 'Isi');
+                    const statusSel = statusIsiVal !== undefined ? (statusIsiVal ? 'Isi' : 'Kosong') : (prev?.statusIsi || '');
+                    const effRefill = (counts[item.Item_ID]?.tglRefill || '') || (prev?.tglRefill || '');
+                    const effPakai = (counts[item.Item_ID]?.tglPakai || '') || (prev?.tglPakai || '');
 
                     return (
                       <div
@@ -1071,82 +1127,168 @@ export default function InputSOPage() {
                             ({item.Satuan})
                           </span>
                           <span className="ml-auto flex items-center gap-3 flex-wrap">
-                            <span className="text-[10px] tabular-nums text-base-content/60">
-                              Batas Min: <span className="font-bold text-base-content">{item.Threshold}</span>
-                            </span>
-                            {getStatusBadge(total, item.Threshold)}
+                            {isBoolean ? (
+                              effStatus
+                                ? <span className="badge badge-success text-[11px] font-bold gap-1"><CheckCircle2 className="w-3 h-3" /><span>Isi</span></span>
+                                : <span className="badge badge-error text-[11px] font-bold gap-1"><AlertCircle className="w-3 h-3" /><span>Kosong</span></span>
+                            ) : (
+                              <>
+                                <span className="text-[10px] tabular-nums text-base-content/60">
+                                  Batas Min: <span className="font-bold text-base-content">{item.Threshold}</span>
+                                </span>
+                                {getStatusBadge(total, item.Threshold)}
+                              </>
+                            )}
                           </span>
                         </div>
 
-                        {/* Compact input: 6-col on sm+ (prev | now), stacked on mobile */}
-                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1">
-                          {/* ── SO SEBELUMNYA (read-only) ── */}
-                          <div>
-                            <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
-                              S1
-                            </span>
-                            <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-md">
-                              <span className="text-[11px] font-bold tabular-nums">{hasPrev ? prev.step1 : '–'}</span>
-                            </div>
+                        {(isBoolean || isDate) && (
+                          <div className={`grid grid-cols-2 gap-1 ${(isBoolean && isDate) ? 'sm:grid-cols-6' : (isBoolean ? 'sm:grid-cols-2' : 'sm:grid-cols-4')}`}>
+                            {isBoolean && (
+                              <>
+                                <div>
+                                  <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
+                                    Isi Sebelumnya
+                                  </span>
+                                  <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-md">
+                                    <span className="text-[11px] font-bold tabular-nums">{hasPrev && prev.statusIsi ? prev.statusIsi : '–'}</span>
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-primary text-center">
+                                    Isi
+                                  </span>
+                                  <select
+                                    value={statusSel}
+                                    onChange={(e) => handleCountChange(item.Item_ID, 'statusIsi', e.target.value === '' ? undefined : e.target.value === 'Isi')}
+                                    className="w-full h-8 px-1 text-center text-[11px] font-semibold cursor-pointer select select-bordered rounded-md"
+                                  >
+                                    <option value="">Pilih...</option>
+                                    <option value="Isi">Isi</option>
+                                    <option value="Kosong">Kosong</option>
+                                  </select>
+                                </div>
+                              </>
+                            )}
+                            {isDate && (
+                              <>
+                                <div>
+                                  <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
+                                    Refill Sebelumnya
+                                  </span>
+                                  <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-md">
+                                    <span className="text-[11px] font-bold tabular-nums">{prev?.tglRefill ? prev.tglRefill : '–'}</span>
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-primary text-center">
+                                    Tgl Refill
+                                  </span>
+                                  <input
+                                    type="date"
+                                    value={effRefill}
+                                    onChange={(e) => handleCountChange(item.Item_ID, 'tglRefill', e.target.value)}
+                                    className="w-full h-8 px-1 text-center text-[11px] font-semibold tabular-nums input input-bordered rounded-md"
+                                  />
+                                </div>
+                                <div>
+                                  <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
+                                    Pakai Sebelumnya
+                                  </span>
+                                  <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-md">
+                                    <span className="text-[11px] font-bold tabular-nums">{prev?.tglPakai ? prev.tglPakai : '–'}</span>
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-primary text-center">
+                                    Tgl Pakai
+                                  </span>
+                                  <input
+                                    type="date"
+                                    value={effPakai}
+                                    onChange={(e) => handleCountChange(item.Item_ID, 'tglPakai', e.target.value)}
+                                    className="w-full h-8 px-1 text-center text-[11px] font-semibold tabular-nums input input-bordered rounded-md"
+                                  />
+                                </div>
+                              </>
+                            )}
                           </div>
-                          <div>
-                            <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
-                              S2
-                            </span>
-                            <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-md">
-                              <span className="text-[11px] font-bold tabular-nums">{hasPrev ? prev.step2 : '–'}</span>
-                            </div>
-                          </div>
-                          <div>
-                            <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
-                              Tot
-                            </span>
-                            <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content rounded-md">
-                              <span className="text-[11px] font-extrabold tabular-nums">{hasPrev ? prev.total : '–'}</span>
-                            </div>
-                          </div>
+                        )}
 
-                          {/* ── SO SEKARANG (editable) ── */}
-                          <div>
-                            <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-primary text-center">
-                              S1
-                            </span>
-                            <input
-                              type="number"
-                              step="any"
-                              min="0"
-                              placeholder="0"
-                              value={step1Val}
-                              onChange={(e) => handleCountChange(item.Item_ID, 'step1', e.target.value)}
-                              data-onboard="so-step"
-                              className="w-full h-8 px-1 text-center text-[11px] font-bold tabular-nums input input-bordered rounded-md"
-                            />
-                          </div>
-                          <div>
-                            <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-primary text-center">
-                              S2
-                            </span>
-                            <input
-                              type="number"
-                              step="any"
-                              min="0"
-                              placeholder="0"
-                              value={step2Val}
-                              onChange={(e) => handleCountChange(item.Item_ID, 'step2', e.target.value)}
-                              className="w-full h-8 px-1 text-center text-[11px] font-bold tabular-nums input input-bordered rounded-md"
-                            />
-                          </div>
-                          <div>
-                            <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/60 text-center">
-                              Tot
-                            </span>
-                            <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-primary/10 border border-primary/30 rounded-md">
-                              <span className="text-[11px] font-extrabold tabular-nums text-primary">
-                                {total}
+                        {!isBoolean && !isDate && (
+                          <div className={`grid gap-1 ${isDual ? 'grid-cols-3 sm:grid-cols-6' : 'grid-cols-2 sm:grid-cols-4'}`}>
+                            {/* ── SO SEBELUMNYA (read-only) ── */}
+                            <div>
+                              <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
+                                S1
                               </span>
+                              <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-md">
+                                <span className="text-[11px] font-bold tabular-nums">{hasPrev ? prev.step1 : '–'}</span>
+                              </div>
+                            </div>
+                            {isDual && (
+                              <div>
+                                <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
+                                  S2
+                                </span>
+                                <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-md">
+                                  <span className="text-[11px] font-bold tabular-nums">{hasPrev ? prev.step2 : '–'}</span>
+                                </div>
+                              </div>
+                            )}
+                            <div>
+                              <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
+                                Tot
+                              </span>
+                              <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content rounded-md">
+                                <span className="text-[11px] font-extrabold tabular-nums">{hasPrev ? prev.total : '–'}</span>
+                              </div>
+                            </div>
+
+                            {/* ── SO SEKARANG (editable) ── */}
+                            <div>
+                              <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-primary text-center">
+                                S1
+                              </span>
+                              <input
+                                type="number"
+                                step="any"
+                                min="0"
+                                placeholder="0"
+                                value={step1Val}
+                                onChange={(e) => handleCountChange(item.Item_ID, 'step1', e.target.value)}
+                                data-onboard="so-step"
+                                className="w-full h-8 px-1 text-center text-[11px] font-bold tabular-nums input input-bordered rounded-md"
+                              />
+                            </div>
+                            {isDual && (
+                              <div>
+                                <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-primary text-center">
+                                  S2
+                                </span>
+                                <input
+                                  type="number"
+                                  step="any"
+                                  min="0"
+                                  placeholder="0"
+                                  value={step2Val}
+                                  onChange={(e) => handleCountChange(item.Item_ID, 'step2', e.target.value)}
+                                  className="w-full h-8 px-1 text-center text-[11px] font-bold tabular-nums input input-bordered rounded-md"
+                                />
+                              </div>
+                            )}
+                            <div>
+                              <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/60 text-center">
+                                Tot
+                              </span>
+                              <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-primary/10 border border-primary/30 rounded-md">
+                                <span className="text-[11px] font-extrabold tabular-nums text-primary">
+                                  {total}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Prev session date/shift + Keterangan (Optional Notes) */}
                         <div className="mt-1 flex items-center gap-3 flex-wrap">
@@ -1184,6 +1326,22 @@ export default function InputSOPage() {
             ))}
           </motion.div>
         )}
+
+        {/* Note laporan (opsional) */}
+        <div className="card bg-base-100 border border-base-300 p-3 sm:p-4">
+          <label className="flex items-center gap-2 text-sm font-semibold text-base-content mb-1.5">
+            <StickyNote className="w-4 h-4 text-base-content/50" />
+            Catatan Laporan
+            <span className="text-[10px] font-normal text-base-content/40">(opsional)</span>
+          </label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Tulis catatan untuk laporan ini, mis. kondisi terakhir, hal yang perlu ditindaklanjuti, dsb..."
+            rows={3}
+            className="w-full textarea textarea-bordered resize-y text-sm"
+          />
+        </div>
 
         {/* Floating Action Bar */}
         <div data-onboard="so-submit" className="sticky bottom-4 z-40 card bg-base-100 border border-base-300 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
@@ -1391,6 +1549,19 @@ function SOSummaryModalInline({
                     <span className="text-base-content/60 text-right">{item.keterangan}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Note laporan */}
+          {formState.note?.trim() && (
+            <div className="space-y-2">
+              <span className="text-xs font-bold text-base-content/60 uppercase tracking-wide flex items-center gap-1.5">
+                <StickyNote className="w-3.5 h-3.5" />
+                Catatan Laporan
+              </span>
+              <div className="px-3 py-2 bg-base-200 rounded text-xs border border-base-300 whitespace-pre-wrap">
+                {formState.note}
               </div>
             </div>
           )}

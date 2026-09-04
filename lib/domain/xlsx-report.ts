@@ -14,6 +14,9 @@ export interface XlsxItem {
   prevStep2?: number | string | null;
   prevTotal?: number | string | null;
   prevKeterangan?: string;
+  statusIsi?: 'Isi' | 'Kosong' | '';
+  tglRefill?: string;
+  tglPakai?: string;
 }
 
 type StatusType = 'KRITIS' | 'HAMPIR HABIS' | 'AMAN' | 'Tidak Dipantau';
@@ -86,7 +89,8 @@ export interface XlsxReportInput {
   shift: string;
   petugas: string;
   items: XlsxItem[];
-  previousSOInfo?: { tanggal?: string | number | null; shift?: string; petugas?: string } | null;
+  previousSOInfo?: { tanggal?: string | number | null; shift?: string | number | null; petugas?: string | number | null } | null;
+  note?: string;
 }
 
 const STATUS_ORDER: Record<StatusType, number> = { 'KRITIS': 0, 'HAMPIR HABIS': 1, 'AMAN': 2, 'Tidak Dipantau': 3 };
@@ -135,11 +139,11 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
 
   ws.insertRow(6, []);
 
-  const row7 = ws.insertRow(7, ['INFORMASI BARANG', '', '', '', '', 'SO SEBELUMNYA', '', '', 'SO SEKARANG', '', '', 'HASIL & ANALISIS', '', '', '']);
+  const row7 = ws.insertRow(7, ['INFORMASI BARANG', '', '', '', '', 'SO SEBELUMNYA', '', '', 'SO SEKARANG', '', '', 'HASIL & ANALISIS', '', '', '', '', '']);
   ws.mergeCells('A7:E7');
   ws.mergeCells('F7:H7');
   ws.mergeCells('I7:K7');
-  ws.mergeCells('L7:O7');
+  ws.mergeCells('L7:Q7');
 
   ['A7', 'F7', 'I7', 'L7'].forEach((cell, idx) => {
     const colors = [COLORS.headerInfo, COLORS.headerPrev, COLORS.headerCurr, COLORS.headerHasil];
@@ -151,8 +155,8 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
   });
   ws.getRow(7).height = 18;
 
-  const row8 = ws.insertRow(8, ['No', 'Nama Barang', 'Area', 'Satuan', 'Batas Min', 'Step 1', 'Step 2', 'Total', 'Step 1', 'Step 2', 'Total', 'Pemakaian', 'Status', 'Keterangan Sebelumnya', 'Keterangan']);
-  for (let i = 1; i <= 15; i++) {
+  const row8 = ws.insertRow(8, ['No', 'Nama Barang', 'Area', 'Satuan', 'Batas Min', 'Step 1', 'Step 2', 'Total', 'Step 1', 'Step 2', 'Total', 'Pemakaian', 'Status', 'Status Isi', 'Tgl Refill', 'Tgl Pakai', 'Keterangan']);
+  for (let i = 1; i <= 17; i++) {
     const cell = row8.getCell(i);
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.subHeader } } as any;
     cell.font = { bold: true, color: { argb: COLORS.textDark }, size: 9 };
@@ -204,13 +208,15 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
       total,
       diffValue,
       status,
-      it.prevKeterangan || '',
+      it.statusIsi || '',
+      it.tglRefill || '',
+      it.tglPakai || '',
       it.keterangan || '',
     ]);
 
     newRow.eachCell((cell, colNum) => {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rc.bg } } as any;
-      cell.alignment = { horizontal: [1, 5, 6, 7, 8, 9, 10, 11, 12].includes(colNum) ? 'center' : 'left', vertical: 'middle', wrapText: true };
+      cell.alignment = { horizontal: [1, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16].includes(colNum) ? 'center' : 'left', vertical: 'middle', wrapText: true };
       cell.border = thinBorder;
       if (colNum === 12) {
         cell.numFmt = '+0;-0;0';
@@ -229,7 +235,27 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
     newRow.height = 16;
   });
 
-  ws.columns = [{ width: 5 }, { width: 24 }, { width: 12 }, { width: 8 }, { width: 10 }, { width: 8 }, { width: 8 }, { width: 9 }, { width: 8 }, { width: 8 }, { width: 9 }, { width: 11 }, { width: 15 }, { width: 20 }, { width: 20 }];
+  const note = String(input.note || '').trim();
+  if (note) {
+    const noteHeaderRow = ws.insertRow(sortedItems.length + 10, ['NOTE']);
+    ws.mergeCells(`A${sortedItems.length + 10}:Q${sortedItems.length + 10}`);
+    const nh = noteHeaderRow.getCell(1);
+    nh.font = { bold: true, size: 10, color: { argb: COLORS.white } };
+    nh.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerHasil } } as any;
+    nh.alignment = { horizontal: 'center', vertical: 'middle' };
+    nh.border = thinBorder;
+    ws.getRow(sortedItems.length + 10).height = 16;
+
+    const noteRow = ws.insertRow(sortedItems.length + 11, [note]);
+    ws.mergeCells(`A${sortedItems.length + 11}:Q${sortedItems.length + 11}`);
+    const nc = noteRow.getCell(1);
+    nc.alignment = { horizontal: 'left', vertical: 'top', wrapText: true };
+    nc.font = { size: 10, color: { argb: COLORS.textDark } };
+    nc.border = thinBorder;
+    ws.getRow(sortedItems.length + 11).height = 80;
+  }
+
+  ws.columns = [{ width: 5 }, { width: 24 }, { width: 12 }, { width: 8 }, { width: 10 }, { width: 8 }, { width: 8 }, { width: 9 }, { width: 8 }, { width: 8 }, { width: 9 }, { width: 11 }, { width: 15 }, { width: 12 }, { width: 14 }, { width: 14 }, { width: 20 }];
   ws.views = [{ state: 'frozen', xSplit: 2, ySplit: 8 }];
 
   const buffer = await wb.xlsx.writeBuffer() as any as Buffer;

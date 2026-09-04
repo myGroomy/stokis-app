@@ -15,6 +15,7 @@ export interface MasterItemPayload {
   Konversi_Isi?: string;
   Konversi_Keterangan?: string;
   Threshold?: number;
+  Tipe_Input?: string;
 }
 
 export async function getMasterItems(cabangId: string) {
@@ -42,6 +43,7 @@ export async function addItem(cabangId: string, payload: MasterItemPayload): Pro
     parseThreshold(payload.Threshold),
     true,
     new Date(),
+    payload.Tipe_Input || '',
   ]]);
   return { itemId };
 }

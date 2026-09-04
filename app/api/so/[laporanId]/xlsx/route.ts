@@ -86,7 +86,7 @@ async function uploadFileToGASDriveWithRetry(
 export const POST = withAuth(async (req: NextRequest, { params }, session) => {
   const { laporanId } = await params;
   const body = await req.json();
-  const { items, cabangId, cabangNama, cabangKode, tanggalOperasional, shift, petugas, previousSOInfo, sesiId } = body;
+  const { items, cabangId, cabangNama, cabangKode, tanggalOperasional, shift, petugas, previousSOInfo, sesiId, note } = body;
 
   if (!cabangId || typeof cabangId !== 'string') {
     return NextResponse.json(
@@ -107,6 +107,7 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
     petugas,
     items: Array.isArray(items) ? items : [],
     previousSOInfo,
+    note,
   });
 
   // Upload to Drive via GAS with retry logic

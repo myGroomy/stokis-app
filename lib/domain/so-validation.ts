@@ -16,6 +16,9 @@ interface SOItemRaw {
   step1?: unknown;
   step2?: unknown;
   keterangan?: unknown;
+  statusIsi?: unknown;
+  tglRefill?: unknown;
+  tglPakai?: unknown;
 }
 
 export function validateSOPayload(payload: unknown):
@@ -77,6 +80,18 @@ export function validateSOPayload(payload: unknown):
       if (item.keterangan !== undefined && item.keterangan !== null && typeof item.keterangan !== 'string') {
         errors.push({ code: 'KETERANGAN_INVALID', message: label + ' keterangan harus string' });
       }
+      if (item.statusIsi !== undefined && item.statusIsi !== null && item.statusIsi !== '' &&
+          !['Isi', 'Kosong'].includes(String(item.statusIsi))) {
+        errors.push({ code: 'STATUS_ISI_INVALID', message: label + ' statusIsi harus "Isi" atau "Kosong"' });
+      }
+      if (item.tglRefill !== undefined && item.tglRefill !== null && item.tglRefill !== '' &&
+          !isValidTanggal(item.tglRefill)) {
+        errors.push({ code: 'TGL_REFILL_INVALID', message: label + ' tglRefill harus format YYYY-MM-DD' });
+      }
+      if (item.tglPakai !== undefined && item.tglPakai !== null && item.tglPakai !== '' &&
+          !isValidTanggal(item.tglPakai)) {
+        errors.push({ code: 'TGL_PAKAI_INVALID', message: label + ' tglPakai harus format YYYY-MM-DD' });
+      }
     });
   }
 
@@ -85,12 +100,18 @@ export function validateSOPayload(payload: unknown):
   const normalizedItems: SOItem[] = (items as SOItemRaw[]).map((item) => {
     const step1 = normalizeCount(item.step1);
     const step2 = normalizeCount(item.step2);
+    const statusIsi = (item.statusIsi === 'Isi' || item.statusIsi === 'Kosong') ? item.statusIsi as 'Isi' | 'Kosong' : '';
+    const tglRefill = typeof item.tglRefill === 'string' ? item.tglRefill : '';
+    const tglPakai = typeof item.tglPakai === 'string' ? item.tglPakai : '';
     return {
       itemId: String(item.itemId).trim(),
       step1,
       step2,
       total: step1 + step2,
       keterangan: typeof item.keterangan === 'string' ? item.keterangan : '',
+      statusIsi,
+      tglRefill,
+      tglPakai,
     };
   });
 
@@ -102,6 +123,7 @@ export function validateSOPayload(payload: unknown):
       shift: String(body.shift),
       petugas,
       items: normalizedItems,
+      note: typeof body.note === 'string' ? body.note.trim() : '',
     },
   };
 }

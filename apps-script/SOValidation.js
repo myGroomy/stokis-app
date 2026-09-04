@@ -141,6 +141,18 @@ function validateSOPayload_(payload) {
       if (item.keterangan !== undefined && item.keterangan !== null && typeof item.keterangan !== 'string') {
         errors.push({ code: 'KETERANGAN_INVALID', message: label + ' keterangan harus string' });
       }
+      if (item.statusIsi !== undefined && item.statusIsi !== null && item.statusIsi !== '' &&
+          ['Isi', 'Kosong'].indexOf(String(item.statusIsi)) === -1) {
+        errors.push({ code: 'STATUS_ISI_INVALID', message: label + ' statusIsi harus "Isi" atau "Kosong"' });
+      }
+      if (item.tglRefill !== undefined && item.tglRefill !== null && item.tglRefill !== '' &&
+          !isValidTanggal_(item.tglRefill)) {
+        errors.push({ code: 'TGL_REFILL_INVALID', message: label + ' tglRefill harus format YYYY-MM-DD' });
+      }
+      if (item.tglPakai !== undefined && item.tglPakai !== null && item.tglPakai !== '' &&
+          !isValidTanggal_(item.tglPakai)) {
+        errors.push({ code: 'TGL_PAKAI_INVALID', message: label + ' tglPakai harus format YYYY-MM-DD' });
+      }
     });
   }
 
@@ -157,6 +169,9 @@ function validateSOPayload_(payload) {
       step2: step2,
       total: step1 + step2,
       keterangan: typeof item.keterangan === 'string' ? item.keterangan : '',
+      statusIsi: (item.statusIsi === 'Isi' || item.statusIsi === 'Kosong') ? item.statusIsi : '',
+      tglRefill: typeof item.tglRefill === 'string' ? item.tglRefill : '',
+      tglPakai: typeof item.tglPakai === 'string' ? item.tglPakai : '',
     };
   });
 
@@ -168,6 +183,7 @@ function validateSOPayload_(payload) {
       shift: payload.shift,
       petugas: petugas,
       items: normalizedItems,
+      note: typeof payload.note === 'string' ? payload.note.trim() : '',
     },
   };
 }

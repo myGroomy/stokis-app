@@ -16,6 +16,10 @@ export const SO_COL = {
   Petugas: 11,
   Sesi_ID: 12,
   Keterangan: 13,
+  Status_Isi: 14,
+  Tgl_Refill: 15,
+  Tgl_Pakai: 16,
+  Note: 17,
 } as const;
 
 export function calculateStatus(total: number, threshold: number | null | undefined): string {
@@ -35,12 +39,30 @@ export function parseThreshold(v: unknown): number | null {
   return isNaN(n) ? null : n;
 }
 
+export type InputTipe = 'single' | 'dual' | 'boolean' | 'date';
+
+export function parseTipeInput(raw: unknown): InputTipe[] {
+  const s = String(raw || '').trim().toLowerCase();
+  if (!s) return ['dual'];
+  return s
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean) as InputTipe[];
+}
+
+export function hasTipe(tipeInput: InputTipe[], tipe: InputTipe): boolean {
+  return tipeInput.includes(tipe);
+}
+
 export interface SOItem {
   itemId: string;
   step1: number;
   step2: number;
   total: number;
   keterangan: string;
+  statusIsi?: 'Isi' | 'Kosong' | '';
+  tglRefill?: string;
+  tglPakai?: string;
 }
 
 export interface ValidatedSOPayload {
@@ -49,6 +71,7 @@ export interface ValidatedSOPayload {
   shift: string;
   petugas: string;
   items: SOItem[];
+  note?: string;
 }
 
 export function isNonNegativeNumber(v: unknown): boolean {

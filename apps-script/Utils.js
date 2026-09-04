@@ -14,6 +14,10 @@ var SO_COL = {
   Petugas: 11,
   Sesi_ID: 12,
   Keterangan: 13,
+  Status_Isi: 14,
+  Tgl_Refill: 15,
+  Tgl_Pakai: 16,
+  Note: 17,
 };
 
 function formatDate_(date) {

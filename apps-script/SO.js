@@ -97,6 +97,8 @@ function submitSO(cabangId, payload) {
         it.itemId, master['Nama_Barang'], master['Area'],
         it.step1, it.step2, it.total,
         validation.data.petugas, sesiId, it.keterangan,
+        it.statusIsi || '', it.tglRefill || '', it.tglPakai || '',
+        validation.data.note || '',
       ]);
     });
 
@@ -251,6 +253,9 @@ function getPreviousSO(cabangId) {
           shift: r['Shift'] || '',
           petugas: r['Petugas'] || '',
           keterangan: r['Keterangan'] || '',
+          statusIsi: r['Status_Isi'] || '',
+          tglRefill: formatDate_(r['Tgl_Refill']),
+          tglPakai: formatDate_(r['Tgl_Pakai']),
         };
       });
       return {

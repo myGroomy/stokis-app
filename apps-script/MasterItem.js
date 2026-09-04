@@ -12,7 +12,8 @@ function addItem(cabangId, payload) {
   sheet.appendRow([
     itemId, payload.Nama_Barang, payload.Area, payload.Satuan,
     payload.Konversi_Isi || '', payload.Konversi_Keterangan || '',
-    Number(payload.Threshold) || 0, true, new Date()
+    Number(payload.Threshold) || 0, true, new Date(),
+    payload.Tipe_Input || '',
   ]);
   return { itemId };
 }

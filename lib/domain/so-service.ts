@@ -143,6 +143,9 @@ export async function submitSO(
   items.forEach((it, idx) => {
     const master = masterMap[it.itemId];
     const transaksiId = buildTransaksiId(tanggal, idx + 1, randomToken(4));
+    const step1 = Number(it.step1) || 0;
+    const step2 = Number(it.step2) || 0;
+    const total = Number(it.total) || (step1 + step2);
     rows.push([
       transaksiId,
       timestamp,
@@ -151,9 +154,9 @@ export async function submitSO(
       it.itemId,
       master.Nama_Barang,
       master.Area,
-      it.step1,
-      it.step2,
-      it.total,
+      step1,
+      step2,
+      total,
       petugas,
       sesiId,
       it.keterangan,
@@ -224,10 +227,13 @@ export async function getPreviousSO(cabangId: string): Promise<PreviousSOResult>
       const firstRow = sessionRows[0];
       const items: Record<string, PrevItem> = {};
       sessionRows.forEach((r) => {
+        const step1 = Number(r['Step1']) || 0;
+        const step2 = Number(r['Step2']) || 0;
         const itemObj: PrevItem = {
-          step1: Number(r['Step1']) || 0,
-          step2: Number(r['Step2']) || 0,
-          total: Number(r['Total']) || 0,
+          step1,
+          step2,
+          // Total bisa kosong di sheet → fallback hitung dari Step1+Step2.
+          total: Number(r['Total']) || (step1 + step2),
           tanggal: fmtDate(r['Tanggal_Operasional']),
           shift: String(r['Shift'] || ''),
           petugas: String(r['Petugas'] || ''),

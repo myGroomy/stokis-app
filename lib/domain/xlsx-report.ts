@@ -186,9 +186,11 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
     const thresholdCell = threshold != null ? threshold : '';
     const p1 = it.prevStep1 != null && it.prevStep1 !== '' ? Number(it.prevStep1) : null;
     const p2 = it.prevStep2 != null && it.prevStep2 !== '' ? Number(it.prevStep2) : null;
-    const prevTotal = it.prevTotal != null && it.prevTotal !== ''
-      ? Number(it.prevTotal)
-      : (p1 != null || p2 != null ? (p1 || 0) + (p2 || 0) : null);
+    // Total sebelumnya = Step1+Step2 sebelumnya (sumber kebenaran). Prev_Total yang
+    // tersimpan kadang 0/kosong padahal Step1/Step2 terisi → utamakan penjumlahan.
+    const prevTotal = (p1 != null || p2 != null)
+      ? (p1 || 0) + (p2 || 0)
+      : (it.prevTotal != null && it.prevTotal !== '' ? Number(it.prevTotal) : null);
     const diff = prevTotal != null ? total - prevTotal : null;
     const diffValue = diff ?? '';
     const status = getStatus(s1, s2, threshold);

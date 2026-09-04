@@ -27,7 +27,11 @@ export async function getDashboardHarian(cabangId: string, tanggal: string) {
 
   const detail = soRows.map((r) => {
     const master = masterMap[String(r['Item_ID'])] || {};
-    return { ...r, Status: calculateStatus(Number(r['Total']) || 0, Number(master['Threshold']) || 0) };
+    const step1 = Number(r['Step1']) || 0;
+    const step2 = Number(r['Step2']) || 0;
+    // Total bisa kosong di sheet → fallback hitung dari Step1+Step2.
+    const total = Number(r['Total']) || (step1 + step2);
+    return { ...r, Total: total, Status: calculateStatus(total, Number(master['Threshold']) || 0) };
   });
 
   return {
@@ -62,7 +66,10 @@ export async function getDashboardMingguan(
       trenPerHari[t] = { total: 0, kritis: 0, hampirHabis: 0, aman: 0 };
     }
     const master = masterMap[String(r['Item_ID'])] || {};
-    const status = calculateStatus(Number(r['Total']) || 0, Number(master['Threshold']) || 0);
+    const step1 = Number(r['Step1']) || 0;
+    const step2 = Number(r['Step2']) || 0;
+    const total = Number(r['Total']) || (step1 + step2);
+    const status = calculateStatus(total, Number(master['Threshold']) || 0);
     trenPerHari[t].total += 1;
     if (status === 'Kritis') trenPerHari[t].kritis += 1;
     else if (status === 'Hampir Habis') trenPerHari[t].hampirHabis += 1;

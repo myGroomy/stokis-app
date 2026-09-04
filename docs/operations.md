@@ -105,10 +105,31 @@ Each branch has its own spreadsheet with these sheets:
 
 | Sheet | Purpose |
 |-------|---------|
-| `Master_Item` | Item definitions (name, unit, threshold) |
+| `Master_Item` | Item definitions (name, unit, threshold, area, `Tipe_Input`) |
 | `SO_Transaksi` | Stock opname transaction records |
 | `Laporan_PDF` | Laporan records + XLSX links |
 | `Petugas` | Staff data |
+
+#### `Master_Item` — kolom
+
+| Kolom | Keterangan |
+|-------|-----------|
+| `Tipe_Input` | Jenis input per item: `single` / `dual` / `boolean` / `date` (comma-separated utk kombinasi, mis. `boolean,date`). Kosong = `dual`. |
+
+#### `SO_Transaksi` — kolom
+
+| Kolom | Keterangan |
+|-------|-----------|
+| `Status_Isi` | Untuk item `boolean`: `Isi` / `Kosong` |
+| `Tgl_Refill` | Untuk item `date`: tanggal refill (YYYY-MM-DD) |
+| `Tgl_Pakai` | Untuk item `date`: tanggal pakai (YYYY-MM-DD) |
+| `Note` | Catatan laporan per sesi (opsional, diulang di setiap baris transaksi sesi tsb) |
+
+#### Catatan pada XLSX report
+
+- Item bertipe `boolean`/`date` tidak menampilkan masukan numerik (Step1/Step2) di form.
+- Kolom `Keterangan Sebelumnya` tidak lagi dicetak di laporan.
+- `Note` dicetak sebagai box besar di bagian paling bawah laporan (hanya bila terisi).
 
 ### Registry Spreadsheet
 

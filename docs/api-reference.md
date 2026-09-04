@@ -78,16 +78,26 @@ Submit stock opname counts. Requires auth.
   "tanggalOperasional": "2026-09-01",
   "shift": "Opening",
   "petugas": "Budi",
+  "note": "Catatan laporan (opsional), ditulis ke setiap baris transaksi",
   "items": [
     {
       "itemId": "ITM-001",
       "step1": 5,
       "step2": 3,
-      "keterangan": ""
+      "keterangan": "",
+      "statusIsi": "Isi",
+      "tglRefill": "2026-09-01",
+      "tglPakai": ""
     }
   ]
 }
 ```
+
+Per-item fields depend on the item's `Tipe_Input` (from `Master_Item`):
+- `single` / `dual`: `step1` (+ `step2` optional)
+- `boolean`: `statusIsi` = `"Isi"` | `"Kosong"`
+- `date`: `tglRefill` / `tglPakai` (YYYY-MM-DD)
+- `note`: one value for the whole session; written to every transaction row.
 
 **Response (201):**
 ```json
@@ -145,6 +155,7 @@ Save laporan record for an SO session. Requires auth.
   "tanggalOperasional": "2026-09-01",
   "shift": "Opening",
   "petugas": "Budi",
+  "note": "Catatan laporan (opsional)",
   "items": [
     {
       "itemId": "ITM-001",
@@ -188,6 +199,7 @@ Generate and upload XLSX report. Requires auth. Returns binary file.
   "tanggalOperasional": "2026-09-01",
   "shift": "Opening",
   "petugas": "Budi",
+  "note": "Catatan laporan (opsional, dirender sebagai box di bawah tabel XLSX)",
   "items": [
     {
       "itemId": "ITM-001",
@@ -277,6 +289,7 @@ List active master items. Requires auth.
       "Konversi_Isi": "5",
       "Konversi_Keterangan": "1 Karung = 5 kg",
       "Threshold": 10,
+      "Tipe_Input": "dual",
       "Aktif": true,
       "Created_At": "2026-01-01"
     }
@@ -297,9 +310,17 @@ Add new master item. Requires admin role.
   "Satuan": "kg",
   "Konversi_Isi": "5",
   "Konversi_Keterangan": "1 Karung = 5 kg",
-  "Threshold": 10
+  "Threshold": 10,
+  "Tipe_Input": "dual"
 }
 ```
+
+`Tipe_Input` menentukan jenis input pada form SO per item (comma-separated bila kombinasi):
+- `single` — satu angka (Step1)
+- `dual` — dua angka (Step1 + Step2), default bila kosong
+- `boolean` — dropdown Isi/Kosong
+- `date` — Tgl_Refill + Tgl_Pakai
+- contoh kombinasi: `boolean,date` (mis. tabung gas)
 
 **Response (201):**
 ```json

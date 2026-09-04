@@ -153,6 +153,7 @@ erDiagram
         string Area
         string Satuan
         number Threshold
+        string Tipe_Input
     }
 
     SO_TRANSAKSI {
@@ -163,6 +164,10 @@ erDiagram
         number Step1
         number Step2
         number Total
+        string Status_Isi
+        date Tgl_Refill
+        date Tgl_Pakai
+        string Note
     }
 
     LAPORAN_PDF {
@@ -191,6 +196,7 @@ flowchart LR
     B --> F["Row 9+: Data Rows"]
     F --> G["Status Coloring<br/>(KRITIS=Red, AMAN=Green)"]
     F --> H["Pemakaian Calc<br/>(+/- signed)"]
+    F --> M["Note Box<br/>(selective, bottom)"]
     B --> I["Freeze Panes<br/>(Col A-B, Row 1-8)"]
     I --> J["Buffer Output"]
     J --> K["Upload to Drive"]

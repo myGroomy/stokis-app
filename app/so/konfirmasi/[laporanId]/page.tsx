@@ -98,8 +98,13 @@ const [errorMsg, setErrorMsg] = useState<string>('');
     setIsRegenerating(true);
     try {
       const res = await fetch(
-        `/api/laporan/${laporanId}/regenerate?cabang=${selectedCabang.Cabang_ID}`,
-        { method: 'POST', credentials: 'include' }
+        `/api/laporan/${laporanId}/regenerate`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cabangId: selectedCabang.Cabang_ID }),
+        }
       );
       const json = await res.json();
       if (json.success) {

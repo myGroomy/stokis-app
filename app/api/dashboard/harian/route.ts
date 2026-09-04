@@ -13,4 +13,4 @@ export const GET = withAuth(async (req: NextRequest, _ctx, session) => {
 
   const result = await callAppsScript('getDashboardHarian', cabangId, { tanggal });
   return NextResponse.json(result, { status: result.success ? 200 : 400 });
-});
+}, { requiredRole: 'admin' });

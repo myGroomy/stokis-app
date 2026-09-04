@@ -593,6 +593,7 @@ const quickActions = [
     desc: "Analitik stok harian/mingguan",
     color: "text-success",
     bg: "bg-success/10",
+    roles: ["admin"],
   },
   {
     href: "/docs",
@@ -644,6 +645,10 @@ function UserHome() {
   const isAdmin = user?.role === "admin";
   const cabang = selectedCabang?.Nama_Cabang || "Semua Cabang";
 
+  const visibleQuickActions = quickActions.filter(
+    (a) => !a.roles || a.roles.includes(user?.role || "petugas")
+  );
+
   useEffect(() => {
     let cancelled = false;
 
@@ -658,13 +663,17 @@ function UserHome() {
       setLaporanLoading(true);
       const cabangId = selectedCabang.Cabang_ID;
 
-      const [dashRes, lapRes] = await Promise.all([
-        fetch(`/api/dashboard/harian?cabang=${cabangId}&tanggal=${today}`),
-        fetch(`/api/laporan?cabang=${cabangId}`),
-      ]);
+      const dashPromise = isAdmin
+        ? fetch(`/api/dashboard/harian?cabang=${cabangId}&tanggal=${today}`)
+        : Promise.resolve(null);
+      const lapPromise = fetch(`/api/laporan?cabang=${cabangId}`);
 
-      const dash = await dashRes.json();
-      if (!cancelled && dash.success && dash.data) setData(dash.data);
+      const [dashRes, lapRes] = await Promise.all([dashPromise, lapPromise]);
+
+      if (dashRes) {
+        const dash = await dashRes.json();
+        if (!cancelled && dash.success && dash.data) setData(dash.data);
+      }
 
       const lap = await lapRes.json();
       if (!cancelled && lap.success && Array.isArray(lap.data)) {
@@ -681,7 +690,7 @@ function UserHome() {
     return () => {
       cancelled = true;
     };
-  }, [selectedCabang, today]);
+  }, [selectedCabang, today, isAdmin]);
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-6 space-y-6">
@@ -714,7 +723,7 @@ function UserHome() {
           Layanan
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {quickActions.map((a) => {
+          {visibleQuickActions.map((a) => {
             const Icon = a.icon;
             return (
               <Link
@@ -771,8 +780,8 @@ function UserHome() {
         )}
       </div>
 
-      {/* Stock Summary */}
-      {selectedCabang ? (
+      {/* Stock Summary (admin only) */}
+      {isAdmin && selectedCabang ? (
         <div className="space-y-4">
           <h2 className="font-semibold text-base-content flex items-center gap-2 text-base">
             <TrendingUp className="w-4 h-4 text-primary" />
@@ -822,12 +831,12 @@ function UserHome() {
             </div>
           )}
         </div>
-      ) : (
+      ) : isAdmin ? (
         <div className="alert alert-warning text-sm" role="alert">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span>Silakan pilih cabang aktif melalui dropdown di navbar untuk melihat ringkasan stok dan laporan.</span>
+          <span>Silakan pilih cabang aktif melalui dropdown di navbar untuk melihat ringkasan stok.</span>
         </div>
-      )}
+      ) : null}
 
       {/* Recent Laporan */}
       <div className="space-y-4">

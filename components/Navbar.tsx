@@ -46,7 +46,7 @@ const bottomNavItems: NavItem[] = [
 ];
 
 const desktopNavItems: NavItem[] = [
-  { name: "Dashboard", nameEn: "Dashboard", href: "/dashboard/harian", icon: BarChart3 },
+  { name: "Dashboard", nameEn: "Dashboard", href: "/dashboard/harian", icon: BarChart3, roles: ["admin"] },
   { name: "Input SO", nameEn: "Input SO", href: "/so/input", icon: ClipboardCheck },
   { name: "Laporan", nameEn: "Reports", href: "/laporan", icon: FileText },
   { name: "Dokumentasi", nameEn: "Docs", href: "/docs", icon: BookOpen },

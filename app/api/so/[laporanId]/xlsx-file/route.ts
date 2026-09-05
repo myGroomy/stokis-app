@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveCabang } from '@/lib/google/registry';
 import { readSheetData, sheetToObjects } from '@/lib/google/sheets';
 import { generateXlsxReport, type XlsxItem } from '@/lib/domain/xlsx-report';
+import { getUrutanLaporan, getSesiLiveData } from '@/lib/domain/laporan-service';
 import { parseThreshold } from '@/lib/domain/so';
 
 function fmtDateValue(v: unknown): string {
@@ -85,26 +86,39 @@ export async function GET(
   const shift = String(laporan['Shift'] || '');
   const petugas = String(laporan['Petugas'] || '');
 
+  // Fallback data live (note + boolean/date) untuk laporan lama yang kolomnya
+  // belum tersimpan di Laporan_SO.
+  const live = await getSesiLiveData(spreadsheetId, String(laporan['Sesi_ID'] || ''));
+
   // Build XlsxItem[]
-  const items: XlsxItem[] = detail.map((r) => ({
-    itemId: String(r['Item_ID'] || ''),
-    namaBarang: String(r['Nama_Barang'] || ''),
-    area: String(r['Area'] || ''),
-    satuan: String(r['Satuan'] || ''),
-    threshold: parseThreshold(r['Threshold']) ?? undefined,
-    step1: Number(r['Step1']) || 0,
-    step2: Number(r['Step2']) || 0,
-    keterangan: String(r['Keterangan'] || ''),
-    prevStep1: r['Prev_Step1'] != null && String(r['Prev_Step1']) !== '' ? Number(r['Prev_Step1']) : null,
-    prevStep2: r['Prev_Step2'] != null && String(r['Prev_Step2']) !== '' ? Number(r['Prev_Step2']) : null,
-    prevTotal: r['Prev_Total'] != null && String(r['Prev_Total']) !== '' ? Number(r['Prev_Total']) : null,
-    prevKeterangan: String(r['Prev_Keterangan'] || ''),
-  }));
+  const items: XlsxItem[] = detail.map((r) => {
+    const itemId = String(r['Item_ID'] || '');
+    const fb = live.byItemId[itemId] || {};
+    return {
+      itemId,
+      namaBarang: String(r['Nama_Barang'] || ''),
+      area: String(r['Area'] || ''),
+      satuan: String(r['Satuan'] || ''),
+      threshold: parseThreshold(r['Threshold']) ?? undefined,
+      step1: Number(r['Step1']) || 0,
+      step2: Number(r['Step2']) || 0,
+      keterangan: String(r['Keterangan'] || ''),
+      prevStep1: r['Prev_Step1'] != null && String(r['Prev_Step1']) !== '' ? Number(r['Prev_Step1']) : null,
+      prevStep2: r['Prev_Step2'] != null && String(r['Prev_Step2']) !== '' ? Number(r['Prev_Step2']) : null,
+      prevTotal: r['Prev_Total'] != null && String(r['Prev_Total']) !== '' ? Number(r['Prev_Total']) : null,
+      prevKeterangan: String(r['Prev_Keterangan'] || ''),
+      statusIsi: (r['Status_Isi'] === 'Isi' || r['Status_Isi'] === 'Kosong') ? r['Status_Isi'] as 'Isi' | 'Kosong' : (fb.statusIsi || ''),
+      tglRefill: String(r['Tgl_Refill'] || fb.tglRefill || ''),
+      tglPakai: String(r['Tgl_Pakai'] || fb.tglPakai || ''),
+    };
+  });
 
   const previousSOInfo = {
     tanggal: detail[0]?.['Prev_Tanggal'] ? fmtDateValue(detail[0]['Prev_Tanggal']) : '',
     shift: String(detail[0]?.['Prev_Shift'] || ''),
   };
+
+  const urutanLaporan = await getUrutanLaporan(spreadsheetId);
 
   const { buffer, fileName } = await generateXlsxReport({
     laporanId,
@@ -114,6 +128,8 @@ export async function GET(
     shift,
     petugas,
     items,
+    groupMode: urutanLaporan,
+    note: detail[0]?.['Note'] ? String(detail[0]['Note']) : live.note,
     previousSOInfo,
   });
 

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCabang } from '@/lib/CabangContext';
+import { useAuth } from '@/lib/AuthContext';
 import {
   FileText,
   Search,
@@ -18,6 +19,7 @@ import {
   Table,
   RefreshCw,
   Loader2,
+  ListOrdered,
 } from 'lucide-react';
 import { WATemplateModal } from '@/components/WATemplateModal';
 import { QuantumLoaderFull } from '@/components/ui/QuantumLoader';
@@ -51,9 +53,15 @@ function formatWaktuDibuat(value: string): string {
 
 export default function LaporanPage() {
   const { selectedCabang } = useCabang();
+  const { isAdmin } = useAuth();
 
   const [laporanList, setLaporanList] = useState<LaporanItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+
+  type UrutanLaporan = 'Area' | 'Urutan_Input';
+  const [urutanLaporan, setUrutanLaporan] = useState<UrutanLaporan>('Urutan_Input');
+  const [settingsSaving, setSettingsSaving] = useState<boolean>(false);
+  const [settingsMsg, setSettingsMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [filterTanggal, setFilterTanggal] = useState<string>('');
   const [filterShift, setFilterShift] = useState<string>('');
@@ -111,6 +119,44 @@ export default function LaporanPage() {
   useEffect(() => {
     fetchLaporan();
   }, [selectedCabang, filterTanggal, filterShift, debouncedPetugas]);
+
+  useEffect(() => {
+    if (!isAdmin || !selectedCabang?.Cabang_ID) return;
+    fetch(`/api/cabang/${selectedCabang.Cabang_ID}/settings`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data?.urutanLaporan) {
+          setUrutanLaporan(json.data.urutanLaporan === 'Area' ? 'Area' : 'Urutan_Input');
+        }
+      })
+      .catch(() => {
+        setSettingsMsg({ type: 'error', text: 'Gagal memuat pengaturan urutan laporan.' });
+      });
+  }, [isAdmin, selectedCabang?.Cabang_ID]);
+
+  const handleUrutanLaporanChange = async (value: UrutanLaporan) => {
+    if (!selectedCabang) return;
+    setUrutanLaporan(value);
+    setSettingsSaving(true);
+    setSettingsMsg(null);
+    try {
+      const res = await fetch(`/api/cabang/${selectedCabang.Cabang_ID}/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urutanLaporan: value }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setSettingsMsg({ type: 'success', text: 'Pengaturan urutan laporan tersimpan. Berlaku untuk laporan yang dibuat ulang.' });
+      } else {
+        setSettingsMsg({ type: 'error', text: json.error?.message || 'Gagal menyimpan pengaturan.' });
+      }
+    } catch {
+      setSettingsMsg({ type: 'error', text: 'Gagal menyimpan pengaturan.' });
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
 
   if (!selectedCabang) {
     return (
@@ -192,6 +238,46 @@ export default function LaporanPage() {
             <span>{errorMsg}</span>
             <button onClick={() => { setErrorMsg(''); fetchLaporan(); }} className="btn btn-ghost btn-xs">Coba Lagi</button>
           </div>
+        )}
+
+        {isAdmin && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: 0.03 }}
+            className="card bg-base-100 border border-base-300 p-4 space-y-2"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-0.5 flex-1">
+                <label className="text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
+                  <ListOrdered className="w-3.5 h-3.5" />
+                  <span>Urutan Baris Laporan</span>
+                </label>
+                <p className="text-xs text-base-content/50">
+                  Berlaku untuk file yang dibuat ulang (Regenerate) di cabang ini.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={urutanLaporan}
+                  onChange={(e) => handleUrutanLaporanChange(e.target.value as UrutanLaporan)}
+                  disabled={settingsSaving}
+                  className="select select-bordered min-h-[42px] text-sm w-full sm:w-auto"
+                >
+                  <option value="Area">Per Kategori / Area</option>
+                  <option value="Urutan_Input">Default - Urutan Master Item</option>
+                </select>
+                {settingsSaving && (
+                  <Loader2 className="w-4 h-4 animate-spin text-primary flex-shrink-0" />
+                )}
+              </div>
+            </div>
+            {settingsMsg && (
+              <div className={`text-xs font-medium ${settingsMsg.type === 'error' ? 'text-error' : 'text-success'}`}>
+                {settingsMsg.text}
+              </div>
+            )}
+          </motion.div>
         )}
 
         <motion.div

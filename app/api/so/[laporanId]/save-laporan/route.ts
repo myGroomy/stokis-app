@@ -46,6 +46,7 @@ export const POST = withAuth(async (req: NextRequest, _ctx, session) => {
     petugas: body.petugas || '',
     items: Array.isArray(body.items) ? body.items : [],
     linkPdf: typeof body.linkPdf === 'string' ? body.linkPdf : '',
+    note: typeof body.note === 'string' ? body.note : '',
     previousSOInfo: rawPreviousSOInfo
       ? {
           tanggal: String(rawPreviousSOInfo.tanggal || ''),

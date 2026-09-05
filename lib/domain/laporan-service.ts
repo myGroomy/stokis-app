@@ -26,6 +26,7 @@ interface SaveLaporanPayload {
   items?: SaveLaporanItem[];
   linkPdf?: string;
   linkXlsx?: string;
+  note?: string;
   previousSOInfo?: { tanggal?: string; shift?: string } | null;
 }
 
@@ -44,6 +45,9 @@ interface SaveLaporanItem {
   prevTanggal?: string | null;
   prevShift?: string | null;
   prevKeterangan?: string;
+  statusIsi?: 'Isi' | 'Kosong' | '';
+  tglRefill?: string;
+  tglPakai?: string;
 }
 
 /**
@@ -105,6 +109,7 @@ export async function saveLaporan(
     shift,
     petugas: payload.petugas || '',
     items: payload.items || [],
+    note: String(payload.note || ''),
     previousSOInfo: payload.previousSOInfo || null,
   });
 
@@ -119,6 +124,8 @@ const LAPORAN_DETAIL_HEADERS = [
   'Prev_Step1', 'Prev_Step2', 'Prev_Total', 'Prev_Tanggal', 'Prev_Shift', 'Prev_Keterangan',
   'Step1', 'Step2', 'Total',
   'Penggunaan', 'Keterangan', 'Status',
+  'Status_Isi', 'Tgl_Refill', 'Tgl_Pakai',
+  'Note',
 ];
 
 async function saveLaporanDetail(
@@ -129,6 +136,7 @@ async function saveLaporanDetail(
     shift: string;
     petugas: string;
     items: SaveLaporanItem[];
+    note?: string;
     previousSOInfo?: { tanggal?: string; shift?: string } | null;
   }
 ): Promise<void> {
@@ -137,6 +145,7 @@ async function saveLaporanDetail(
 
   const prevTanggal = data.previousSOInfo?.tanggal || '';
   const prevShift = data.previousSOInfo?.shift || '';
+  const note = String(data.note || '');
 
   const rows: unknown[][] = (data.items || []).map((it) => {
     const step1 = Number(it.step1) || 0;
@@ -168,6 +177,10 @@ async function saveLaporanDetail(
       penggunaan,
       it.keterangan || '',
       status,
+      it.statusIsi || '',
+      it.tglRefill || '',
+      it.tglPakai || '',
+      note,
     ];
   });
 
@@ -275,4 +288,93 @@ export async function getLaporanDetail(
   const { headers, rows } = await readSheetData(spreadsheetId, LAPORAN_DETAIL_SHEET);
   const all = sheetToObjects(headers, rows);
   return all.filter((r) => String(r['Laporan_ID']) === laporanId);
+}
+
+export interface SesiLiveExtra {
+  note: string;
+  byItemId: Record<string, { statusIsi?: 'Isi' | 'Kosong' | ''; tglRefill?: string; tglPakai?: string }>;
+}
+
+/**
+ * Fallback data live dari SO_Transaksi untuk laporan lama yang kolom
+ * Status_Isi/Tgl_Refill/Tgl_Pakai/Note di Laporan_SO masih kosong.
+ * Diambil dari sesi SO aslinya, lalu di-join per Item_ID.
+ */
+export async function getSesiLiveData(
+  spreadsheetId: string,
+  sesiId: string
+): Promise<SesiLiveExtra> {
+  if (!spreadsheetId || !sesiId) return { note: '', byItemId: {} };
+  try {
+    const { headers, rows } = await readSheetData(spreadsheetId, 'SO_Transaksi');
+    const all = sheetToObjects(headers, rows).filter((r) => String(r['Sesi_ID']) === sesiId);
+    if (all.length === 0) return { note: '', byItemId: {} };
+    const byItemId: SesiLiveExtra['byItemId'] = {};
+    all.forEach((r) => {
+      const itemId = String(r['Item_ID'] || '').trim();
+      if (!itemId) return;
+      byItemId[itemId] = {
+        statusIsi: (r['Status_Isi'] === 'Isi' || r['Status_Isi'] === 'Kosong') ? r['Status_Isi'] as 'Isi' | 'Kosong' : '',
+        tglRefill: String(r['Tgl_Refill'] || ''),
+        tglPakai: String(r['Tgl_Pakai'] || ''),
+      };
+    });
+    return { note: String(all[0]['Note'] || ''), byItemId };
+  } catch {
+    return { note: '', byItemId: {} };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Settings per cabang (sheet "Settings", kolom Key/Value)
+// ---------------------------------------------------------------------------
+
+export const CABANG_SETTINGS_SHEET = 'Settings';
+
+export type UrutanLaporan = 'Area' | 'Urutan_Input';
+
+export const URUTAN_LAPORAN_KEY = 'Urutan_Laporan';
+
+const URUTAN_LAPORAN_VALUES: UrutanLaporan[] = ['Area', 'Urutan_Input'];
+
+/** Normalisasi nilai Urutan_Laporan; nilai tidak dikenal → default 'Urutan_Input'. */
+export function normalizeUrutanLaporan(value: unknown): UrutanLaporan {
+  const s = String(value ?? '').trim();
+  return URUTAN_LAPORAN_VALUES.includes(s as UrutanLaporan) ? (s as UrutanLaporan) : 'Urutan_Input';
+}
+
+/** Baca semua key/value sheet Settings cabang. Aman jika sheet belum ada. */
+export async function getCabangSettings(spreadsheetId: string): Promise<Record<string, string>> {
+  try {
+    const { headers, rows } = await readSheetData(spreadsheetId, CABANG_SETTINGS_SHEET);
+    const objs = sheetToObjects(headers, rows);
+    const result: Record<string, string> = {};
+    objs.forEach((r) => {
+      result[String(r['Key'] ?? '')] = String(r['Value'] ?? '');
+    });
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+/** Ambil Urutan_Laporan untuk cabang (default 'Urutan_Input'). */
+export async function getUrutanLaporan(spreadsheetId: string): Promise<UrutanLaporan> {
+  const settings = await getCabangSettings(spreadsheetId);
+  return normalizeUrutanLaporan(settings[URUTAN_LAPORAN_KEY]);
+}
+
+/** Simpan Urutan_Laporan untuk cabang. Membuat sheet/pastikan header bila perlu. */
+export async function setUrutanLaporan(spreadsheetId: string, value: UrutanLaporan): Promise<UrutanLaporan> {
+  const normalized = normalizeUrutanLaporan(value);
+  await ensureSheet(spreadsheetId, CABANG_SETTINGS_SHEET, ['Key', 'Value']);
+  const { rows } = await readSheetData(spreadsheetId, CABANG_SETTINGS_SHEET);
+  const found = findRowIndex(rows, 0, URUTAN_LAPORAN_KEY);
+  if (found.index !== -1) {
+    const rowNumber = found.index + 2;
+    await writeRow(spreadsheetId, `${CABANG_SETTINGS_SHEET}!B${rowNumber}`, [normalized]);
+  } else {
+    await appendRows(spreadsheetId, CABANG_SETTINGS_SHEET, [[URUTAN_LAPORAN_KEY, normalized]]);
+  }
+  return normalized;
 }

@@ -66,6 +66,7 @@ function runSetupPhase1(parentFolderId) {
   formatHeader_(sheetSettings);
   sheetSettings.appendRow(['Daftar_Shift', 'Opening, Closing']);
   sheetSettings.appendRow(['Kelipatan_Threshold_Hampir_Habis', 2]);
+  sheetSettings.appendRow(['Urutan_Laporan', 'Urutan_Input']);
   sheetSettings.appendRow(['Daftar_Area', 'Meja Biru Depan, Chiller, Freezer Ayam dan Alat, Barang Alat dan Kebersihan, Meja Laci, Gas dan Utilitas']);
 
   Logger.log('✅ STOKIS_TEMPLATE_CABANG berhasil dibuat! ID: ' + templateSS.getId());

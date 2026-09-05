@@ -89,16 +89,16 @@ export interface XlsxReportInput {
   shift: string;
   petugas: string;
   items: XlsxItem[];
+  groupMode?: 'Area' | 'Urutan_Input';
   previousSOInfo?: { tanggal?: string | number | null; shift?: string | number | null; petugas?: string | number | null } | null;
   note?: string;
 }
-
-const STATUS_ORDER: Record<StatusType, number> = { 'KRITIS': 0, 'HAMPIR HABIS': 1, 'AMAN': 2, 'Tidak Dipantau': 3 };
 
 const COLORS = {
   headerInfo: 'FF2563EB', headerPrev: 'FF4B5563', headerCurr: 'FF059669', headerHasil: 'FFD97706',
   subHeader: 'FFE2E8F0', kritisText: 'FFB91C1C', kritisBg: 'FFFEE2E2',
   hampirText: 'FFA16207', hampirBg: 'FFFEF9C3', amanText: 'FF047857', amanBg: 'FFD1FAE5',
+  dividerBg: 'FFDBEAFE', dividerText: 'FF1D4ED8',
   white: 'FFFFFFFF', textDark: 'FF1E293B',
 };
 
@@ -165,11 +165,22 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
   }
   ws.getRow(8).height = 18;
 
-  const sortedItems = [...input.items].sort((a, b) => {
-    const sa = getStatus(Number(a.step1) || 0, Number(a.step2) || 0, parseThreshold(a.threshold));
-    const sb = getStatus(Number(b.step1) || 0, Number(b.step2) || 0, parseThreshold(b.threshold));
-    return STATUS_ORDER[sa] - STATUS_ORDER[sb];
-  });
+  // Urutkan/kelompokkan item sesuai mode laporan.
+  // - 'Area': grup per area, baris pembatas biru muda saat area berganti, nomor urut direset per grup.
+  // - 'Urutan_Input' (default): tanpa sort, mengikuti urutan Master Item.
+  const groupMode: 'Area' | 'Urutan_Input' = input.groupMode === 'Area' ? 'Area' : 'Urutan_Input';
+  const groups: Array<{ area?: string; items: XlsxItem[] }> = [];
+  if (groupMode === 'Area') {
+    const byArea = new Map<string, XlsxItem[]>();
+    input.items.forEach((it) => {
+      const key = (it.area || '').trim() || 'Area Umum';
+      if (!byArea.has(key)) byArea.set(key, []);
+      byArea.get(key)!.push(it);
+    });
+    byArea.forEach((items, area) => groups.push({ area, items }));
+  } else {
+    groups.push({ items: input.items });
+  }
 
   const ROW_COLORS: Record<StatusType, { bg: string; text: string }> = {
     'KRITIS':          { bg: COLORS.kritisBg, text: COLORS.kritisText },
@@ -178,83 +189,104 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
     'Tidak Dipantau':  { bg: 'FFFFFFFF',      text: COLORS.textDark },
   };
 
-  sortedItems.forEach((it, idx) => {
-    const s1 = Number(it.step1) || 0;
-    const s2 = Number(it.step2) || 0;
-    const total = s1 + s2;
-    const threshold = parseThreshold(it.threshold);
-    const thresholdCell = threshold != null ? threshold : '';
-    const p1 = it.prevStep1 != null && it.prevStep1 !== '' ? Number(it.prevStep1) : null;
-    const p2 = it.prevStep2 != null && it.prevStep2 !== '' ? Number(it.prevStep2) : null;
-    // Total sebelumnya = Step1+Step2 sebelumnya (sumber kebenaran). Prev_Total yang
-    // tersimpan kadang 0/kosong padahal Step1/Step2 terisi → utamakan penjumlahan.
-    const prevTotal = (p1 != null || p2 != null)
-      ? (p1 || 0) + (p2 || 0)
-      : (it.prevTotal != null && it.prevTotal !== '' ? Number(it.prevTotal) : null);
-    const diff = prevTotal != null ? total - prevTotal : null;
-    const diffValue = diff ?? '';
-    const status = getStatus(s1, s2, threshold);
-    const rc = ROW_COLORS[status];
+  let rowNumber = 9;
 
-    const newRow = ws.insertRow(idx + 9, [
-      idx + 1,
-      it.namaBarang || '',
-      it.area || '',
-      it.satuan || '',
-      thresholdCell,
-      p1 ?? '',
-      p2 ?? '',
-      prevTotal ?? '',
-      s1,
-      s2,
-      total,
-      diffValue,
-      status,
-      it.statusIsi || '',
-      it.tglRefill || '',
-      it.tglPakai || '',
-      it.keterangan || '',
-    ]);
+  groups.forEach((group) => {
+    if (group.area != null) {
+      const divider = ws.insertRow(rowNumber, [group.area]);
+      ws.mergeCells(`A${rowNumber}:Q${rowNumber}`);
+      for (let c = 1; c <= 17; c++) {
+        divider.getCell(c).border = thinBorder;
+      }
+      const cell = divider.getCell(1);
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.dividerBg } } as ExcelJS.Fill;
+      cell.font = { bold: true, size: 10, color: { argb: COLORS.dividerText } };
+      cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+      divider.height = 18;
+      rowNumber++;
+    }
 
-    newRow.eachCell((cell, colNum) => {
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rc.bg } } as any;
-      cell.alignment = { horizontal: [1, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16].includes(colNum) ? 'center' : 'left', vertical: 'middle', wrapText: true };
-      cell.border = thinBorder;
-      if (colNum === 12) {
-        cell.numFmt = '+0;-0;0';
-        const isNeg = typeof diffValue === 'number' && diffValue < 0;
-        const isPos = typeof diffValue === 'number' && diffValue > 0;
-        cell.font = {
-          bold: true,
-          color: { argb: isNeg ? COLORS.kritisText : isPos ? COLORS.amanText : COLORS.textDark },
-          size: 9,
-        };
-      }
-      if (colNum === 13) {
-        cell.font = { bold: true, color: { argb: rc.text }, size: 9 };
-      }
+    group.items.forEach((it, no) => {
+      const s1 = Number(it.step1) || 0;
+      const s2 = Number(it.step2) || 0;
+      const total = s1 + s2;
+      const threshold = parseThreshold(it.threshold);
+      const thresholdCell = threshold != null ? threshold : '';
+      const p1 = it.prevStep1 != null && it.prevStep1 !== '' ? Number(it.prevStep1) : null;
+      const p2 = it.prevStep2 != null && it.prevStep2 !== '' ? Number(it.prevStep2) : null;
+      // Total sebelumnya = Step1+Step2 sebelumnya (sumber kebenaran). Prev_Total yang
+      // tersimpan kadang 0/kosong padahal Step1/Step2 terisi → utamakan penjumlahan.
+      const prevTotal = (p1 != null || p2 != null)
+        ? (p1 || 0) + (p2 || 0)
+        : (it.prevTotal != null && it.prevTotal !== '' ? Number(it.prevTotal) : null);
+      const diff = prevTotal != null ? total - prevTotal : null;
+      const diffValue = diff ?? '';
+      const status = getStatus(s1, s2, threshold);
+      const rc = ROW_COLORS[status];
+
+      const newRow = ws.insertRow(rowNumber, [
+        no + 1,
+        it.namaBarang || '',
+        it.area || '',
+        it.satuan || '',
+        thresholdCell,
+        p1 ?? '',
+        p2 ?? '',
+        prevTotal ?? '',
+        s1,
+        s2,
+        total,
+        diffValue,
+        status,
+        it.statusIsi || '',
+        it.tglRefill || '',
+        it.tglPakai || '',
+        it.keterangan || '',
+      ]);
+
+      newRow.eachCell((cell, colNum) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rc.bg } } as any;
+        cell.alignment = { horizontal: [1, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16].includes(colNum) ? 'center' : 'left', vertical: 'middle', wrapText: true };
+        cell.border = thinBorder;
+        if (colNum === 12) {
+          cell.numFmt = '+0;-0;0';
+          const isNeg = typeof diffValue === 'number' && diffValue < 0;
+          const isPos = typeof diffValue === 'number' && diffValue > 0;
+          cell.font = {
+            bold: true,
+            color: { argb: isNeg ? COLORS.kritisText : isPos ? COLORS.amanText : COLORS.textDark },
+            size: 9,
+          };
+        }
+        if (colNum === 13) {
+          cell.font = { bold: true, color: { argb: rc.text }, size: 9 };
+        }
+      });
+      newRow.height = 16;
+      rowNumber++;
     });
-    newRow.height = 16;
   });
 
   const note = String(input.note || '').trim();
   if (note) {
-    const noteHeaderRow = ws.insertRow(sortedItems.length + 10, ['NOTE']);
-    ws.mergeCells(`A${sortedItems.length + 10}:Q${sortedItems.length + 10}`);
+    const noteHeaderRow = ws.insertRow(rowNumber, ['NOTE']);
+    ws.mergeCells(`A${rowNumber}:Q${rowNumber}`);
     const nh = noteHeaderRow.getCell(1);
     nh.font = { bold: true, size: 10, color: { argb: COLORS.white } };
     nh.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerHasil } } as any;
     nh.alignment = { horizontal: 'center', vertical: 'middle' };
     nh.border = thinBorder;
-    ws.getRow(sortedItems.length + 10).height = 16;
+    ws.getRow(rowNumber).height = 16;
+    rowNumber++;
 
-    const noteRow = ws.insertRow(sortedItems.length + 11, [note]);
-    ws.mergeCells(`A${sortedItems.length + 11}:Q${sortedItems.length + 11}`);
+    const noteRow = ws.insertRow(rowNumber, [note]);
+    ws.mergeCells(`A${rowNumber}:Q${rowNumber}`);
     const nc = noteRow.getCell(1);
     nc.alignment = { horizontal: 'left', vertical: 'top', wrapText: true };
     nc.font = { size: 10, color: { argb: COLORS.textDark } };
     nc.border = thinBorder;
-    ws.getRow(sortedItems.length + 11).height = 80;
+    ws.getRow(rowNumber).height = 80;
+    rowNumber++;
   }
 
   ws.columns = [{ width: 5 }, { width: 24 }, { width: 12 }, { width: 8 }, { width: 10 }, { width: 8 }, { width: 8 }, { width: 9 }, { width: 8 }, { width: 8 }, { width: 9 }, { width: 11 }, { width: 15 }, { width: 12 }, { width: 14 }, { width: 14 }, { width: 20 }];

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, assertCabangAccess } from '@/lib/auth';
 import { resolveCabang } from '@/lib/google/registry';
 import { uploadFileToGASDrive } from '@/lib/appsscript';
-import { updateLaporanXlsxLink, getLaporanById, getLaporanDetail } from '@/lib/domain/laporan-service';
+import { updateLaporanXlsxLink, getLaporanById, getLaporanDetail, getUrutanLaporan, getSesiLiveData } from '@/lib/domain/laporan-service';
 import { generateXlsxReport, type XlsxItem } from '@/lib/domain/xlsx-report';
 
 export const POST = withAuth(async (req: NextRequest, { params }, session) => {
@@ -41,7 +41,7 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
   }
 
   // 3. Resolve cabang info
-  const { folderId, cabang } = await resolveCabang(cabangId);
+  const { spreadsheetId, folderId, cabang } = await resolveCabang(cabangId);
   const cabangNama = String(cabang['Nama_Cabang'] || '');
   const cabangKode = String(cabang['Cabang_ID'] || '');
   const tanggalOperasional = String(laporan['Tanggal_Operasional'] || '');
@@ -49,21 +49,34 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
   const petugas = String(laporan['Petugas'] || '');
   const sesiId = String(laporan['Sesi_ID'] || '');
 
+  const urutanLaporan = await getUrutanLaporan(spreadsheetId);
+
+  // Fallback data live (note + boolean/date) untuk laporan lama yang kolomnya
+  // belum tersimpan di Laporan_SO.
+  const live = await getSesiLiveData(spreadsheetId, sesiId);
+
   // 4. Map detail rows to XlsxItem[]
-  const items: XlsxItem[] = detailRows.map((r) => ({
-    itemId: String(r['Item_ID'] || ''),
-    namaBarang: String(r['Nama_Barang'] || ''),
-    satuan: String(r['Satuan'] || ''),
-    area: String(r['Area'] || ''),
-    threshold: Number(r['Threshold']) || 0,
-    step1: Number(r['Step1']) || 0,
-    step2: Number(r['Step2']) || 0,
-    keterangan: String(r['Keterangan'] || ''),
-    prevStep1: r['Prev_Step1'] != null && r['Prev_Step1'] !== '' ? Number(r['Prev_Step1']) : null,
-    prevStep2: r['Prev_Step2'] != null && r['Prev_Step2'] !== '' ? Number(r['Prev_Step2']) : null,
-    prevTotal: r['Prev_Total'] != null && r['Prev_Total'] !== '' ? Number(r['Prev_Total']) : null,
-    prevKeterangan: String(r['Prev_Keterangan'] || ''),
-  }));
+  const items: XlsxItem[] = detailRows.map((r) => {
+    const itemId = String(r['Item_ID'] || '');
+    const fb = live.byItemId[itemId] || {};
+    return {
+      itemId,
+      namaBarang: String(r['Nama_Barang'] || ''),
+      area: String(r['Area'] || ''),
+      satuan: String(r['Satuan'] || ''),
+      threshold: r['Threshold'] != null && r['Threshold'] !== '' ? Number(r['Threshold']) : undefined,
+      step1: Number(r['Step1']) || 0,
+      step2: Number(r['Step2']) || 0,
+      keterangan: String(r['Keterangan'] || ''),
+      prevStep1: r['Prev_Step1'] != null && r['Prev_Step1'] !== '' ? Number(r['Prev_Step1']) : null,
+      prevStep2: r['Prev_Step2'] != null && r['Prev_Step2'] !== '' ? Number(r['Prev_Step2']) : null,
+      prevTotal: r['Prev_Total'] != null && r['Prev_Total'] !== '' ? Number(r['Prev_Total']) : null,
+      prevKeterangan: String(r['Prev_Keterangan'] || ''),
+      statusIsi: (r['Status_Isi'] === 'Isi' || r['Status_Isi'] === 'Kosong') ? r['Status_Isi'] as 'Isi' | 'Kosong' : (fb.statusIsi || ''),
+      tglRefill: String(r['Tgl_Refill'] || fb.tglRefill || ''),
+      tglPakai: String(r['Tgl_Pakai'] || fb.tglPakai || ''),
+    };
+  });
 
   const previousSOInfo = {
     tanggal: detailRows[0]?.['Prev_Tanggal'] ? String(detailRows[0]['Prev_Tanggal']) : '',
@@ -82,6 +95,8 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
       shift,
       petugas,
       items,
+      groupMode: urutanLaporan,
+      note: detailRows[0]?.['Note'] ? String(detailRows[0]['Note']) : live.note,
       previousSOInfo,
     });
 

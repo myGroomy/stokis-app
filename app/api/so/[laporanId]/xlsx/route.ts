@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, assertCabangAccess } from '@/lib/auth';
 import { resolveCabang } from '@/lib/google/registry';
-import { updateLaporanXlsxLink } from '@/lib/domain/laporan-service';
+import { updateLaporanXlsxLink, getUrutanLaporan } from '@/lib/domain/laporan-service';
 import { uploadFileToGASDrive } from '@/lib/appsscript';
 import { generateXlsxReport } from '@/lib/domain/xlsx-report';
 
@@ -98,6 +98,9 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
   const guard = assertCabangAccess(session, cabangId);
   if (guard) return guard;
 
+  const { spreadsheetId } = await resolveCabang(cabangId);
+  const urutanLaporan = await getUrutanLaporan(spreadsheetId);
+
   const { buffer, fileName } = await generateXlsxReport({
     laporanId,
     cabangNama,
@@ -106,6 +109,7 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
     shift,
     petugas,
     items: Array.isArray(items) ? items : [],
+    groupMode: urutanLaporan,
     previousSOInfo,
     note,
   });

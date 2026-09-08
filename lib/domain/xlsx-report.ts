@@ -291,6 +291,7 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
 
   ws.columns = [{ width: 5 }, { width: 24 }, { width: 12 }, { width: 8 }, { width: 10 }, { width: 8 }, { width: 8 }, { width: 9 }, { width: 8 }, { width: 8 }, { width: 9 }, { width: 11 }, { width: 15 }, { width: 12 }, { width: 14 }, { width: 14 }, { width: 20 }];
   ws.views = [{ state: 'frozen', xSplit: 2, ySplit: 8 }];
+  ws.autoFilter = 'A8:Q8';
 
   const buffer = await wb.xlsx.writeBuffer() as any as Buffer;
   return { buffer, fileName: buildXlsxFileName(input) };

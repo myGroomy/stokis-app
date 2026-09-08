@@ -23,11 +23,11 @@ export function DocsTOC({ items }: DocsTOCProps) {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
+        for (const entry of entries) {
           if (entry.isIntersecting) {
             setActiveId(entry.target.id);
           }
-        });
+        }
       },
       { rootMargin: "-80px 0px -80% 0px" }
     );
@@ -43,11 +43,11 @@ export function DocsTOC({ items }: DocsTOCProps) {
   if (items.length === 0) return null;
 
   return (
-    <nav className="hidden xl:block sticky top-24 w-56 flex-shrink-0 self-start">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-base-content/40 mb-3 px-1">
+    <nav className="hidden xl:block sticky top-24 w-56 flex-shrink-0 self-start py-8">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-base-content/40 mb-3 px-3">
         {lang === "en" ? "On this page" : "Di halaman ini"}
       </p>
-      <ul className="space-y-0.5 border-l border-base-300">
+      <ul className="space-y-0.5 border-l border-base-200">
         {items.map((item) => {
           const label = lang === "en" && item.labelEn ? item.labelEn : item.label;
           const isActive = activeId === item.id;
@@ -55,12 +55,12 @@ export function DocsTOC({ items }: DocsTOCProps) {
             <li key={item.id}>
               <a
                 href={`#${item.id}`}
-                className={`block text-xs py-1 transition-colors border-l -ml-px ${
+                className={`block text-[11px] py-1 transition-all border-l-2 -ml-px ${
                   item.level === 3 ? "pl-6" : "pl-3"
                 } ${
                   isActive
                     ? "border-primary text-primary font-semibold"
-                    : "border-transparent text-base-content/50 hover:text-base-content hover:border-base-300"
+                    : "border-transparent text-base-content/45 hover:text-base-content/70 hover:border-base-300"
                 }`}
               >
                 {label}

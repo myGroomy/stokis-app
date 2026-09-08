@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCabang } from "@/lib/CabangContext";
@@ -19,8 +19,9 @@ import {
   Home,
   LogOut,
   HelpCircle,
-  BookOpen,
   Globe,
+  Menu,
+  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -38,21 +39,22 @@ const bottomNavItems: NavItem[] = [
   { name: "Beranda", nameEn: "Home", href: "/", icon: Home },
   { name: "Input SO", nameEn: "Input SO", href: "/so/input", icon: ClipboardCheck },
   { name: "Laporan", nameEn: "Reports", href: "/laporan", icon: FileText },
-  { name: "Dokumentasi", nameEn: "Docs", href: "/docs", icon: BookOpen },
   { name: "Item", nameEn: "Items", href: "/master-item", icon: Package, roles: ["admin"] },
   { name: "Lainnya", nameEn: "More", href: "/cabang", icon: Building2, roles: ["admin"] },
   { name: "Tutor", nameEn: "Tutor", href: "/tutorial", icon: HelpCircle },
   { name: "Keluar", nameEn: "Logout", href: "/logout", icon: LogOut },
 ];
 
-const desktopNavItems: NavItem[] = [
+const desktopCoreItems: NavItem[] = [
   { name: "Dashboard", nameEn: "Dashboard", href: "/dashboard/harian", icon: BarChart3, roles: ["admin"] },
   { name: "Input SO", nameEn: "Input SO", href: "/so/input", icon: ClipboardCheck },
   { name: "Laporan", nameEn: "Reports", href: "/laporan", icon: FileText },
-  { name: "Dokumentasi", nameEn: "Docs", href: "/docs", icon: BookOpen },
-  { name: "Item", nameEn: "Items", href: "/master-item", icon: Package, roles: ["admin"] },
-  { name: "Petugas", nameEn: "Staff", href: "/petugas", icon: Users, roles: ["admin"] },
-  { name: "Cabang", nameEn: "Branches", href: "/cabang", icon: Building2, roles: ["admin"] },
+];
+
+const adminMenuItems: NavItem[] = [
+  { name: "Master Item", nameEn: "Items", href: "/master-item", icon: Package },
+  { name: "Petugas", nameEn: "Staff", href: "/petugas", icon: Users },
+  { name: "Cabang", nameEn: "Branches", href: "/cabang", icon: Building2 },
 ];
 
 export function Navbar() {
@@ -63,15 +65,32 @@ export function Navbar() {
   const { lang, toggleLang } = useLanguage();
   const role = user?.role || "petugas";
 
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  const adminMenuRef = useRef<HTMLDivElement>(null);
+
   const isVisible = (item: NavItem) => !item.roles || item.roles.includes(role);
 
-  const filteredDesktop = desktopNavItems.filter(isVisible);
+  const filteredDesktop = desktopCoreItems.filter(isVisible);
   const filteredBottom = bottomNavItems.filter(isVisible);
+  const showAdminMenu = role === "admin";
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
+
+  const isAdminMenuActive = adminMenuItems.some((item) => isActive(item.href));
+
+  useEffect(() => {
+    if (!adminMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (adminMenuRef.current && !adminMenuRef.current.contains(e.target as Node)) {
+        setAdminMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [adminMenuOpen]);
 
   return (
     <>
@@ -122,6 +141,51 @@ export function Navbar() {
                   </Link>
                 );
               })}
+
+              {/* Admin Hamburger Menu */}
+              {showAdminMenu && (
+                <div ref={adminMenuRef} className="relative">
+                  <button
+                    onClick={() => setAdminMenuOpen(!adminMenuOpen)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-150 ${
+                      adminMenuOpen || isAdminMenuActive
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-base-content/60 hover:bg-base-200 hover:text-base-content'
+                    }`}
+                    title={lang === 'en' ? 'Management' : 'Pengelolaan'}
+                  >
+                    {adminMenuOpen ? <X className="w-3.5 h-3.5" /> : <Menu className="w-3.5 h-3.5" />}
+                    <span>{lang === 'en' ? 'Management' : 'Pengelolaan'}</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${adminMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {adminMenuOpen && (
+                    <div className="absolute right-0 top-full mt-1 w-48 bg-base-100 border border-base-300 rounded-lg shadow-lg py-1 z-50">
+                      {adminMenuItems.map((item) => {
+                        const Icon = item.icon;
+                        const active = isActive(item.href);
+                        const label = lang === 'en' && item.nameEn ? item.nameEn : item.name;
+                        return (
+                          <Link
+                            key={item.name}
+                            href={item.href}
+                            prefetch={false}
+                            onClick={() => setAdminMenuOpen(false)}
+                            className={`flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold transition-colors ${
+                              active
+                                ? 'bg-primary/10 text-primary'
+                                : 'text-base-content/60 hover:bg-base-200 hover:text-base-content'
+                            }`}
+                          >
+                            <Icon className="w-4 h-4" />
+                            <span>{label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
             </nav>
 
             {/* Right side */}

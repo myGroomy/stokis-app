@@ -497,6 +497,13 @@ function MarketingLanding() {
               Mulai Sekarang
               <ChevronRight className="ml-1 w-4 h-4" />
             </Link>
+            <Link
+              href="/docs"
+              className="inline-flex items-center justify-center transition-all duration-200 focus:ring-2 focus:outline-none text-base-content/70 bg-base-200 hover:bg-base-300 hover:text-base-content ring-1 ring-base-300 focus:ring-primary/30 h-11 px-8 text-sm font-medium rounded-lg gap-2"
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>Baca Dokumentasi</span>
+            </Link>
           </div>
         </div>
       </section>
@@ -524,6 +531,9 @@ function MarketingLanding() {
               <a href="#fitur" className="hover:text-base-content transition">
                 Fitur
               </a>
+              <Link href="/docs" className="hover:text-base-content transition">
+                Dokumentasi
+              </Link>
             </div>
             <p className="text-xs text-base-content/40">
               &copy; {new Date().getFullYear()} Stokis. Hak cipta dilindungi.

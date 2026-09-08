@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Menu, BookOpen, ArrowLeft } from "lucide-react";
+import { Menu, BookOpen, ArrowLeft, ChevronRight } from "lucide-react";
 import { DocsSidebar } from "@/components/docs/DocsSidebar";
 import { DocsTOC } from "@/components/docs/DocsTOC";
 import { DocsSearch } from "@/components/docs/DocsSearch";
@@ -19,25 +19,24 @@ function Breadcrumb({ pathname }: { pathname: string }) {
   if (segments.length === 0) return null;
 
   return (
-    <nav className="flex items-center gap-1.5 text-[11px] text-base-content/40 min-w-0">
-      <span className="text-base-content/25">/</span>
+    <nav className="flex items-center gap-1 text-[11px] text-base-content/40 min-w-0" aria-label="Breadcrumb">
       {segments.map((seg, i) => {
         const isLast = i === segments.length - 1;
         const label = seg
           .replace(/-/g, " ")
           .replace(/\b\w/g, (c) => c.toUpperCase());
         return (
-          <span key={i} className="flex items-center gap-1.5 min-w-0">
+          <span key={i} className="flex items-center gap-1 min-w-0">
+            {!isLast && <ChevronRight className="w-3 h-3 text-base-content/20 flex-shrink-0" />}
             <span
               className={`truncate ${
                 isLast
-                  ? "text-base-content/60 font-medium"
-                  : "text-base-content/35"
+                  ? "text-base-content/70 font-semibold"
+                  : "text-base-content/40"
               }`}
             >
               {label}
             </span>
-            {!isLast && <span className="text-base-content/15">/</span>}
           </span>
         );
       })}
@@ -54,8 +53,8 @@ export function DocsLayout({ children }: DocsLayoutProps) {
   return (
     <div className="min-h-[100dvh] bg-base-100">
       {/* Docs top bar */}
-      <div className="sticky top-[60px] z-30 bg-base-100/95 backdrop-blur-lg border-b border-base-200">
-        <div className="max-w-screen-2xl mx-auto px-3 sm:px-6 h-11 flex items-center gap-2 sm:gap-3">
+      <div className="sticky top-[60px] z-30 bg-base-100/95 backdrop-blur-lg border-b border-base-200/80">
+        <div className="max-w-screen-2xl mx-auto px-3 sm:px-6 h-12 flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-base-200 text-base-content/50 transition-colors flex-shrink-0"
@@ -64,10 +63,10 @@ export function DocsLayout({ children }: DocsLayoutProps) {
             <Menu className="w-4 h-4" />
           </button>
 
-          <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
             <Link
               href="/docs"
-              className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors flex-shrink-0"
+              className="flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary/80 transition-colors flex-shrink-0"
             >
               <BookOpen className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{t("Docs", "Docs")}</span>
@@ -75,7 +74,7 @@ export function DocsLayout({ children }: DocsLayoutProps) {
             <Breadcrumb pathname={pathname} />
           </div>
 
-          <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+          <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
             <DocsSearch onClose={() => setSidebarOpen(false)} />
             <Link
               href="/"

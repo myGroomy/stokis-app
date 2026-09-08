@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useCabang } from '@/lib/CabangContext';
@@ -10,7 +10,9 @@ import {
   Activity,
   BarChart3Icon,
   LineChartIcon,
-  AreaChartIcon
+  AreaChartIcon,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import {
   BarChart,
@@ -56,9 +58,12 @@ function TrendBarChart({ data }: { data: DailyStats[] }) {
         dataKey="date"
         tick={{ fill: 'oklch(0.40 0.03 260)', fontSize: 10 }}
         axisLine={false}
-        tickFormatter={(val) => val.split('-')[2] + '/' + val.split('-')[1]}
+        tickFormatter={(val) => {
+          const parts = val.split('-');
+          return `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
+        }}
       />
-      <YAxis tick={{ fill: 'oklch(0.40 0.03 260)', fontSize: 12 }} axisLine={false} />
+      <YAxis tick={{ fill: 'oklch(0.40 0.03 260)', fontSize: 12 }} axisLine={false} allowDecimals={false} />
       <Tooltip
         contentStyle={{ backgroundColor: 'oklch(0.99 0.002 260)', borderRadius: '4px', border: '1px solid oklch(0.90 0.005 260)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
         itemStyle={{ color: 'oklch(0.18 0.03 260)' }}
@@ -78,9 +83,12 @@ function TrendLineChart({ data }: { data: DailyStats[] }) {
         dataKey="date"
         tick={{ fill: 'oklch(0.40 0.03 260)', fontSize: 10 }}
         axisLine={false}
-        tickFormatter={(val) => val.split('-')[2] + '/' + val.split('-')[1]}
+        tickFormatter={(val) => {
+          const parts = val.split('-');
+          return `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
+        }}
       />
-      <YAxis tick={{ fill: 'oklch(0.40 0.03 260)', fontSize: 12 }} axisLine={false} />
+      <YAxis tick={{ fill: 'oklch(0.40 0.03 260)', fontSize: 12 }} axisLine={false} allowDecimals={false} />
       <Tooltip
         contentStyle={{ backgroundColor: 'oklch(0.99 0.002 260)', borderRadius: '4px', border: '1px solid oklch(0.90 0.005 260)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
         itemStyle={{ color: 'oklch(0.18 0.03 260)' }}
@@ -100,9 +108,12 @@ function TrendAreaChart({ data }: { data: DailyStats[] }) {
         dataKey="date"
         tick={{ fill: 'oklch(0.40 0.03 260)', fontSize: 10 }}
         axisLine={false}
-        tickFormatter={(val) => val.split('-')[2] + '/' + val.split('-')[1]}
+        tickFormatter={(val) => {
+          const parts = val.split('-');
+          return `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
+        }}
       />
-      <YAxis tick={{ fill: 'oklch(0.40 0.03 260)', fontSize: 12 }} axisLine={false} />
+      <YAxis tick={{ fill: 'oklch(0.40 0.03 260)', fontSize: 12 }} axisLine={false} allowDecimals={false} />
       <Tooltip
         contentStyle={{ backgroundColor: 'oklch(0.99 0.002 260)', borderRadius: '4px', border: '1px solid oklch(0.90 0.005 260)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
         itemStyle={{ color: 'oklch(0.18 0.03 260)' }}
@@ -129,26 +140,36 @@ export default function DashboardMingguanPage() {
   const [chartType, setChartType] = useState<ChartType>('bar');
   const [errorMsg, setErrorMsg] = useState<string>('');
 
-  const fetchDashboard = async () => {
+  const fetchDashboard = useCallback(async () => {
     if (!selectedCabang) return;
     try {
       setLoading(true);
-      const res = await fetch(`/api/dashboard/mingguan?cabang=${selectedCabang.Cabang_ID}&dari=${dari}&sampai=${sampai}`);
+      setErrorMsg('');
+      const url = `/api/dashboard/mingguan?cabang=${selectedCabang.Cabang_ID}&dari=${dari}&sampai=${sampai}`;
+      console.log('[DashboardMingguan] Fetching:', url);
+      const res = await fetch(url);
       const json = await res.json();
+      console.log('[DashboardMingguan] Response:', json);
       if (json.success && json.data) {
         setData(json.data);
+      } else {
+        const errMsg = json.error?.message || 'Gagal memuat data tren.';
+        console.error('[DashboardMingguan] API error:', errMsg);
+        setErrorMsg(errMsg);
+        setData(null);
       }
     } catch (e) {
-      console.error('Error fetching weekly dashboard:', e);
+      console.error('[DashboardMingguan] Fetch error:', e);
       setErrorMsg('Gagal memuat data tren. Periksa koneksi internet Anda.');
+      setData(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCabang, dari, sampai]);
 
   useEffect(() => {
     fetchDashboard();
-  }, [selectedCabang, dari, sampai]);
+  }, [fetchDashboard]);
 
   if (!selectedCabang) {
     return (
@@ -174,12 +195,15 @@ export default function DashboardMingguanPage() {
     return <QuantumLoaderFull text="Memuat tren transaksi mingguan" />;
   }
 
-  if (!data) {
+  if (errorMsg && !data) {
     return (
       <div className="p-12 text-center card bg-base-100 border border-base-300 space-y-4">
-        <Activity className="w-10 h-10 text-error mx-auto" />
-        <p className="text-base-content/60 text-sm">{errorMsg || 'Gagal memuat data tren.'}</p>
-        <button onClick={fetchDashboard} className="btn btn-primary btn-sm">Coba Lagi</button>
+        <AlertCircle className="w-10 h-10 text-error mx-auto" />
+        <p className="text-base-content/60 text-sm">{errorMsg}</p>
+        <button onClick={fetchDashboard} className="btn btn-primary btn-sm gap-2">
+          <RefreshCw className="w-4 h-4" />
+          Coba Lagi
+        </button>
       </div>
     );
   }
@@ -187,6 +211,13 @@ export default function DashboardMingguanPage() {
   const ChartIcon = chartType === 'bar' ? BarChart3Icon : chartType === 'line' ? LineChartIcon : AreaChartIcon;
 
   const renderChart = () => {
+    if (trendData.length === 0) {
+      return (
+        <div className="h-full flex items-center justify-center text-base-content/40 text-sm">
+          Tidak ada data tren pada rentang tanggal ini.
+        </div>
+      );
+    }
     switch (chartType) {
       case 'bar':
         return <TrendBarChart data={trendData} />;
@@ -269,8 +300,8 @@ export default function DashboardMingguanPage() {
       >
         <div className="space-y-1">
           <span className="text-sm text-base-content/60 font-semibold">Total Item Terhitung pada Periode Ini</span>
-          <h2 className="text-3xl font-bold text-base-content tabular-nums">{data.totalTransaksi || 0} Transaksi</h2>
-          <p className="text-sm text-base-content/60 tabular-nums">Periode: {formatDateShort(data.dari)} hingga {formatDateShort(data.sampai)}</p>
+          <h2 className="text-3xl font-bold text-base-content tabular-nums">{data?.totalTransaksi ?? 0} Transaksi</h2>
+          <p className="text-sm text-base-content/60 tabular-nums">Periode: {formatDateShort(data?.dari || '')} hingga {formatDateShort(data?.sampai || '')}</p>
         </div>
         <div className="p-4 bg-primary/10 text-primary rounded">
           <Activity className="w-8 h-8" />
@@ -289,7 +320,7 @@ export default function DashboardMingguanPage() {
             <span>Tren Aktivitas Harian</span>
           </h3>
           <span className="text-xs font-medium text-base-content/60 bg-base-200 px-2 py-1 rounded">
-            {data.totalTransaksi} Total Transaksi
+            {data?.totalTransaksi ?? 0} Total Transaksi
           </span>
         </div>
 
@@ -308,8 +339,11 @@ export default function DashboardMingguanPage() {
       >
         <h3 className="font-semibold text-sm text-base-content uppercase tracking-wider">Distribusi Aktivitas Harian</h3>
 
-        {(!trendData || trendData.length === 0) ? (
-          <p className="text-base-content/60 text-sm text-center py-8">Tidak ada aktivitas pada rentang tanggal ini.</p>
+        {trendData.length === 0 ? (
+          <div className="text-center py-8 text-base-content/60 text-sm space-y-2">
+            <Activity className="w-8 h-8 mx-auto text-base-content/30" />
+            <p>Tidak ada aktivitas pada rentang tanggal ini.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
             {trendData.map((day, i) => (

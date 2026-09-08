@@ -971,7 +971,7 @@ export default function InputSOPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.05 }}
-          className="sticky top-0 z-40 card bg-base-100/95 backdrop-blur-md border border-base-300 shadow-md p-4 space-y-3"
+          className="sticky top-16 z-40 card bg-base-100/95 backdrop-blur-md border border-base-300 shadow-md p-4 space-y-3"
         >
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Search */}

@@ -171,15 +171,6 @@ export default function DashboardMingguanPage() {
     fetchDashboard();
   }, [fetchDashboard]);
 
-  if (!selectedCabang) {
-    return (
-      <div className="text-center py-16 card bg-base-100 border border-base-300 p-8 space-y-3">
-        <ShieldAlert className="w-12 h-12 text-warning mx-auto" />
-        <h3 className="text-base font-bold text-base-content">Pilih Cabang Terlebih Dahulu</h3>
-      </div>
-    );
-  }
-
   const trendData: DailyStats[] = useMemo(() => {
     if (!data?.trenPerHari) return [];
     return Object.entries(data.trenPerHari).map(([date, stats]: any) => ({
@@ -190,6 +181,15 @@ export default function DashboardMingguanPage() {
       aman: stats.aman || 0,
     })).sort((a, b) => a.date.localeCompare(b.date));
   }, [data]);
+
+  if (!selectedCabang) {
+    return (
+      <div className="text-center py-16 card bg-base-100 border border-base-300 p-8 space-y-3">
+        <ShieldAlert className="w-12 h-12 text-warning mx-auto" />
+        <h3 className="text-base font-bold text-base-content">Pilih Cabang Terlebih Dahulu</h3>
+      </div>
+    );
+  }
 
   if (loading) {
     return <QuantumLoaderFull text="Memuat tren transaksi mingguan" />;

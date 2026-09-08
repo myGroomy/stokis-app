@@ -134,15 +134,6 @@ export default function DashboardHarianPage() {
     fetchDashboard();
   }, [fetchDashboard]);
 
-  if (!selectedCabang) {
-    return (
-      <div className="text-center py-16 card bg-base-100 border border-base-300 p-8 space-y-3">
-        <ShieldAlert className="w-12 h-12 text-warning mx-auto" />
-        <h3 className="text-base font-bold text-base-content">Pilih Cabang Terlebih Dahulu</h3>
-      </div>
-    );
-  }
-
   const chartData = useMemo(() => {
     if (!data) return [];
     return [
@@ -151,6 +142,15 @@ export default function DashboardHarianPage() {
       { name: 'Aman', value: data.aman || 0, color: '#22c55e' },
     ];
   }, [data]);
+
+  if (!selectedCabang) {
+    return (
+      <div className="text-center py-16 card bg-base-100 border border-base-300 p-8 space-y-3">
+        <ShieldAlert className="w-12 h-12 text-warning mx-auto" />
+        <h3 className="text-base font-bold text-base-content">Pilih Cabang Terlebih Dahulu</h3>
+      </div>
+    );
+  }
 
   if (loading) {
     return <QuantumLoaderFull text="Memuat ringkasan data harian" />;

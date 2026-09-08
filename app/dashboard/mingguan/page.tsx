@@ -128,20 +128,44 @@ function TrendAreaChart({ data }: { data: DailyStats[] }) {
 export default function DashboardMingguanPage() {
   const { selectedCabang } = useCabang();
 
-  const [dari, setDari] = useState<string>(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 7);
-    return d.toISOString().split('T')[0];
-  });
-  const [sampai, setSampai] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [dari, setDari] = useState<string>('');
+  const [sampai, setSampai] = useState<string>('');
+  const [datesLoading, setDatesLoading] = useState<boolean>(true);
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [chartType, setChartType] = useState<ChartType>('bar');
   const [errorMsg, setErrorMsg] = useState<string>('');
 
-  const fetchDashboard = useCallback(async () => {
+  // Fetch available dates on mount
+  useEffect(() => {
     if (!selectedCabang) return;
+    setDatesLoading(true);
+    fetch(`/api/dashboard/dates/${selectedCabang.Cabang_ID}`)
+      .then(r => r.json())
+      .then(json => {
+        if (json.success && json.data?.dates?.length > 0) {
+          const dates: string[] = json.data.dates;
+          setSampai(dates[0]); // latest
+          setDari(dates[dates.length - 1]); // earliest
+        } else {
+          const today = new Date().toISOString().split('T')[0];
+          const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+          setDari(weekAgo);
+          setSampai(today);
+        }
+      })
+      .catch(() => {
+        const today = new Date().toISOString().split('T')[0];
+        const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+        setDari(weekAgo);
+        setSampai(today);
+      })
+      .finally(() => setDatesLoading(false));
+  }, [selectedCabang]);
+
+  const fetchDashboard = useCallback(async () => {
+    if (!selectedCabang || !dari || !sampai) return;
     try {
       setLoading(true);
       setErrorMsg('');

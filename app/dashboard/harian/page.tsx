@@ -97,14 +97,39 @@ function StatusAreaChart({ data }: { data: any[] }) {
 export default function DashboardHarianPage() {
   const { selectedCabang } = useCabang();
 
-  const [tanggal, setTanggal] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [tanggal, setTanggal] = useState<string>('');
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [datesLoading, setDatesLoading] = useState<boolean>(true);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [chartType, setChartType] = useState<ChartType>('bar');
   const [errorMsg, setErrorMsg] = useState<string>('');
 
-  const fetchDashboard = useCallback(async () => {
+  // Fetch available dates on mount
+  useEffect(() => {
     if (!selectedCabang) return;
+    setDatesLoading(true);
+    fetch(`/api/dashboard/dates/${selectedCabang.Cabang_ID}`)
+      .then(r => r.json())
+      .then(json => {
+        if (json.success && json.data?.dates?.length > 0) {
+          setAvailableDates(json.data.dates);
+          setTanggal(json.data.dates[0]); // latest date
+        } else {
+          const today = new Date().toISOString().split('T')[0];
+          setAvailableDates([]);
+          setTanggal(today);
+        }
+      })
+      .catch(() => {
+        const today = new Date().toISOString().split('T')[0];
+        setTanggal(today);
+      })
+      .finally(() => setDatesLoading(false));
+  }, [selectedCabang]);
+
+  const fetchDashboard = useCallback(async () => {
+    if (!selectedCabang || !tanggal) return;
     try {
       setLoading(true);
       setErrorMsg('');
@@ -215,12 +240,20 @@ export default function DashboardHarianPage() {
             </Link>
           </div>
 
-          <input
-            type="date"
+          <select
             value={tanggal}
             onChange={(e) => setTanggal(e.target.value)}
-            className="input input-bordered px-3 py-1.5 text-sm tabular-nums"
-          />
+            disabled={datesLoading}
+            className="select select-bordered px-3 py-1.5 text-sm tabular-nums"
+          >
+            {availableDates.length > 0 ? (
+              availableDates.map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))
+            ) : (
+              <option value={tanggal}>{tanggal || 'Memuat...'}</option>
+            )}
+          </select>
 
           <div className="flex bg-base-200 rounded p-1">
             {(['bar', 'line', 'area'] as ChartType[]).map((type) => {

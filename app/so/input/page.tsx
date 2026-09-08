@@ -1379,31 +1379,35 @@ export default function InputSOPage() {
         <button
           type="button"
           onClick={scrollToFirstItem}
-          className="group w-8 h-8 flex items-center justify-center bg-base-100/90 backdrop-blur border border-base-300 hover:border-primary/50 hover:bg-primary/5 transition-all duration-150"
-          style={{ clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)' }}
+          className="group relative transition-all duration-150"
           title="Ke item paling atas"
           aria-label="Ke item paling atas"
         >
-          <ArrowUp className="w-3 h-3 text-base-content/60 group-hover:text-primary mt-1.5 transition-colors" />
+          <svg width="32" height="28" viewBox="0 0 32 28">
+            <polygon points="16,2 30,26 2,26" fill="transparent" className="stroke-base-300 group-hover:stroke-primary/60 transition-colors" strokeWidth="1.5" />
+          </svg>
+          <ArrowUp className="w-3 h-3 text-base-content/50 group-hover:text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 transition-colors" />
         </button>
         <button
           type="button"
           onClick={scrollToLastEditedItem}
-          className={`group w-7 h-7 flex items-center justify-center backdrop-blur border transition-all duration-150 rotate-45 ${lastEditedItemId ? 'bg-warning/10 border-warning/40 hover:bg-warning/20' : 'bg-base-100/90 border-base-300 hover:border-primary/50 hover:bg-primary/5'}`}
+          className={`group w-7 h-7 flex items-center justify-center border transition-all duration-150 rotate-45 ${lastEditedItemId ? 'bg-transparent border-warning/60 hover:border-warning' : 'bg-transparent border-base-300 hover:border-primary/60'}`}
           title="Ke item terakhir yang diisi"
           aria-label="Ke item terakhir yang diisi"
         >
-          <Pencil className={`w-3 h-3 -rotate-45 transition-colors ${lastEditedItemId ? 'text-warning' : 'text-base-content/60 group-hover:text-primary'}`} />
+          <Pencil className={`w-3 h-3 -rotate-45 transition-colors ${lastEditedItemId ? 'text-warning/70 group-hover:text-warning' : 'text-base-content/50 group-hover:text-primary'}`} />
         </button>
         <button
           type="button"
           onClick={scrollToLastItem}
-          className="group w-8 h-8 flex items-center justify-center bg-base-100/90 backdrop-blur border border-base-300 hover:border-primary/50 hover:bg-primary/5 transition-all duration-150"
-          style={{ clipPath: 'polygon(0% 0%, 100% 0%, 50% 100%)' }}
+          className="group relative transition-all duration-150"
           title="Ke item paling bawah"
           aria-label="Ke item paling bawah"
         >
-          <ArrowDown className="w-3 h-3 text-base-content/60 group-hover:text-primary mb-1.5 transition-colors" />
+          <svg width="32" height="28" viewBox="0 0 32 28">
+            <polygon points="2,2 30,2 16,26" fill="transparent" className="stroke-base-300 group-hover:stroke-primary/60 transition-colors" strokeWidth="1.5" />
+          </svg>
+          <ArrowDown className="w-3 h-3 text-base-content/50 group-hover:text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-2/3 transition-colors" />
         </button>
       </div>
 

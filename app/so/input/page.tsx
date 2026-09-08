@@ -1344,7 +1344,7 @@ export default function InputSOPage() {
         </div>
 
         {/* Floating Action Bar */}
-        <div data-onboard="so-submit" className="sticky bottom-4 z-40 card bg-base-100 border border-base-300 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+        <div data-onboard="so-submit" className="card bg-base-100 border border-base-300 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
           <div className="space-y-0.5">
             <span className="text-xs font-medium text-base-content/60">
               Selesaikan sesi pencatatan

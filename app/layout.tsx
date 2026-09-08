@@ -37,7 +37,7 @@ export default function RootLayout({
               <AuthGuard>
                 <TourProvider>
                   <Navbar />
-                  <main className="flex-1 w-full overflow-x-hidden">
+                  <main className="flex-1 w-full overflow-x-clip">
                     {children}
                   </main>
                 </TourProvider>

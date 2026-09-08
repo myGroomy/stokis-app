@@ -1374,34 +1374,36 @@ export default function InputSOPage() {
         </div>
       </form>
 
-      {/* Floating navigation rail - always visible on the right */}
-      <div data-onboard="so-navrail" className="fixed right-3 sm:right-4 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2">
+      {/* Floating navigation rail */}
+      <div data-onboard="so-navrail" className="fixed right-3 sm:right-4 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-3">
         <button
           type="button"
           onClick={scrollToFirstItem}
-          className="btn btn-circle btn-sm btn-primary shadow-lg border border-primary/40"
+          className="group w-8 h-8 flex items-center justify-center bg-base-100/90 backdrop-blur border border-base-300 hover:border-primary/50 hover:bg-primary/5 transition-all duration-150"
+          style={{ clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)' }}
           title="Ke item paling atas"
           aria-label="Ke item paling atas"
         >
-          <ArrowUp className="w-4 h-4" />
+          <ArrowUp className="w-3 h-3 text-base-content/60 group-hover:text-primary mt-1.5 transition-colors" />
         </button>
         <button
           type="button"
           onClick={scrollToLastEditedItem}
-          className={`btn btn-circle btn-sm shadow-lg border ${lastEditedItemId ? 'btn-warning border-warning/50' : 'btn-neutral border-base-300'}`}
+          className={`group w-7 h-7 flex items-center justify-center backdrop-blur border transition-all duration-150 rotate-45 ${lastEditedItemId ? 'bg-warning/10 border-warning/40 hover:bg-warning/20' : 'bg-base-100/90 border-base-300 hover:border-primary/50 hover:bg-primary/5'}`}
           title="Ke item terakhir yang diisi"
           aria-label="Ke item terakhir yang diisi"
         >
-          <Pencil className="w-4 h-4" />
+          <Pencil className={`w-3 h-3 -rotate-45 transition-colors ${lastEditedItemId ? 'text-warning' : 'text-base-content/60 group-hover:text-primary'}`} />
         </button>
         <button
           type="button"
           onClick={scrollToLastItem}
-          className="btn btn-circle btn-sm btn-primary shadow-lg border border-primary/40"
+          className="group w-8 h-8 flex items-center justify-center bg-base-100/90 backdrop-blur border border-base-300 hover:border-primary/50 hover:bg-primary/5 transition-all duration-150"
+          style={{ clipPath: 'polygon(0% 0%, 100% 0%, 50% 100%)' }}
           title="Ke item paling bawah"
           aria-label="Ke item paling bawah"
         >
-          <ArrowDown className="w-4 h-4" />
+          <ArrowDown className="w-3 h-3 text-base-content/60 group-hover:text-primary mb-1.5 transition-colors" />
         </button>
       </div>
 

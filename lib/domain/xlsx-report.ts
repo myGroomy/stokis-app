@@ -289,7 +289,25 @@ export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buff
     rowNumber++;
   }
 
-  ws.columns = [{ width: 5 }, { width: 24 }, { width: 12 }, { width: 8 }, { width: 10 }, { width: 8 }, { width: 8 }, { width: 9 }, { width: 8 }, { width: 8 }, { width: 9 }, { width: 11 }, { width: 15 }, { width: 12 }, { width: 14 }, { width: 14 }, { width: 20 }];
+  ws.columns = [
+    { width: 6 },   // No
+    { width: 26 },  // Nama Barang
+    { width: 16 },  // Area
+    { width: 10 },  // Satuan
+    { width: 11 },  // Batas Min
+    { width: 10 },  // Step 1 (prev)
+    { width: 10 },  // Step 2 (prev)
+    { width: 10 },  // Total (prev)
+    { width: 10 },  // Step 1 (curr)
+    { width: 10 },  // Step 2 (curr)
+    { width: 10 },  // Total (curr)
+    { width: 12 },  // Pemakaian
+    { width: 17 },  // Status (fits "HAMPIR HABIS" + filter icon)
+    { width: 13 },  // Status Isi
+    { width: 15 },  // Tgl Refill
+    { width: 15 },  // Tgl Pakai
+    { width: 24 },  // Keterangan
+  ];
   ws.views = [{ state: 'frozen', xSplit: 2, ySplit: 8 }];
   ws.autoFilter = 'A8:Q8';
 

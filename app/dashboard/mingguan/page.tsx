@@ -137,40 +137,75 @@ export default function DashboardMingguanPage() {
   const [chartType, setChartType] = useState<ChartType>('bar');
   const [errorMsg, setErrorMsg] = useState<string>('');
 
-  // Fetch available dates on mount
+  // Single effect: fetch dates first, then fetch dashboard data
   useEffect(() => {
     if (!selectedCabang) return;
-    setDatesLoading(true);
-    fetch(`/api/dashboard/dates/${selectedCabang.Cabang_ID}`)
-      .then(r => r.json())
-      .then(json => {
-        if (json.success && json.data?.dates?.length > 0) {
-          const dates: string[] = json.data.dates;
-          setSampai(dates[0]); // latest
-          setDari(dates[dates.length - 1]); // earliest
+    const cabangId = selectedCabang.Cabang_ID;
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setDatesLoading(true);
+      setErrorMsg('');
+      try {
+        // Step 1: fetch available dates
+        const datesRes = await fetch(`/api/dashboard/dates/${cabangId}`);
+        const datesJson = await datesRes.json();
+        let dariVal = '';
+        let sampaiVal = '';
+        if (datesJson.success && datesJson.data?.dates?.length > 0) {
+          const dates: string[] = datesJson.data.dates;
+          sampaiVal = dates[0];
+          dariVal = dates[dates.length - 1];
         } else {
           const today = new Date().toISOString().split('T')[0];
           const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
-          setDari(weekAgo);
-          setSampai(today);
+          dariVal = weekAgo;
+          sampaiVal = today;
         }
-      })
-      .catch(() => {
-        const today = new Date().toISOString().split('T')[0];
-        const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
-        setDari(weekAgo);
-        setSampai(today);
-      })
-      .finally(() => setDatesLoading(false));
+        if (cancelled) return;
+        setDari(dariVal);
+        setSampai(sampaiVal);
+        setDatesLoading(false);
+
+        // Step 2: fetch dashboard data with resolved dates
+        const url = `/api/dashboard/mingguan?cabang=${cabangId}&dari=${dariVal}&sampai=${sampaiVal}`;
+        console.log('[DashboardMingguan] Fetching:', url);
+        const res = await fetch(url);
+        const json = await res.json();
+        console.log('[DashboardMingguan] Response:', json);
+        if (cancelled) return;
+        if (json.success && json.data) {
+          setData(json.data);
+        } else {
+          const errMsg = json.error?.message || 'Gagal memuat data tren.';
+          console.error('[DashboardMingguan] API error:', errMsg);
+          setErrorMsg(errMsg);
+          setData(null);
+        }
+      } catch (e) {
+        console.error('[DashboardMingguan] Fetch error:', e);
+        if (!cancelled) {
+          setErrorMsg('Gagal memuat data tren. Periksa koneksi internet Anda.');
+          setData(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => { cancelled = true; };
   }, [selectedCabang]);
 
-  const fetchDashboard = useCallback(async () => {
-    if (!selectedCabang || !dari || !sampai) return;
+  // Manual refetch when user changes dates
+  const refetchWithDates = useCallback(async (newDari: string, newSampai: string) => {
+    if (!selectedCabang || !newDari || !newSampai) return;
     try {
       setLoading(true);
       setErrorMsg('');
-      const url = `/api/dashboard/mingguan?cabang=${selectedCabang.Cabang_ID}&dari=${dari}&sampai=${sampai}`;
-      console.log('[DashboardMingguan] Fetching:', url);
+      const url = `/api/dashboard/mingguan?cabang=${selectedCabang.Cabang_ID}&dari=${newDari}&sampai=${newSampai}`;
+      console.log('[DashboardMingguan] Refetching:', url);
       const res = await fetch(url);
       const json = await res.json();
       console.log('[DashboardMingguan] Response:', json);
@@ -189,11 +224,7 @@ export default function DashboardMingguanPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedCabang, dari, sampai]);
-
-  useEffect(() => {
-    fetchDashboard();
-  }, [fetchDashboard]);
+  }, [selectedCabang]);
 
   const trendData: DailyStats[] = useMemo(() => {
     if (!data?.trenPerHari) return [];
@@ -224,7 +255,7 @@ export default function DashboardMingguanPage() {
       <div className="p-12 text-center card bg-base-100 border border-base-300 space-y-4">
         <AlertCircle className="w-10 h-10 text-error mx-auto" />
         <p className="text-base-content/60 text-sm">{errorMsg}</p>
-        <button onClick={fetchDashboard} className="btn btn-primary btn-sm gap-2">
+        <button onClick={() => dari && sampai && refetchWithDates(dari, sampai)} className="btn btn-primary btn-sm gap-2">
           <RefreshCw className="w-4 h-4" />
           Coba Lagi
         </button>
@@ -282,14 +313,24 @@ export default function DashboardMingguanPage() {
             <input
               type="date"
               value={dari}
-              onChange={(e) => setDari(e.target.value)}
+              onChange={(e) => {
+                const newDari = e.target.value;
+                setDari(newDari);
+                if (newDari && sampai) refetchWithDates(newDari, sampai);
+              }}
+              disabled={datesLoading}
               className="input input-bordered px-3 py-1.5 text-sm tabular-nums"
             />
             <span>sampai</span>
             <input
               type="date"
               value={sampai}
-              onChange={(e) => setSampai(e.target.value)}
+              onChange={(e) => {
+                const newSampai = e.target.value;
+                setSampai(newSampai);
+                if (dari && newSampai) refetchWithDates(dari, newSampai);
+              }}
+              disabled={datesLoading}
               className="input input-bordered px-3 py-1.5 text-sm tabular-nums"
             />
           </div>

@@ -973,13 +973,13 @@ export default function InputSOPage() {
           transition={{ duration: 0.25, delay: 0.05 }}
           className="sticky top-16 z-40 card bg-base-100/95 backdrop-blur-md border border-base-300 shadow-md p-4 space-y-3"
         >
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-row gap-2">
             {/* Search */}
-            <div data-onboard="so-search" className="relative flex-1">
+            <div data-onboard="so-search" className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/50" />
               <input
                 type="text"
-                placeholder="Cari nama barang atau kode item..."
+                placeholder="Cari barang..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-8 py-2.5 text-sm min-h-[42px] input input-bordered"

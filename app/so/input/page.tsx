@@ -782,7 +782,7 @@ export default function InputSOPage() {
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-6 max-w-5xl mx-auto pb-16">
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-5xl mx-auto px-4 py-6 pb-20 md:pb-6">
         {/* Draft restore banner */}
         {pendingDraft && (
           <motion.div

@@ -284,7 +284,7 @@ export default function LaporanPage() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.05 }}
-          className="card bg-base-100 border border-base-300 p-4 grid grid-cols-1 sm:grid-cols-3 gap-4"
+          className="sticky top-16 z-40 card bg-base-100/95 backdrop-blur-md border border-base-300 shadow-md p-4 grid grid-cols-1 sm:grid-cols-3 gap-4"
         >
           <div className="space-y-1.5">
             <label className="text-xs font-semibold flex items-center gap-1.5 text-base-content/60">

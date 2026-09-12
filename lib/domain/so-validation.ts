@@ -81,8 +81,8 @@ export function validateSOPayload(payload: unknown):
         errors.push({ code: 'KETERANGAN_INVALID', message: label + ' keterangan harus string' });
       }
       if (item.statusIsi !== undefined && item.statusIsi !== null && item.statusIsi !== '' &&
-          !['Isi', 'Kosong'].includes(String(item.statusIsi))) {
-        errors.push({ code: 'STATUS_ISI_INVALID', message: label + ' statusIsi harus "Isi" atau "Kosong"' });
+          !['Penuh', 'Dipakai', 'Habis'].includes(String(item.statusIsi))) {
+        errors.push({ code: 'STATUS_ISI_INVALID', message: label + ' statusIsi harus "Penuh", "Dipakai", atau "Habis"' });
       }
       if (item.tglRefill !== undefined && item.tglRefill !== null && item.tglRefill !== '' &&
           !isValidTanggal(item.tglRefill)) {
@@ -100,7 +100,7 @@ export function validateSOPayload(payload: unknown):
   const normalizedItems: SOItem[] = (items as SOItemRaw[]).map((item) => {
     const step1 = normalizeCount(item.step1);
     const step2 = normalizeCount(item.step2);
-    const statusIsi = (item.statusIsi === 'Isi' || item.statusIsi === 'Kosong') ? item.statusIsi as 'Isi' | 'Kosong' : '';
+    const statusIsi = (['Penuh', 'Dipakai', 'Habis'].includes(String(item.statusIsi))) ? item.statusIsi as 'Penuh' | 'Dipakai' | 'Habis' : '';
     const tglRefill = typeof item.tglRefill === 'string' ? item.tglRefill : '';
     const tglPakai = typeof item.tglPakai === 'string' ? item.tglPakai : '';
     return {

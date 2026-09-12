@@ -50,7 +50,7 @@ interface PreviousSO {
   shift: string;
   petugas: string;
   keterangan: string;
-  statusIsi?: 'Isi' | 'Kosong' | '';
+  statusIsi?: 'Penuh' | 'Dipakai' | 'Habis' | '';
   tglRefill?: string;
   tglPakai?: string;
 }
@@ -71,10 +71,10 @@ export interface SOItemPayload {
   prevTanggal: string | null;
   prevShift: string | null;
   prevKeterangan: string;
-  statusIsi: 'Isi' | 'Kosong' | '';
+  statusIsi: 'Penuh' | 'Dipakai' | 'Habis' | '';
   tglRefill: string;
   tglPakai: string;
-  prevStatusIsi: 'Isi' | 'Kosong' | '' | null;
+  prevStatusIsi: 'Penuh' | 'Dipakai' | 'Habis' | '' | null;
   prevTglRefill: string | null;
   prevTglPakai: string | null;
 }
@@ -138,7 +138,7 @@ async function postWithRetry<T = SubmitSOResult>(
 const DRAFT_PREFIX = 'stokis_so_draft_';
 
 interface SODraft {
-  counts: Record<string, { step1: string; step2: string; keterangan: string; statusIsi?: boolean; tglRefill?: string; tglPakai?: string }>;
+  counts: Record<string, { step1: string; step2: string; keterangan: string; statusIsi?: string; tglRefill?: string; tglPakai?: string }>;
   sesiId: string;
   tanggalOperasional: string;
   shift: string;
@@ -150,7 +150,7 @@ function getDraftKey(cabangId: string): string {
 }
 
 function countFilled(
-  counts: Record<string, { step1: string; step2: string; keterangan: string; statusIsi?: boolean; tglRefill?: string; tglPakai?: string }>,
+  counts: Record<string, { step1: string; step2: string; keterangan: string; statusIsi?: string; tglRefill?: string; tglPakai?: string }>,
 ): number {
   return Object.keys(counts).reduce((n, k) => {
     const v = counts[k];
@@ -273,8 +273,8 @@ export default function InputSOPage() {
   });
   const [shift, setShift] = useState<string>('Opening');
 
-  // Inputs: { [itemId]: { step1: string, step2: string, keterangan: string, statusIsi: boolean | undefined, tglRefill: string, tglPakai: string } }
-  const [counts, setCounts] = useState<Record<string, { step1: string; step2: string; keterangan: string; statusIsi?: boolean; tglRefill?: string; tglPakai?: string }>>({});
+  // Inputs: { [itemId]: { step1: string, step2: string, keterangan: string, statusIsi: string, tglRefill: string, tglPakai: string } }
+  const [counts, setCounts] = useState<Record<string, { step1: string; step2: string; keterangan: string; statusIsi?: string; tglRefill?: string; tglPakai?: string }>>({});
   const [note, setNote] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [genStep, setGenStep] = useState<SOGerStep>('simpan');
@@ -324,7 +324,7 @@ export default function InputSOPage() {
 
         if (dataItems.success && Array.isArray(dataItems.data)) {
           setItems(dataItems.data);
-          const initialCounts: Record<string, { step1: string; step2: string; keterangan: string; statusIsi?: boolean; tglRefill?: string; tglPakai?: string }> = {};
+           const initialCounts: Record<string, { step1: string; step2: string; keterangan: string; statusIsi?: string; tglRefill?: string; tglPakai?: string }> = {};
           dataItems.data.forEach((item: MasterItem) => {
             initialCounts[item.Item_ID] = { step1: '', step2: '', keterangan: '', statusIsi: undefined, tglRefill: '', tglPakai: '' };
           });
@@ -457,7 +457,7 @@ export default function InputSOPage() {
     return acc;
   }, {} as Record<string, MasterItem[]>);
 
-  const handleCountChange = (itemId: string, field: 'step1' | 'step2' | 'keterangan' | 'statusIsi' | 'tglRefill' | 'tglPakai', value: string | boolean | undefined) => {
+  const handleCountChange = (itemId: string, field: 'step1' | 'step2' | 'keterangan' | 'statusIsi' | 'tglRefill' | 'tglPakai', value: string | undefined) => {
     setCounts((prev) => ({
       ...prev,
       [itemId]: {
@@ -558,13 +558,11 @@ export default function InputSOPage() {
       const tglRefillInput = (c.tglRefill || '').trim();
       const tglRefill = tglRefillInput || prev?.tglRefill || '';
 
-      let statusIsi: 'Isi' | 'Kosong' | '';
-      if (tglRefillInput) {
-        statusIsi = 'Isi';
-      } else if (c.statusIsi !== undefined) {
-        statusIsi = c.statusIsi ? 'Isi' : 'Kosong';
+      let statusIsi: 'Penuh' | 'Dipakai' | 'Habis' | '';
+      if (c.statusIsi !== undefined && c.statusIsi !== '') {
+        statusIsi = c.statusIsi as 'Penuh' | 'Dipakai' | 'Habis';
       } else {
-        statusIsi = prev?.statusIsi ?? '';
+        statusIsi = (prev?.statusIsi as 'Penuh' | 'Dipakai' | 'Habis' | '') ?? '';
       }
 
       const tglPakaiInput = (c.tglPakai || '').trim();
@@ -576,6 +574,7 @@ export default function InputSOPage() {
         satuan: it.Satuan,
         area: it.Area,
         threshold: it.Threshold,
+        tipeInput: it.Tipe_Input || '',
         step1,
         step2,
         total,
@@ -1104,8 +1103,8 @@ export default function InputSOPage() {
                     const isDate = hasTipe(tipeInput, 'date');
 
                     // Nilai efektif: input user kalau disentuh, else auto-carry dari prev.
-                    const effStatus = statusIsiVal !== undefined ? statusIsiVal : (prev?.statusIsi === 'Isi');
-                    const statusSel = statusIsiVal !== undefined ? (statusIsiVal ? 'Isi' : 'Kosong') : (prev?.statusIsi || '');
+                    const effStatus = statusIsiVal !== undefined ? statusIsiVal : (prev?.statusIsi || '');
+                    const statusSel = statusIsiVal !== undefined ? statusIsiVal : (prev?.statusIsi || '');
                     const effRefill = (counts[item.Item_ID]?.tglRefill || '') || (prev?.tglRefill || '');
                     const effPakai = (counts[item.Item_ID]?.tglPakai || '') || (prev?.tglPakai || '');
 
@@ -1128,9 +1127,13 @@ export default function InputSOPage() {
                           </span>
                           <span className="ml-auto flex items-center gap-3 flex-wrap">
                             {isBoolean ? (
-                              effStatus
-                                ? <span className="badge badge-success text-[11px] font-bold gap-1"><CheckCircle2 className="w-3 h-3" /><span>Isi</span></span>
-                                : <span className="badge badge-error text-[11px] font-bold gap-1"><AlertCircle className="w-3 h-3" /><span>Kosong</span></span>
+                              effStatus === 'Penuh'
+                                ? <span className="badge badge-success text-[11px] font-bold gap-1"><CheckCircle2 className="w-3 h-3" /><span>Penuh</span></span>
+                                : effStatus === 'Dipakai'
+                                  ? <span className="badge badge-warning text-[11px] font-bold gap-1"><AlertTriangle className="w-3 h-3" /><span>Dipakai</span></span>
+                                  : effStatus === 'Habis'
+                                    ? <span className="badge badge-error text-[11px] font-bold gap-1"><AlertCircle className="w-3 h-3" /><span>Habis</span></span>
+                                    : <span className="badge badge-ghost text-[11px] font-bold gap-1"><HelpCircle className="w-3 h-3" /><span>Pilih...</span></span>
                             ) : (
                               <>
                                 <span className="text-[10px] tabular-nums text-base-content/60">
@@ -1147,25 +1150,26 @@ export default function InputSOPage() {
                             {isBoolean && (
                               <>
                                 <div>
-                                  <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
-                                    Isi Sebelumnya
+                                   <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-base-content/50 text-center">
+                                    Status Sebelumnya
                                   </span>
                                   <div className="w-full h-8 px-1 text-center flex items-center justify-center bg-base-200 border border-base-300 text-base-content/60 rounded-md">
                                     <span className="text-[11px] font-bold tabular-nums">{hasPrev && prev.statusIsi ? prev.statusIsi : '–'}</span>
                                   </div>
                                 </div>
                                 <div>
-                                  <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-primary text-center">
-                                    Isi
+                                   <span className="block text-[10px] mb-0 font-semibold uppercase tracking-wide text-primary text-center">
+                                    Nilai Saat Ini
                                   </span>
                                   <select
                                     value={statusSel}
-                                    onChange={(e) => handleCountChange(item.Item_ID, 'statusIsi', e.target.value === '' ? undefined : e.target.value === 'Isi')}
+                                    onChange={(e) => handleCountChange(item.Item_ID, 'statusIsi', e.target.value || '')}
                                     className="w-full h-8 px-1 text-center text-[11px] font-semibold cursor-pointer select select-bordered rounded-md"
                                   >
                                     <option value="">Pilih...</option>
-                                    <option value="Isi">Isi</option>
-                                    <option value="Kosong">Kosong</option>
+                                    <option value="Penuh">Penuh</option>
+                                    <option value="Dipakai">Dipakai</option>
+                                    <option value="Habis">Habis</option>
                                   </select>
                                 </div>
                               </>

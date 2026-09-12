@@ -11,13 +11,12 @@ import {
   X,
   Loader2,
   ShieldAlert,
-  Layers,
-  Sliders,
-  CheckCircle2,
-  Trash2,
   Search,
   Filter,
-  AlertTriangle
+  AlertTriangle,
+  Settings,
+  ChevronDown,
+  CircleDot,
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -30,6 +29,8 @@ interface MasterItem {
   Konversi_Keterangan?: string;
   Threshold: number;
   Aktif: boolean;
+  Tipe_Input?: string;
+  Keterangan?: string;
 }
 
 const DEFAULT_AREAS = [
@@ -41,6 +42,22 @@ const DEFAULT_AREAS = [
   'Gas dan Utilitas',
   'Area Umum',
 ];
+
+const TIPE_OPTIONS = [
+  { value: 'dual', label: 'Dual (S1+S2)' },
+  { value: 'single', label: 'Single (S1)' },
+  { value: 'boolean', label: 'Boolean' },
+  { value: 'date', label: 'Date' },
+  { value: 'boolean,date', label: 'Boolean+Date' },
+];
+
+function tipeBadgeColor(t?: string) {
+  if (!t) return 'bg-base-200 text-base-content/60';
+  if (t.includes('boolean') && t.includes('date')) return 'bg-warning/15 text-warning-content border border-warning/20';
+  if (t.includes('boolean')) return 'bg-info/15 text-info-content border border-info/20';
+  if (t.includes('date')) return 'bg-secondary/15 text-secondary-content border border-secondary/20';
+  return 'bg-base-200 text-base-content/60 border border-base-300';
+}
 
 export default function MasterItemPage() {
   const { selectedCabang } = useCabang();
@@ -57,12 +74,20 @@ export default function MasterItemPage() {
     Konversi_Isi: '',
     Konversi_Keterangan: '',
     Threshold: 0,
+    Tipe_Input: 'dual',
+    Keterangan: '',
   });
   const [savingItem, setSavingItem] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
 
   const [editingThreshold, setEditingThreshold] = useState<string | null>(null);
   const [tempThreshold, setTempThreshold] = useState<number>(0);
+
+  const [editingTipeInput, setEditingTipeInput] = useState<string | null>(null);
+  const [tempTipeInput, setTempTipeInput] = useState<string>('dual');
+
+  const [editingKeterangan, setEditingKeterangan] = useState<string | null>(null);
+  const [tempKeterangan, setTempKeterangan] = useState<string>('');
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedArea, setSelectedArea] = useState<string>('Semua');
@@ -113,6 +138,8 @@ export default function MasterItemPage() {
           Konversi_Isi: '',
           Konversi_Keterangan: '',
           Threshold: 0,
+          Tipe_Input: 'dual',
+          Keterangan: '',
         });
         fetchItems();
       } else {
@@ -143,6 +170,48 @@ export default function MasterItemPage() {
       }
     } catch (err: any) {
       setErrorMsg('Gagal mengubah threshold: ' + err.message);
+    }
+  };
+
+  const handleSaveTipeInput = async (itemId: string) => {
+    if (!selectedCabang) return;
+    try {
+      const res = await fetch(`/api/master-item/${itemId}/tipe-input`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cabangId: selectedCabang.Cabang_ID,
+          tipeInput: tempTipeInput,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setEditingTipeInput(null);
+        fetchItems();
+      }
+    } catch (err: any) {
+      setErrorMsg('Gagal mengubah tipe input: ' + err.message);
+    }
+  };
+
+  const handleSaveKeterangan = async (itemId: string) => {
+    if (!selectedCabang) return;
+    try {
+      const res = await fetch(`/api/master-item/${itemId}/keterangan`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cabangId: selectedCabang.Cabang_ID,
+          keterangan: tempKeterangan,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setEditingKeterangan(null);
+        fetchItems();
+      }
+    } catch (err: any) {
+      setErrorMsg('Gagal mengubah keterangan: ' + err.message);
     }
   };
 
@@ -184,274 +253,424 @@ export default function MasterItemPage() {
     });
   }, [items, selectedArea, searchQuery]);
 
+  const groupedByArea = useMemo(() => {
+    const groups: Array<{ area: string; items: MasterItem[] }> = [];
+    const byArea = new Map<string, MasterItem[]>();
+    filteredItems.forEach((it) => {
+      const key = it.Area || 'Area Umum';
+      if (!byArea.has(key)) byArea.set(key, []);
+      byArea.get(key)!.push(it);
+    });
+    byArea.forEach((items, area) => groups.push({ area, items }));
+    return groups;
+  }, [filteredItems]);
+
+  const activeFilterCount = (selectedArea !== 'Semua' ? 1 : 0) + (searchQuery ? 1 : 0);
+
   if (!selectedCabang) {
     return (
-      <div className="text-center py-16 card bg-base-100 border border-base-300 p-8 space-y-3">
-        <ShieldAlert className="w-12 h-12 text-warning mx-auto" />
-        <h3 className="text-base font-bold text-base-content">Pilih Cabang Terlebih Dahulu</h3>
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <div className="w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center">
+          <ShieldAlert className="w-8 h-8 text-warning" />
+        </div>
+        <div className="text-center">
+          <h3 className="text-base font-semibold text-base-content">Pilih Cabang Terlebih Dahulu</h3>
+          <p className="text-sm text-base-content/50 mt-1">Pilih cabang dari menu untuk mengelola master item.</p>
+        </div>
       </div>
     );
   }
 
-  const isAdmin = hasAnyRole(['admin']);
-  const activeFilterCount = (selectedArea !== 'Semua' ? 1 : 0) + (searchQuery ? 1 : 0);
-
   return (
-    <div className="space-y-6 max-w-6xl mx-auto px-4 py-6 pb-20 md:pb-6">
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-      >
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold flex items-center gap-2 text-base-content">
-            <Package className="w-6 h-6 text-primary" />
-            <span>Master Item dan Threshold Minimum</span>
-          </h1>
-          <p className="text-sm mt-1 text-base-content/60">
-            Pengaturan batas minimum stok untuk cabang: <span className="font-semibold">{selectedCabang.Nama_Cabang}</span>
-          </p>
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-6 space-y-5">
+      {/* ─── HEADER ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Settings className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-base-content">
+                Master Threshold
+              </h1>
+              <p className="text-sm text-base-content/50">
+                {selectedCabang.Nama_Cabang} &middot; Atur batas minimum stok semua item
+              </p>
+            </div>
+          </div>
         </div>
-
         <button
           onClick={() => setShowModal(true)}
-          className="btn btn-primary gap-2 px-4 py-2 text-sm self-start sm:self-auto"
+          className="btn btn-primary btn-sm gap-1.5 shadow-sm"
         >
           <PlusCircle className="w-4 h-4" />
-          <span>Tambah Item Baru</span>
+          Tambah Item
         </button>
-      </motion.div>
+      </div>
 
-      {errorMsg && (
-        <div className="alert alert-error text-sm" role="alert">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-          <span>{errorMsg}</span>
-          <button onClick={() => { setErrorMsg(''); fetchItems(); }} className="btn btn-ghost btn-xs">Coba Lagi</button>
-        </div>
-      )}
+      {/* ─── INFO BANNER ─── */}
+      <div className="bg-primary/5 border border-primary/10 rounded-lg px-4 py-3 flex items-start gap-3">
+        <CircleDot className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+        <p className="text-sm text-base-content/70 leading-relaxed">
+          Ubah angka di kolom <strong>Threshold Baru</strong>, lalu simpan. Semua sheet SO akan otomatis menggunakan threshold baru.
+        </p>
+      </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25, delay: 0.05 }}
-        className="card bg-base-100 border border-base-300 p-4 space-y-3"
-      >
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/40" />
-            <input
-              type="text"
-              placeholder="Cari nama barang, area, atau ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input input-bordered w-full pl-9 pr-8 min-h-[42px] text-sm"
-            />
-            <AnimatePresence>
-              {searchQuery && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.7 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.7 }}
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-base-content/40 hover:text-base-content"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </motion.button>
-              )}
-            </AnimatePresence>
-          </div>
+      {/* ─── ERROR ─── */}
+      <AnimatePresence>
+        {errorMsg && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="alert alert-error text-sm rounded-lg"
+          >
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span className="flex-1">{errorMsg}</span>
+            <button onClick={() => { setErrorMsg(''); fetchItems(); }} className="btn btn-ghost btn-xs">
+              Muat ulang
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-base-content/40" />
-            <select
-              value={selectedArea}
-              onChange={(e) => setSelectedArea(e.target.value)}
-              className="select select-bordered pl-9 pr-8 min-h-[42px] text-sm font-medium"
+      {/* ─── TOOLBAR ─── */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+        <div className="relative flex-1 w-full sm:max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/40" />
+          <input
+            type="text"
+            placeholder="Cari nama barang..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input input-bordered input-sm w-full pl-9 pr-8 text-sm bg-base-100"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-base-content/30 hover:text-base-content transition-colors"
             >
-              <option value="Semua">Semua Area</option>
-              {areas.map(area => (
-                <option key={area} value={area}>{area}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <AnimatePresence>
-          {activeFilterCount > 0 && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="flex items-center gap-2 flex-wrap"
-            >
-              <span className="text-[11px] font-semibold text-base-content/60">Filter aktif:</span>
-              {selectedArea !== 'Semua' && (
-                <span className="badge badge-primary gap-1">
-                  <Layers className="w-3 h-3" />
-                  {selectedArea}
-                  <button type="button" onClick={() => setSelectedArea('Semua')}>
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              {searchQuery && (
-                <span className="badge badge-primary gap-1">
-                  <Search className="w-3 h-3" />
-                  &quot;{searchQuery}&quot;
-                  <button type="button" onClick={() => setSearchQuery('')}>
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={() => { setSelectedArea('Semua'); setSearchQuery(''); }}
-                className="text-[11px] font-medium underline text-base-content/50 hover:text-base-content"
-              >
-                Hapus semua
-              </button>
-            </motion.div>
+              <X className="w-3.5 h-3.5" />
+            </button>
           )}
-        </AnimatePresence>
-      </motion.div>
+        </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25, delay: 0.1 }}
-        className="card bg-base-100 border border-base-300 overflow-hidden"
-      >
+        <div className="relative">
+          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-base-content/40" />
+          <select
+            value={selectedArea}
+            onChange={(e) => setSelectedArea(e.target.value)}
+            className="select select-bordered select-sm pl-9 pr-8 text-sm font-medium bg-base-100"
+          >
+            <option value="Semua">Semua Area</option>
+            {areas.map(area => (
+              <option key={area} value={area}>{area}</option>
+            ))}
+          </select>
+        </div>
+
+        {activeFilterCount > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-base-content/40">{filteredItems.length} dari {items.length} item</span>
+            <button
+              onClick={() => { setSelectedArea('Semua'); setSearchQuery(''); }}
+              className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+            >
+              Reset filter
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ─── TABLE ─── */}
+      <div className="bg-base-100 border border-base-300 rounded-xl overflow-hidden">
         {loading ? (
-          <div className="p-16 text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
-            <p className="text-sm text-base-content/60">Memuat data barang...</p>
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="w-7 h-7 animate-spin text-primary" />
+            <p className="text-sm text-base-content/50">Memuat data barang...</p>
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="p-16 text-center space-y-2">
-            <Package className="w-12 h-12 mx-auto text-base-content/30" />
-            <h3 className="text-sm font-semibold text-base-content">
-              {items.length === 0
-                ? 'Belum Ada Item Terdaftar di Cabang Ini'
-                : 'Tidak ada item yang cocok dengan filter.'}
-            </h3>
-            <p className="text-sm text-base-content/60">
-              {items.length === 0
-                ? 'Tambahkan master barang untuk memulai pencatatan SO.'
-                : 'Coba ubah filter atau kata kunci pencarian.'}
-            </p>
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <div className="w-14 h-14 rounded-2xl bg-base-200 flex items-center justify-center">
+              <Package className="w-7 h-7 text-base-content/30" />
+            </div>
+            <div className="text-center">
+              <h3 className="text-sm font-semibold text-base-content">
+                {items.length === 0 ? 'Belum Ada Item' : 'Tidak ada hasil'}
+              </h3>
+              <p className="text-sm text-base-content/50 mt-1">
+                {items.length === 0
+                  ? 'Tambahkan master barang untuk memulai pencatatan SO.'
+                  : 'Ubah filter atau kata kunci pencarian.'}
+              </p>
+            </div>
+            {items.length > 0 && (
+              <button
+                onClick={() => { setSelectedArea('Semua'); setSearchQuery(''); }}
+                className="btn btn-ghost btn-xs text-primary"
+              >
+                Reset filter
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm mobile-card-table">
-              <thead className="bg-base-200 border-b border-base-300">
-                <tr className="font-semibold text-base-content/60">
-                  <th className="px-5 py-3">ID Item</th>
-                  <th className="px-5 py-3">Nama Barang</th>
-                  <th className="px-5 py-3">Area Penempatan</th>
-                  <th className="px-5 py-3">Satuan</th>
-                  <th className="px-5 py-3 text-center">Batas Minimum (Threshold)</th>
-                  <th className="px-5 py-3 text-center">Status</th>
-                  <th className="px-5 py-3 text-right">Aksi</th>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-base-300 bg-base-200/50">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-base-content/50 uppercase tracking-wider w-10">
+                    No
+                  </th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-base-content/50 uppercase tracking-wider">
+                    Nama Barang
+                  </th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-base-content/50 uppercase tracking-wider">
+                    Area
+                  </th>
+                  <th className="px-4 py-2.5 text-center text-xs font-semibold text-base-content/50 uppercase tracking-wider w-16">
+                    Satuan
+                  </th>
+                  <th className="px-4 py-2.5 text-center text-xs font-semibold text-base-content/50 uppercase tracking-wider w-28">
+                    Tipe Input
+                  </th>
+                  <th className="px-4 py-2.5 text-center text-xs font-semibold text-base-content/50 uppercase tracking-wider w-20">
+                    Threshold
+                  </th>
+                  <th className="px-4 py-2.5 text-center text-xs font-semibold text-base-content/50 uppercase tracking-wider w-32">
+                    Threshold Baru
+                  </th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-base-content/50 uppercase tracking-wider">
+                    Keterangan
+                  </th>
+                  <th className="px-4 py-2.5 text-center text-xs font-semibold text-base-content/50 uppercase tracking-wider w-16">
+                    Status
+                  </th>
+                  <th className="px-4 py-2.5 text-center text-xs font-semibold text-base-content/50 uppercase tracking-wider w-20">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
-              <tbody className="text-base-content">
-                <AnimatePresence initial={false}>
-                  {filteredItems.map((item) => (
-                    <motion.tr
-                      key={item.Item_ID}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 8 }}
-                      transition={{ duration: 0.15 }}
-                      className="transition-colors border-b border-base-300 hover:bg-base-200"
-                    >
-                      <td className="px-5 py-4 font-mono text-base-content/60" data-label="ID">{item.Item_ID}</td>
-                      <td className="px-5 py-4 font-semibold" data-label="Nama">{item.Nama_Barang}</td>
-                      <td className="px-5 py-4" data-label="Area">
-                        <span className="badge badge-ghost gap-1">
-                          {item.Area}
+              <tbody className="divide-y divide-base-200">
+                {groupedByArea.map((group) => (
+                  <React.Fragment key={group.area}>
+                    {/* Area divider */}
+                    <tr>
+                      <td colSpan={10} className="px-4 py-2 bg-base-200/30">
+                        <span className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider">
+                          <ChevronDown className="w-3.5 h-3.5" />
+                          {group.area}
+                          <span className="text-base-content/30 font-normal normal-case tracking-normal">
+                            ({group.items.length} item)
+                          </span>
                         </span>
                       </td>
-                      <td className="px-5 py-4 font-mono text-base-content/60" data-label="Satuan">{item.Satuan}</td>
-                      <td className="px-5 py-4 text-center" data-label="Threshold">
-                        {editingThreshold === item.Item_ID ? (
-                          <div className="inline-flex items-center gap-1.5">
-                            <input
-                              type="number"
-                              value={tempThreshold}
-                              onChange={(e) => setTempThreshold(Number(e.target.value))}
-                              className="input input-bordered w-16 px-2 py-1 text-sm text-center tabular-nums min-h-0 h-8"
-                            />
+                    </tr>
+                    {/* Items */}
+                    {group.items.map((item, idx) => (
+                      <tr
+                        key={item.Item_ID}
+                        className="hover:bg-base-200/30 transition-colors group/row"
+                      >
+                        <td className="px-4 py-3 text-base-content/40 text-xs tabular-nums">
+                          {idx + 1}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="font-medium text-base-content">{item.Nama_Barang}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center gap-1 text-xs text-base-content/60 bg-base-200/50 px-2 py-0.5 rounded-md">
+                            {item.Area}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center text-xs text-base-content/50 font-mono">
+                          {item.Satuan}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {editingTipeInput === item.Item_ID ? (
+                            <div className="flex items-center justify-center gap-1">
+                              <select
+                                value={tempTipeInput}
+                                onChange={(e) => setTempTipeInput(e.target.value)}
+                                className="select select-bordered select-xs min-h-0 h-7 text-xs w-full max-w-[120px]"
+                                autoFocus
+                              >
+                                {TIPE_OPTIONS.map(o => (
+                                  <option key={o.value} value={o.value}>{o.label}</option>
+                                ))}
+                              </select>
+                              <button
+                                onClick={() => handleSaveTipeInput(item.Item_ID)}
+                                className="btn btn-success btn-xs min-h-0 h-6 px-1.5"
+                              >
+                                <Check className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => setEditingTipeInput(null)}
+                                className="btn btn-ghost btn-xs min-h-0 h-6 px-1.5"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
                             <button
-                              onClick={() => handleSaveThreshold(item.Item_ID)}
-                              className="btn btn-primary btn-xs"
+                              onClick={() => {
+                                setEditingTipeInput(item.Item_ID);
+                                setTempTipeInput(item.Tipe_Input || 'dual');
+                              }}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] ${tipeBadgeColor(item.Tipe_Input)}`}
                             >
-                              <Check className="w-3.5 h-3.5" />
+                              {item.Tipe_Input || 'dual'}
+                              <Edit3 className="w-3 h-3 opacity-0 group-hover/row:opacity-60 transition-opacity" />
                             </button>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-md bg-base-200/50 text-sm font-semibold tabular-nums text-base-content/70">
+                            {item.Threshold}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {editingThreshold === item.Item_ID ? (
+                            <div className="flex items-center justify-center gap-1">
+                              <input
+                                type="number"
+                                value={tempThreshold}
+                                onChange={(e) => setTempThreshold(Number(e.target.value))}
+                                className="input input-bordered input-xs w-20 text-center tabular-nums font-semibold text-sm min-h-0 h-7"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => handleSaveThreshold(item.Item_ID)}
+                                className="btn btn-success btn-xs min-h-0 h-6 px-1.5"
+                              >
+                                <Check className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => setEditingThreshold(null)}
+                                className="btn btn-ghost btn-xs min-h-0 h-6 px-1.5"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
                             <button
-                              onClick={() => setEditingThreshold(null)}
-                              className="btn btn-ghost btn-xs"
+                              onClick={() => {
+                                setEditingThreshold(item.Item_ID);
+                                setTempThreshold(item.Threshold);
+                              }}
+                              className="inline-flex items-center justify-center gap-1.5 min-w-[2.5rem] px-2 py-0.5 rounded-md bg-warning/10 border border-warning/20 text-sm font-bold tabular-nums text-warning-content cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
                             >
-                              <X className="w-3.5 h-3.5" />
+                              {item.Threshold}
+                              <Edit3 className="w-3 h-3 opacity-0 group-hover/row:opacity-60 transition-opacity" />
                             </button>
-                          </div>
-                        ) : (
-                          <div
-                            onClick={() => {
-                              setEditingThreshold(item.Item_ID);
-                              setTempThreshold(item.Threshold);
-                            }}
-                            className="inline-flex items-center gap-2 cursor-pointer group px-2 py-1 rounded-md transition-colors hover:bg-base-200"
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {editingKeterangan === item.Item_ID ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="text"
+                                value={tempKeterangan}
+                                onChange={(e) => setTempKeterangan(e.target.value)}
+                                placeholder="Catatan..."
+                                className="input input-bordered input-xs flex-1 text-xs min-h-0 h-7"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => handleSaveKeterangan(item.Item_ID)}
+                                className="btn btn-success btn-xs min-h-0 h-6 px-1.5"
+                              >
+                                <Check className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => setEditingKeterangan(null)}
+                                className="btn btn-ghost btn-xs min-h-0 h-6 px-1.5"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setEditingKeterangan(item.Item_ID);
+                                setTempKeterangan(item.Keterangan || '');
+                              }}
+                              className="text-left text-xs text-base-content/50 hover:text-base-content max-w-[150px] truncate transition-colors cursor-pointer group/ket"
+                            >
+                              {item.Keterangan || <span className="italic opacity-40">Tambah catatan...</span>}
+                              <Edit3 className="w-3 h-3 inline ml-1 opacity-0 group-hover/ket:opacity-50 transition-opacity" />
+                            </button>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {item.Aktif ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-success/10 text-success border border-success/20">
+                              <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                              Aktif
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-base-200 text-base-content/40">
+                              Nonaktif
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => handleToggleActive(item.Item_ID, item.Aktif)}
+                            title={item.Aktif ? "Nonaktifkan item" : "Aktifkan item"}
+                            className={`btn btn-xs min-h-0 h-6 px-2 text-xs font-medium transition-colors ${
+                              item.Aktif
+                                ? 'btn-ghost text-error/70 hover:text-error hover:bg-error/10'
+                                : 'btn-ghost text-success/70 hover:text-success hover:bg-success/10'
+                            }`}
                           >
-                            <span className="font-semibold tabular-nums">{item.Threshold}</span>
-                            <Edit3 className="w-3.5 h-3.5 transition-colors text-base-content/40 group-hover:text-primary" />
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-5 py-4 text-center" data-label="Status">
-                        {item.Aktif ? (
-                          <span className="badge badge-success">Aktif</span>
-                        ) : (
-                          <span className="badge badge-ghost">Nonaktif</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-4 text-right" data-label="Aksi">
-                        <button
-                          onClick={() => handleToggleActive(item.Item_ID, item.Aktif)}
-                          title={item.Aktif ? "Nonaktifkan item dari form SO" : "Aktifkan item"}
-                          className="btn btn-ghost btn-xs text-error hover:bg-error/10"
-                        >
-                          {item.Aktif ? "Nonaktifkan" : "Aktifkan"}
-                        </button>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
+                            {item.Aktif ? 'Nonaktifkan' : 'Aktifkan'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                ))}
               </tbody>
             </table>
           </div>
         )}
-      </motion.div>
+      </div>
 
+      {/* ─── ADD ITEM MODAL ─── */}
       <AnimatePresence>
         {showModal && (
           <dialog className="modal modal-open">
-            <div className="modal-box">
-              <div className="flex items-center justify-between pb-4 border-b border-base-300">
-                <div className="flex items-center gap-2">
-                  <Package className="w-5 h-5 text-base-content" />
-                  <h3 className="text-lg font-semibold text-base-content">Tambah Master Item Baru</h3>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="modal-box max-w-lg p-0"
+            >
+              {/* Modal header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-base-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Package className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-base-content">Tambah Item Baru</h3>
+                    <p className="text-xs text-base-content/50">Isi data master item untuk cabang ini</p>
+                  </div>
                 </div>
-                <button onClick={() => setShowModal(false)} className="btn btn-ghost btn-sm">
-                  <X className="w-5 h-5" />
+                <button onClick={() => setShowModal(false)} className="btn btn-ghost btn-sm btn-circle">
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <form onSubmit={handleAddItem} className="space-y-4 mt-4">
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-base-content/70">Nama Barang</label>
+              {/* Modal body */}
+              <form onSubmit={handleAddItem} className="px-6 py-5 space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-base-content/60 uppercase tracking-wider">
+                    Nama Barang <span className="text-error">*</span>
+                  </label>
                   <input
                     type="text"
                     required
@@ -462,9 +681,11 @@ export default function MasterItemPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-sm font-semibold text-base-content/70">Area</label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-base-content/60 uppercase tracking-wider">
+                      Area <span className="text-error">*</span>
+                    </label>
                     <select
                       value={newItem.Area}
                       onChange={(e) => setNewItem({ ...newItem, Area: e.target.value })}
@@ -476,50 +697,94 @@ export default function MasterItemPage() {
                     </select>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-sm font-semibold text-base-content/70">Satuan</label>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-base-content/60 uppercase tracking-wider">
+                      Satuan <span className="text-error">*</span>
+                    </label>
                     <input
                       type="text"
                       required
-                      placeholder="kg, pcs, liter..."
+                      placeholder="kg, pcs, gr..."
                       value={newItem.Satuan}
                       onChange={(e) => setNewItem({ ...newItem, Satuan: e.target.value })}
                       className="input input-bordered w-full text-sm"
                     />
                   </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-base-content/60 uppercase tracking-wider">
+                      Tipe Input
+                    </label>
+                    <select
+                      value={newItem.Tipe_Input}
+                      onChange={(e) => setNewItem({ ...newItem, Tipe_Input: e.target.value })}
+                      className="select select-bordered w-full text-sm"
+                    >
+                      {TIPE_OPTIONS.map(o => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-base-content/70">Batas Minimum Stok (Threshold)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={newItem.Threshold}
-                    onChange={(e) => setNewItem({ ...newItem, Threshold: Number(e.target.value) })}
-                    className="input input-bordered w-full text-sm font-semibold tabular-nums"
-                  />
-                  <p className="text-xs text-base-content/50">Jika hasil SO berada di bawah atau sama dengan threshold, status otomatis menjadi Kritis.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-base-content/60 uppercase tracking-wider">
+                      Threshold (Batas Minimum)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={newItem.Threshold}
+                      onChange={(e) => setNewItem({ ...newItem, Threshold: Number(e.target.value) })}
+                      className="input input-bordered w-full text-sm font-semibold tabular-nums"
+                    />
+                    <p className="text-[11px] text-base-content/40">Threshold = 0 berarti tidak dipantau</p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-base-content/60 uppercase tracking-wider">
+                      Keterangan
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Catatan (opsional)"
+                      value={newItem.Keterangan}
+                      onChange={(e) => setNewItem({ ...newItem, Keterangan: e.target.value })}
+                      className="input input-bordered w-full text-sm"
+                    />
+                  </div>
                 </div>
 
-                <div className="flex gap-2 justify-end pt-4 border-t border-base-300">
+                <div className="flex gap-2 justify-end pt-3 border-t border-base-300">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="btn btn-ghost"
+                    className="btn btn-ghost btn-sm"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
                     disabled={savingItem}
-                    className="btn btn-primary"
+                    className="btn btn-primary btn-sm gap-1.5"
                   >
-                    {savingItem ? 'Menyimpan...' : 'Simpan Master Item'}
+                    {savingItem ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Menyimpan...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        Simpan
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
-            </div>
+            </motion.div>
             <form method="dialog" className="modal-backdrop">
               <button onClick={() => setShowModal(false)}>close</button>
             </form>

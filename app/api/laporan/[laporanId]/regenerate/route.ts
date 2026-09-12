@@ -5,7 +5,9 @@ import { withAuth, assertCabangAccess } from '@/lib/auth';
 import { resolveCabang } from '@/lib/google/registry';
 import { uploadFileToGASDrive } from '@/lib/appsscript';
 import { updateLaporanXlsxLink, getLaporanById, getLaporanDetail, getUrutanLaporan, getSesiLiveData } from '@/lib/domain/laporan-service';
+import { getMasterItems } from '@/lib/domain/master-item-service';
 import { generateXlsxReport, type XlsxItem } from '@/lib/domain/xlsx-report';
+import { generateXlsxFromTemplate } from '@/lib/google/template-xlsx';
 
 export const POST = withAuth(async (req: NextRequest, { params }, session) => {
   const { laporanId } = await params;
@@ -55,6 +57,11 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
   // belum tersimpan di Laporan_SO.
   const live = await getSesiLiveData(spreadsheetId, sesiId);
 
+  // Fetch master items untuk mendapatkan Tipe_Input
+  const masterItems = await getMasterItems(cabangId);
+  const tipeInputMap = new Map<string, string>();
+  masterItems.forEach((m: any) => { tipeInputMap.set(String(m['Item_ID'] || ''), String(m['Tipe_Input'] || '')); });
+
   // 4. Map detail rows to XlsxItem[]
   const items: XlsxItem[] = detailRows.map((r) => {
     const itemId = String(r['Item_ID'] || '');
@@ -65,6 +72,7 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
       area: String(r['Area'] || ''),
       satuan: String(r['Satuan'] || ''),
       threshold: r['Threshold'] != null && r['Threshold'] !== '' ? Number(r['Threshold']) : undefined,
+      tipeInput: tipeInputMap.get(itemId) || '',
       step1: Number(r['Step1']) || 0,
       step2: Number(r['Step2']) || 0,
       keterangan: String(r['Keterangan'] || ''),
@@ -72,7 +80,7 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
       prevStep2: r['Prev_Step2'] != null && r['Prev_Step2'] !== '' ? Number(r['Prev_Step2']) : null,
       prevTotal: r['Prev_Total'] != null && r['Prev_Total'] !== '' ? Number(r['Prev_Total']) : null,
       prevKeterangan: String(r['Prev_Keterangan'] || ''),
-      statusIsi: (r['Status_Isi'] === 'Isi' || r['Status_Isi'] === 'Kosong') ? r['Status_Isi'] as 'Isi' | 'Kosong' : (fb.statusIsi || ''),
+      statusIsi: (['Penuh', 'Dipakai', 'Habis'].includes(String(r['Status_Isi']))) ? r['Status_Isi'] as 'Penuh' | 'Dipakai' | 'Habis' : (fb.statusIsi || ''),
       tglRefill: String(r['Tgl_Refill'] || fb.tglRefill || ''),
       tglPakai: String(r['Tgl_Pakai'] || fb.tglPakai || ''),
     };
@@ -85,20 +93,42 @@ export const POST = withAuth(async (req: NextRequest, { params }, session) => {
 
   const results: { xlsx?: string; error?: string } = {};
 
-  // 5. Generate XLSX
+  // 5. Generate XLSX — coba template dulu, fallback ke ExcelJS
   try {
-    const { buffer, fileName } = await generateXlsxReport({
-      laporanId,
-      cabangNama,
-      cabangKode,
-      tanggalOperasional,
-      shift,
-      petugas,
-      items,
-      groupMode: urutanLaporan,
-      note: detailRows[0]?.['Note'] ? String(detailRows[0]['Note']) : live.note,
-      previousSOInfo,
-    });
+    let buffer: Buffer;
+    let fileName: string;
+    try {
+      const templateResult = await generateXlsxFromTemplate({
+        laporanId,
+        cabangNama,
+        cabangKode,
+        tanggalOperasional,
+        shift,
+        petugas,
+        items,
+        groupMode: urutanLaporan,
+        note: detailRows[0]?.['Note'] ? String(detailRows[0]['Note']) : live.note,
+        previousSOInfo,
+      });
+      buffer = templateResult.buffer;
+      fileName = templateResult.fileName;
+    } catch (templateErr) {
+      console.warn('[Regenerate] Template approach gagal, fallback ExcelJS:', templateErr);
+      const fallback = await generateXlsxReport({
+        laporanId,
+        cabangNama,
+        cabangKode,
+        tanggalOperasional,
+        shift,
+        petugas,
+        items,
+        groupMode: urutanLaporan,
+        note: detailRows[0]?.['Note'] ? String(detailRows[0]['Note']) : live.note,
+        previousSOInfo,
+      });
+      buffer = fallback.buffer;
+      fileName = fallback.fileName;
+    }
 
     let xlsxLink = '';
     if (folderId) {

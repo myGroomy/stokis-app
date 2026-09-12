@@ -142,8 +142,8 @@ function validateSOPayload_(payload) {
         errors.push({ code: 'KETERANGAN_INVALID', message: label + ' keterangan harus string' });
       }
       if (item.statusIsi !== undefined && item.statusIsi !== null && item.statusIsi !== '' &&
-          ['Isi', 'Kosong'].indexOf(String(item.statusIsi)) === -1) {
-        errors.push({ code: 'STATUS_ISI_INVALID', message: label + ' statusIsi harus "Isi" atau "Kosong"' });
+          ['Penuh', 'Dipakai', 'Habis'].indexOf(String(item.statusIsi)) === -1) {
+        errors.push({ code: 'STATUS_ISI_INVALID', message: label + ' statusIsi harus "Penuh", "Dipakai", atau "Habis"' });
       }
       if (item.tglRefill !== undefined && item.tglRefill !== null && item.tglRefill !== '' &&
           !isValidTanggal_(item.tglRefill)) {
@@ -169,7 +169,7 @@ function validateSOPayload_(payload) {
       step2: step2,
       total: step1 + step2,
       keterangan: typeof item.keterangan === 'string' ? item.keterangan : '',
-      statusIsi: (item.statusIsi === 'Isi' || item.statusIsi === 'Kosong') ? item.statusIsi : '',
+      statusIsi: (['Penuh', 'Dipakai', 'Habis'].indexOf(String(item.statusIsi)) !== -1) ? item.statusIsi : '',
       tglRefill: typeof item.tglRefill === 'string' ? item.tglRefill : '',
       tglPakai: typeof item.tglPakai === 'string' ? item.tglPakai : '',
     };

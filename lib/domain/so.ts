@@ -60,7 +60,7 @@ export interface SOItem {
   step2: number;
   total: number;
   keterangan: string;
-  statusIsi?: 'Isi' | 'Kosong' | '';
+  statusIsi?: 'Penuh' | 'Dipakai' | 'Habis' | '';
   tglRefill?: string;
   tglPakai?: string;
 }

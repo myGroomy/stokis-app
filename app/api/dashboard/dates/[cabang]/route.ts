@@ -17,7 +17,7 @@ function formatDate(date: any): string {
 
 export const GET = withAuth(async (req, context, session) => {
   try {
-    const cabang = context.params?.cabang as string;
+    const { cabang } = await context.params;
     const accessError = assertCabangAccess(session, cabang);
     if (accessError) return accessError;
 

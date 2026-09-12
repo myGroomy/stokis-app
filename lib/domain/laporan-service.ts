@@ -45,7 +45,7 @@ interface SaveLaporanItem {
   prevTanggal?: string | null;
   prevShift?: string | null;
   prevKeterangan?: string;
-  statusIsi?: 'Isi' | 'Kosong' | '';
+  statusIsi?: 'Penuh' | 'Dipakai' | 'Habis' | '';
   tglRefill?: string;
   tglPakai?: string;
 }
@@ -292,7 +292,7 @@ export async function getLaporanDetail(
 
 export interface SesiLiveExtra {
   note: string;
-  byItemId: Record<string, { statusIsi?: 'Isi' | 'Kosong' | ''; tglRefill?: string; tglPakai?: string }>;
+  byItemId: Record<string, { statusIsi?: 'Penuh' | 'Dipakai' | 'Habis' | ''; tglRefill?: string; tglPakai?: string }>;
 }
 
 /**
@@ -314,7 +314,7 @@ export async function getSesiLiveData(
       const itemId = String(r['Item_ID'] || '').trim();
       if (!itemId) return;
       byItemId[itemId] = {
-        statusIsi: (r['Status_Isi'] === 'Isi' || r['Status_Isi'] === 'Kosong') ? r['Status_Isi'] as 'Isi' | 'Kosong' : '',
+        statusIsi: (['Penuh', 'Dipakai', 'Habis'].includes(String(r['Status_Isi']))) ? r['Status_Isi'] as 'Penuh' | 'Dipakai' | 'Habis' : '',
         tglRefill: String(r['Tgl_Refill'] || ''),
         tglPakai: String(r['Tgl_Pakai'] || ''),
       };

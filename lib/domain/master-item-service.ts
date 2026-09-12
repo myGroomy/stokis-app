@@ -16,6 +16,7 @@ export interface MasterItemPayload {
   Konversi_Keterangan?: string;
   Threshold?: number;
   Tipe_Input?: string;
+  Keterangan?: string;
 }
 
 export async function getMasterItems(cabangId: string) {
@@ -44,6 +45,7 @@ export async function addItem(cabangId: string, payload: MasterItemPayload): Pro
     true,
     new Date(),
     payload.Tipe_Input || '',
+    payload.Keterangan || '',
   ]]);
   return { itemId };
 }
@@ -76,4 +78,36 @@ export async function setItemActive(
   const val = aktif === true || aktif === 'true';
   await writeRow(spreadsheetId, `Master_Item!H${rowNumber}`, [val]);
   return { itemId, aktif: val };
+}
+
+export async function updateTipeInput(
+  cabangId: string,
+  itemId: string,
+  tipeInput: unknown
+): Promise<{ itemId: string; tipeInput: string }> {
+  const allowed = ['dual', 'single', 'boolean', 'date', 'boolean,date'];
+  const val = String(tipeInput || 'dual');
+  const normalized = allowed.includes(val) ? val : 'dual';
+  const { spreadsheetId } = await resolveCabang(cabangId);
+  const { rows } = await readSheetData(spreadsheetId, 'Master_Item');
+  const found = findRowIndex(rows, 0, itemId);
+  if (found.index === -1) throw new ApiError('not_found', 'Item ' + itemId + ' tidak ditemukan');
+  const rowNumber = found.index + 2;
+  await writeRow(spreadsheetId, `Master_Item!J${rowNumber}`, [normalized]);
+  return { itemId, tipeInput: normalized };
+}
+
+export async function updateKeterangan(
+  cabangId: string,
+  itemId: string,
+  keterangan: unknown
+): Promise<{ itemId: string; keterangan: string }> {
+  const val = String(keterangan || '');
+  const { spreadsheetId } = await resolveCabang(cabangId);
+  const { rows } = await readSheetData(spreadsheetId, 'Master_Item');
+  const found = findRowIndex(rows, 0, itemId);
+  if (found.index === -1) throw new ApiError('not_found', 'Item ' + itemId + ' tidak ditemukan');
+  const rowNumber = found.index + 2;
+  await writeRow(spreadsheetId, `Master_Item!K${rowNumber}`, [val]);
+  return { itemId, keterangan: val };
 }

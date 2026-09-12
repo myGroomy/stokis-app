@@ -35,7 +35,8 @@ function runSetupPhase1(parentFolderId) {
   sheetMasterItem.setName('Master_Item');
   sheetMasterItem.appendRow([
     'Item_ID', 'Nama_Barang', 'Area', 'Satuan', 
-    'Konversi_Isi', 'Konversi_Keterangan', 'Threshold', 'Aktif', 'Tanggal_Dibuat'
+    'Konversi_Isi', 'Konversi_Keterangan', 'Threshold', 'Aktif', 'Tanggal_Dibuat',
+    'Tipe_Input', 'Keterangan'
   ]);
   formatHeader_(sheetMasterItem);
 
@@ -43,7 +44,8 @@ function runSetupPhase1(parentFolderId) {
   const sheetSO = templateSS.insertSheet('SO_Transaksi');
   sheetSO.appendRow([
     'Transaksi_ID', 'Timestamp', 'Tanggal_Operasional', 'Shift', 
-    'Item_ID', 'Nama_Barang', 'Area', 'Step1', 'Step2', 'Total', 'Petugas', 'Sesi_ID'
+    'Item_ID', 'Nama_Barang', 'Area', 'Step1', 'Step2', 'Total', 'Petugas', 'Sesi_ID',
+    'Keterangan', 'Status_Isi', 'Tgl_Refill', 'Tgl_Pakai', 'Note'
   ]);
   formatHeader_(sheetSO);
 

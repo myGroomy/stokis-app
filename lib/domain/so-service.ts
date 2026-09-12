@@ -35,7 +35,7 @@ interface PrevItem {
   petugas: string;
   keterangan: string;
   waktu: string;
-  statusIsi?: 'Isi' | 'Kosong' | '';
+  statusIsi?: 'Penuh' | 'Dipakai' | 'Habis' | '';
   tglRefill?: string;
   tglPakai?: string;
 }
@@ -239,7 +239,7 @@ export async function getPreviousSO(cabangId: string): Promise<PreviousSOResult>
           petugas: String(r['Petugas'] || ''),
           keterangan: String(r['Keterangan'] ?? r['keterangan'] ?? r['KETERANGAN'] ?? '').trim(),
           waktu: fmtTime(r['Timestamp']),
-          statusIsi: (r['Status_Isi'] === 'Isi' || r['Status_Isi'] === 'Kosong') ? r['Status_Isi'] as 'Isi' | 'Kosong' : '',
+          statusIsi: (['Penuh', 'Dipakai', 'Habis'].includes(String(r['Status_Isi']))) ? r['Status_Isi'] as 'Penuh' | 'Dipakai' | 'Habis' : '',
           tglRefill: fmtDate(r['Tgl_Refill']),
           tglPakai: fmtDate(r['Tgl_Pakai']),
         };

@@ -1,6 +1,18 @@
 import * as ExcelJS from 'exceljs';
 import { parseThreshold } from './so';
 
+// ── Font config — ubah di sini untuk mengubah semua font di XLSX ────
+export const XLSX_FONT = {
+  family: 'Montserrat',
+  title:      { size: 16 },
+  info:       { size: 12 },
+  groupHeader:{ size: 10 },
+  colHeader:  { size: 9 },
+  data:       { size: 12 },
+  divider:    { size: 12 },
+  note:       { size: 12 },
+} as const;
+
 export interface XlsxItem {
   itemId?: string;
   namaBarang?: string;
@@ -14,9 +26,10 @@ export interface XlsxItem {
   prevStep2?: number | string | null;
   prevTotal?: number | string | null;
   prevKeterangan?: string;
-  statusIsi?: 'Isi' | 'Kosong' | '';
+  statusIsi?: 'Penuh' | 'Dipakai' | 'Habis' | '';
   tglRefill?: string;
   tglPakai?: string;
+  tipeInput?: string;
 }
 
 type StatusType = 'KRITIS' | 'HAMPIR HABIS' | 'AMAN' | 'Tidak Dipantau';
@@ -31,7 +44,7 @@ function getStatus(step1: number, step2: number, threshold: number | null | unde
   return 'AMAN';
 }
 
-function formatDate(date: string | number | null | undefined): string {
+function formatDateShort(date: string | number | null | undefined): string {
   const v = normalizeDate(date);
   if (!v) return '-';
   const day = String(v.getUTCDate()).padStart(2, '0');
@@ -40,11 +53,6 @@ function formatDate(date: string | number | null | undefined): string {
   return `${day}/${month}/${year}`;
 }
 
-/**
- * Normalkan nilai tanggal (serial number Google Sheets/Excel, ISO YYYY-MM-DD,
- * atau Date) menjadi sebuah Date. Menggunakan origin serial 25569 = 1970-01-01
- * yang konsisten dengan ids.ts agar tidak terjadi pergeseran tanggal.
- */
 function normalizeDate(date: string | number | null | undefined): Date | null {
   if (date == null || date === '') return null;
   if (typeof date === 'number' && Number.isFinite(date)) {
@@ -54,13 +62,11 @@ function normalizeDate(date: string | number | null | undefined): Date | null {
     return Number.isNaN(d.getTime()) ? null : d;
   }
   const s = String(date).trim();
-  // Serial number (5-6 digit), mis. "46266" = 2026-09-01.
   if (/^\d{5,6}$/.test(s)) {
     const ms = Math.round((Number(s) - 25569) * 86400000);
     const d = new Date(ms);
     return Number.isNaN(d.getTime()) ? null : d;
   }
-  // ISO YYYY-MM-DD (dengan/ tanpa waktu) — parse sebagai UTC agar tanggal stabil.
   const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ].*)?$/);
   if (m) {
     const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
@@ -100,216 +106,478 @@ const COLORS = {
   hampirText: 'FFA16207', hampirBg: 'FFFEF9C3', amanText: 'FF047857', amanBg: 'FFD1FAE5',
   dividerBg: 'FFDBEAFE', dividerText: 'FF1D4ED8',
   white: 'FFFFFFFF', textDark: 'FF1E293B',
+  utilitasHeader: 'FFBDD7EE', utilitasInput: 'FFFFE599', utilitasOutput: 'FFE06666',
+  utilitasAltBg: 'FFEBF3FB',
 };
+
+const THIN_BORDER: Partial<ExcelJS.Borders> = {
+  top: { style: 'thin' as const },
+  left: { style: 'thin' as const },
+  bottom: { style: 'thin' as const },
+  right: { style: 'thin' as const },
+};
+
+function applyBordersToRow(row: ExcelJS.Row, maxCol: number) {
+  for (let c = 1; c <= maxCol; c++) {
+    row.getCell(c).border = THIN_BORDER;
+  }
+}
+
+function isUtilitasBoolean(it: XlsxItem): boolean {
+  const t = (it.tipeInput || '').toLowerCase();
+  return t.includes('boolean');
+}
+
+function isUtilitasNumeric(it: XlsxItem): boolean {
+  const t = (it.tipeInput || '').toLowerCase();
+  return t.includes('single') || t.includes('dual');
+}
+
+/**
+ * Tulis baris header kolom regular (No, NAMA BARANG, SATUAN, ...) — diulang tiap area.
+ */
+function writeSubHeaderRow(ws: ExcelJS.Worksheet, rowNumber: number) {
+  const headers = ['No', 'NAMA BARANG', 'SATUAN', 'THRESHOLD', 'STEP 1\nUTUH', 'STEP 2\nTERBUKA', 'TOTAL', 'STEP 1\nUTUH\n', 'STEP 2\nTERBUKA\n', 'TOTAL 2', 'PEMAKAIAN', 'STATUS\nSTOK', 'KETERANGAN'];
+  const row = ws.insertRow(rowNumber, headers);
+  for (let i = 1; i <= 13; i++) {
+    const cell = row.getCell(i);
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.subHeader } } as any;
+    cell.font = { name: XLSX_FONT.family, bold: true, color: { argb: COLORS.textDark }, size: XLSX_FONT.colHeader.size };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    cell.border = THIN_BORDER;
+  }
+  row.height = 28;
+  return row;
+}
+
+/**
+ * Tulis baris divider area (▶  AREA ...).
+ */
+function writeAreaDivider(ws: ExcelJS.Worksheet, rowNumber: number, areaName: string) {
+  const row = ws.insertRow(rowNumber, ['', `▶  ${areaName}`]);
+  ws.mergeCells(`B${rowNumber}:M${rowNumber}`);
+  applyBordersToRow(row, 13);
+  const cell = row.getCell(2);
+  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.dividerBg } } as ExcelJS.Fill;
+  cell.font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.divider.size, color: { argb: COLORS.dividerText } };
+  cell.alignment = { horizontal: 'left', vertical: 'middle' };
+  row.height = 18;
+  return row;
+}
+
+/**
+ * Tulis satu baris data item regular (layout 13 kolom A-M).
+ */
+function writeItemRow(ws: ExcelJS.Worksheet, rowNumber: number, no: number, it: XlsxItem) {
+  const s1 = Number(it.step1) || 0;
+  const s2 = Number(it.step2) || 0;
+  const threshold = parseThreshold(it.threshold);
+  const thresholdVal = threshold != null ? threshold : '';
+  const p1 = it.prevStep1 != null && it.prevStep1 !== '' ? Number(it.prevStep1) : null;
+  const p2 = it.prevStep2 != null && it.prevStep2 !== '' ? Number(it.prevStep2) : null;
+  const prevTotal = (p1 != null || p2 != null)
+    ? (p1 || 0) + (p2 || 0)
+    : (it.prevTotal != null && it.prevTotal !== '' ? Number(it.prevTotal) : null);
+
+  const row = ws.insertRow(rowNumber, [
+    no,
+    it.namaBarang || '',
+    it.satuan || '',
+    thresholdVal,
+    p1 ?? '',
+    p2 ?? '',
+    prevTotal ?? '',
+    s1,
+    s2,
+    '', '', '',
+    it.keterangan || '',
+  ]);
+
+  const r = rowNumber;
+  row.getCell(10).value = { formula: `SUM(H${r},I${r})` } as ExcelJS.CellFormulaValue;
+  row.getCell(11).value = { formula: `IF(COUNTA(G${r},J${r})=0,"",J${r}-G${r})` } as ExcelJS.CellFormulaValue;
+  row.getCell(12).value = { formula: `IF(D${r}=0,"—",IF(J${r}<=D${r},"🔴 KRITIS",IF(J${r}<=D${r}*2,"🟠 HAMPIR HABIS","🟢 AMAN")))` } as ExcelJS.CellFormulaValue;
+
+  const status = getStatus(s1, s2, threshold);
+  const ROW_COLORS: Record<StatusType, { bg: string; text: string }> = {
+    'KRITIS': { bg: COLORS.kritisBg, text: COLORS.kritisText },
+    'HAMPIR HABIS': { bg: COLORS.hampirBg, text: COLORS.hampirText },
+    'AMAN': { bg: COLORS.amanBg, text: COLORS.amanText },
+    'Tidak Dipantau': { bg: 'FFFFFFFF', text: COLORS.textDark },
+  };
+  const rc = ROW_COLORS[status];
+
+  row.eachCell((cell, colNum) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rc.bg } } as any;
+    cell.alignment = {
+      horizontal: [1, 4, 5, 6, 7, 8, 9, 10, 11].includes(colNum) ? 'center' : 'left',
+      vertical: 'middle',
+      wrapText: true,
+    };
+    cell.border = THIN_BORDER;
+    cell.font = { name: XLSX_FONT.family, size: XLSX_FONT.data.size, color: { argb: COLORS.textDark } };
+  });
+
+  const kCell = row.getCell(11);
+  kCell.numFmt = '+0;-0;0';
+  kCell.font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.data.size, color: { argb: COLORS.textDark } };
+
+  const lCell = row.getCell(12);
+  lCell.font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.data.size, color: { argb: rc.text } };
+
+  row.height = 18;
+  return row;
+}
+
+/**
+ * Tulis baris header sub-layout UTILITAS Gas/Minyak:
+ * No(A) | NAMA BARANG(B) | SATUAN(C) | THRESHOLD(D) | NILAI SAAT INI(E:F) | TGL ISI/RESTOCK(G:H) | TGL PAKAI(I:J) | PEMAKAIAN(K) | STATUS STOK(L) | KETERANGAN(M)
+ */
+function writeUtilitasGasHeader(ws: ExcelJS.Worksheet, rowNumber: number) {
+  const row = ws.insertRow(rowNumber, [
+    'No', 'NAMA BARANG', 'SATUAN', 'THRESHOLD', 'NILAI SAAT INI', '', 'TGL ISI / RESTOCK', '', 'TGL PAKAI', '', 'PEMAKAIAN', 'STATUS\nSTOK', 'KETERANGAN',
+  ]);
+  ws.mergeCells(`E${rowNumber}:F${rowNumber}`);
+  ws.mergeCells(`G${rowNumber}:H${rowNumber}`);
+  ws.mergeCells(`I${rowNumber}:J${rowNumber}`);
+  for (let i = 1; i <= 13; i++) {
+    const cell = row.getCell(i);
+    cell.font = { name: XLSX_FONT.family, bold: true, color: { argb: COLORS.textDark }, size: XLSX_FONT.colHeader.size };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    cell.border = THIN_BORDER;
+    // Warna header: A-D = biru muda, E-H = kuning, I-J = kuning, K-M = merah muda
+    if (i <= 4) {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.utilitasHeader } } as any;
+    } else if (i <= 10) {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.utilitasInput } } as any;
+    } else {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.utilitasOutput } } as any;
+    }
+  }
+  row.height = 28;
+  return row;
+}
+
+/**
+ * Tulis baris header sub-layout UTILITAS Token Listrik:
+ * No(A) | NAMA BARANG(B) | SATUAN(C) | THRESHOLD(D) | JUMLAH RESTOCK(E) | TGL ISI/RESTOCK(F:G) | NILAI SAAT INI(H) | TGL PAKAI(I:J) | PEMAKAIAN(K) | STATUS STOK(L) | KETERANGAN(M)
+ */
+function writeUtilitasTokenHeader(ws: ExcelJS.Worksheet, rowNumber: number) {
+  const row = ws.insertRow(rowNumber, [
+    'No', 'NAMA BARANG', 'SATUAN', 'THRESHOLD', 'JUMLAH RESTOCK', 'TGL ISI / RESTOCK', '', 'NILAI SAAT INI', 'TGL PAKAI', '', 'PEMAKAIAN', 'STATUS\nSTOK', 'KETERANGAN',
+  ]);
+  ws.mergeCells(`F${rowNumber}:G${rowNumber}`);
+  ws.mergeCells(`I${rowNumber}:J${rowNumber}`);
+  for (let i = 1; i <= 13; i++) {
+    const cell = row.getCell(i);
+    cell.font = { name: XLSX_FONT.family, bold: true, color: { argb: COLORS.textDark }, size: XLSX_FONT.colHeader.size };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    cell.border = THIN_BORDER;
+    if (i <= 4) {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.utilitasHeader } } as any;
+    } else if (i <= 10) {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.utilitasInput } } as any;
+    } else {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.utilitasOutput } } as any;
+    }
+  }
+  row.height = 28;
+  return row;
+}
+
+/**
+ * Tulis baris data UTILITAS Gas/Minyak:
+ * Nilai Saat Ini = statusIsi (Penuh/Dipakai/Habis), Tgl Refill, Tgl Pakai
+ */
+function writeUtilitasGasRow(ws: ExcelJS.Worksheet, rowNumber: number, no: number, it: XlsxItem) {
+  const threshold = parseThreshold(it.threshold);
+  const thresholdVal = threshold != null ? threshold : (it.threshold ? String(it.threshold) : '');
+  const isAltRow = no % 2 === 0;
+  const bgColor = isAltRow ? 'FFFFFFFF' : COLORS.utilitasAltBg;
+
+  const row = ws.insertRow(rowNumber, [
+    no,
+    it.namaBarang || '',
+    it.satuan || '',
+    thresholdVal,
+    it.statusIsi || '',  // NILAI SAAT INI (col E, merged E:F)
+    '',                   // merge partner
+    it.tglRefill || '',  // TGL ISI/RESTOCK (col G, merged G:H)
+    '',                   // merge partner
+    it.tglPakai || '',  // TGL PAKAI (col I, merged I:J)
+    '',                   // merge partner
+    '',                   // PEMAKAIAN (K) — gas tidak ada pemakaian numerik
+    '',                   // STATUS STOK (L) — gas tidak ada status stok
+    it.keterangan || '',
+  ]);
+
+  ws.mergeCells(`E${rowNumber}:F${rowNumber}`);
+  ws.mergeCells(`G${rowNumber}:H${rowNumber}`);
+  ws.mergeCells(`I${rowNumber}:J${rowNumber}`);
+
+  row.eachCell((cell, colNum) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } } as any;
+    cell.alignment = {
+      horizontal: [1, 4, 5, 6, 7, 8, 9, 10].includes(colNum) ? 'center' : 'left',
+      vertical: 'middle',
+      wrapText: true,
+    };
+    cell.border = THIN_BORDER;
+    cell.font = { name: XLSX_FONT.family, size: XLSX_FONT.data.size, color: { argb: COLORS.textDark }, bold: [5, 7, 9].includes(colNum) };
+  });
+
+  row.height = 18;
+  return row;
+}
+
+/**
+ * Tulis baris data UTILITAS Token Listrik:
+ * Jumlah Restock = step1, Nilai Saat Ini = step2, Pemakaian = E-H (formula)
+ */
+function writeUtilitasTokenRow(ws: ExcelJS.Worksheet, rowNumber: number, no: number, it: XlsxItem) {
+  const threshold = parseThreshold(it.threshold);
+  const thresholdVal = threshold != null ? threshold : '';
+  const jumlahRestock = Number(it.step1) || 0;
+  const nilaiSaatIni = Number(it.step2) || 0;
+  const isAltRow = no % 2 === 0;
+  const bgColor = isAltRow ? 'FFFFFFFF' : COLORS.utilitasAltBg;
+
+  const row = ws.insertRow(rowNumber, [
+    no,
+    it.namaBarang || '',
+    it.satuan || '',
+    thresholdVal,
+    jumlahRestock,       // JUMLAH RESTOCK (col E)
+    it.tglRefill || '',  // TGL ISI/RESTOCK (col F, merged F:G)
+    '',                   // merge partner
+    nilaiSaatIni,         // NILAI SAAT INI (col H)
+    it.tglPakai || '',  // TGL PAKAI (col I, merged I:J)
+    '',                   // merge partner
+    '',                   // PEMAKAIAN (K) — formula
+    '',                   // STATUS STOK (L) — formula
+    it.keterangan || '',
+  ]);
+
+  ws.mergeCells(`F${rowNumber}:G${rowNumber}`);
+  ws.mergeCells(`I${rowNumber}:J${rowNumber}`);
+
+  const r = rowNumber;
+  // PEMAKAIAN = Jumlah Restock - Nilai Saat Ini
+  row.getCell(11).value = { formula: `E${r}-H${r}` } as ExcelJS.CellFormulaValue;
+  // STATUS STOK
+  row.getCell(12).value = {
+    formula: `IF(D${r}=0,"—",IF(H${r}<=D${r},"🔴 KRITIS",IF(H${r}<=D${r}*2,"🟠 HAMPIR HABIS","🟢 AMAN")))`,
+  } as ExcelJS.CellFormulaValue;
+
+  row.eachCell((cell, colNum) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } } as any;
+    cell.alignment = {
+      horizontal: [1, 4, 5, 6, 7, 8, 9, 10, 11].includes(colNum) ? 'center' : 'left',
+      vertical: 'middle',
+      wrapText: true,
+    };
+    cell.border = THIN_BORDER;
+    cell.font = { name: XLSX_FONT.family, size: XLSX_FONT.data.size, color: { argb: COLORS.textDark }, bold: [5, 8, 11].includes(colNum) };
+  });
+
+  const kCell = row.getCell(11);
+  kCell.numFmt = '+0;-0;0';
+  kCell.font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.data.size, color: { argb: COLORS.textDark } };
+
+  row.height = 18;
+  return row;
+}
 
 export async function generateXlsxReport(input: XlsxReportInput): Promise<{ buffer: Buffer; fileName: string }> {
   const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet('Detail SO');
+  const ws = wb.addWorksheet('SO DETAILS');
 
-  const currTgl = formatDate(input.tanggalOperasional);
-  const prevTgl = formatDate(input.previousSOInfo?.tanggal);
+  ws.columns = [
+    { width: 7.88 },   // A
+    { width: 27.63 },  // B
+    { width: 13.63 },  // C
+    { width: 12.63 },  // D
+    { width: 19.13 },  // E
+    { width: 15.5 },   // F
+    { width: 11.13 },  // G
+    { width: 16.25 },  // H
+    { width: 15.13 },  // I
+    { width: 12.25 },  // J
+    { width: 17.63 },  // K
+    { width: 20.88 },  // L
+    { width: 28.5 },   // M
+  ];
+
+  const currTgl = formatDateShort(input.tanggalOperasional);
+  const prevTgl = formatDateShort(input.previousSOInfo?.tanggal);
   const prevShift = input.previousSOInfo?.shift || '-';
   const prevPetugas = input.previousSOInfo?.petugas || '-';
+  const cabangLabel = input.cabangKode + ' (' + input.cabangNama + ')';
 
-  const titleRow = ws.insertRow(1, ['LAPORAN STOCK OPNAME HARIAN']);
-  titleRow.getCell(1).font = { bold: true, size: 14 };
+  // ─── ROW 1: Title ────────────────────────────────────────────────
+  const row1 = ws.insertRow(1, ['', '', '', '', `LAPORAN STOCK OPNAME HARIAN ${input.cabangNama.toUpperCase()}`]);
+  ws.mergeCells('E1:J1');
+  row1.getCell(5).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.title.size };
+  row1.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
   ws.getRow(1).height = 24;
 
-  const thinBorder = { top: { style: 'thin' as const }, left: { style: 'thin' as const }, bottom: { style: 'thin' as const }, right: { style: 'thin' as const } };
+  // ─── ROW 2: SO SEBELUMNYA / SO SEKARANG ─────────────────────────
+  const row2 = ws.insertRow(2, ['', '', '', '', 'SO SEBELUMNYA', '', '', 'SO SEKARANG']);
+  ws.mergeCells('E2:G2');
+  ws.mergeCells('H2:J2');
+  row2.getCell(5).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.info.size, color: { argb: COLORS.headerPrev } };
+  row2.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
+  row2.getCell(8).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.info.size, color: { argb: COLORS.headerCurr } };
+  row2.getCell(8).alignment = { horizontal: 'center', vertical: 'middle' };
+  ws.getRow(2).height = 24;
 
-  const currHeader = ws.insertRow(2, ['INFORMASI LAPORAN HARI INI']);
-  currHeader.getCell(1).font = { bold: true, size: 11, color: { argb: COLORS.white } };
-  currHeader.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerInfo } } as any;
-  ws.mergeCells('A2:O2');
-  ws.getRow(2).height = 16;
+  // ─── ROW 3: Info baris ───────────────────────────────────────────
+  const row3 = ws.insertRow(3, [
+    cabangLabel, '', currTgl, input.shift, input.petugas, input.shift, '',
+    cabangLabel, '', prevTgl, prevShift, prevPetugas, '',
+  ]);
+  ws.mergeCells('A3:B3');
+  ws.mergeCells('F3:G3');
+  ws.mergeCells('H3:I3');
+  ws.mergeCells('L3:M3');
+  applyBordersToRow(row3, 13);
+  row3.getCell(1).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.info.size };
+  row3.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+  row3.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
+  row3.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+  row3.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
+  row3.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
+  row3.getCell(8).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.info.size };
+  row3.getCell(8).alignment = { horizontal: 'center', vertical: 'middle' };
+  row3.getCell(10).alignment = { horizontal: 'center', vertical: 'middle' };
+  row3.getCell(11).alignment = { horizontal: 'center', vertical: 'middle' };
+  row3.getCell(12).alignment = { horizontal: 'center', vertical: 'middle' };
+  ws.getRow(3).height = 24;
 
-  const currInfo = ws.insertRow(3, ['Cabang', input.cabangKode + ' (' + input.cabangNama + ')', 'Tanggal', currTgl, 'Shift', input.shift, 'Petugas', input.petugas]);
-  currInfo.height = 14;
-  for (let i = 1; i <= 8; i++) { currInfo.getCell(i).border = thinBorder; }
+  // ─── ROW 4: Section headers ──────────────────────────────────────
+  const row4 = ws.insertRow(4, ['', '', '', 'INFORMASI BARANG', '', '', '', '', '', '', '', 'HASIL ANALISIS']);
+  ws.mergeCells('A4:D4');
+  ws.mergeCells('K4:M4');
+  row4.getCell(1).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.groupHeader.size, color: { argb: COLORS.white } };
+  row4.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerInfo } } as any;
+  row4.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+  row4.getCell(11).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.groupHeader.size, color: { argb: COLORS.white } };
+  row4.getCell(11).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerHasil } } as any;
+  row4.getCell(11).alignment = { horizontal: 'center', vertical: 'middle' };
+  applyBordersToRow(row4, 13);
+  ws.getRow(4).height = 24;
 
-  const prevHeader = ws.insertRow(4, ['INFORMASI STOCK OPNAME SEBELUMNYA']);
-  prevHeader.getCell(1).font = { bold: true, size: 11, color: { argb: COLORS.white } };
-  prevHeader.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerPrev } } as any;
-  ws.mergeCells('A4:O4');
-  ws.getRow(4).height = 16;
+  // ─── ROW 5: Column headers ───────────────────────────────────────
+  writeSubHeaderRow(ws, 5);
 
-  const prevInfo = ws.insertRow(5, ['Tanggal', prevTgl, 'Shift', prevShift, 'Petugas', prevPetugas]);
-  prevInfo.height = 14;
-  for (let i = 1; i <= 6; i++) { prevInfo.getCell(i).border = thinBorder; }
+  // ─── SEPARATE ITEMS: Regular vs UTILITAS ─────────────────────────
+  const regularItems: XlsxItem[] = [];
+  const utilitasBoolean: XlsxItem[] = [];  // Gas/Minyak
+  const utilitasNumeric: XlsxItem[] = [];  // Token Listrik
 
-  ws.insertRow(6, []);
-
-  const row7 = ws.insertRow(7, ['INFORMASI BARANG', '', '', '', '', 'SO SEBELUMNYA', '', '', 'SO SEKARANG', '', '', 'HASIL & ANALISIS', '', '', '', '', '']);
-  ws.mergeCells('A7:E7');
-  ws.mergeCells('F7:H7');
-  ws.mergeCells('I7:K7');
-  ws.mergeCells('L7:Q7');
-
-  ['A7', 'F7', 'I7', 'L7'].forEach((cell, idx) => {
-    const colors = [COLORS.headerInfo, COLORS.headerPrev, COLORS.headerCurr, COLORS.headerHasil];
-    const c = ws.getCell(cell);
-    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors[idx] } } as any;
-    c.font = { bold: true, color: { argb: COLORS.white }, size: 10 };
-    c.alignment = { horizontal: 'center', vertical: 'middle' };
-    c.border = thinBorder;
+  input.items.forEach((it) => {
+    if (isUtilitasBoolean(it)) {
+      utilitasBoolean.push(it);
+    } else if (isUtilitasNumeric(it) && (it.area || '').toLowerCase().includes('utilitas')) {
+      utilitasNumeric.push(it);
+    } else {
+      regularItems.push(it);
+    }
   });
-  ws.getRow(7).height = 18;
 
-  const row8 = ws.insertRow(8, ['No', 'Nama Barang', 'Area', 'Satuan', 'Batas Min', 'Step 1', 'Step 2', 'Total', 'Step 1', 'Step 2', 'Total', 'Pemakaian', 'Status', 'Status Isi', 'Tgl Refill', 'Tgl Pakai', 'Keterangan']);
-  for (let i = 1; i <= 17; i++) {
-    const cell = row8.getCell(i);
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.subHeader } } as any;
-    cell.font = { bold: true, color: { argb: COLORS.textDark }, size: 9 };
-    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-    cell.border = thinBorder;
-  }
-  ws.getRow(8).height = 18;
+  const hasUtilitas = utilitasBoolean.length > 0 || utilitasNumeric.length > 0;
 
-  // Urutkan/kelompokkan item sesuai mode laporan.
-  // - 'Area': grup per area, baris pembatas biru muda saat area berganti, nomor urut direset per grup.
-  // - 'Urutan_Input' (default): tanpa sort, mengikuti urutan Master Item.
+  // ─── REGULAR DATA ROWS ──────────────────────────────────────────
   const groupMode: 'Area' | 'Urutan_Input' = input.groupMode === 'Area' ? 'Area' : 'Urutan_Input';
   const groups: Array<{ area?: string; items: XlsxItem[] }> = [];
+
   if (groupMode === 'Area') {
     const byArea = new Map<string, XlsxItem[]>();
-    input.items.forEach((it) => {
+    regularItems.forEach((it) => {
       const key = (it.area || '').trim() || 'Area Umum';
       if (!byArea.has(key)) byArea.set(key, []);
       byArea.get(key)!.push(it);
     });
     byArea.forEach((items, area) => groups.push({ area, items }));
   } else {
-    groups.push({ items: input.items });
+    groups.push({ items: regularItems });
   }
 
-  const ROW_COLORS: Record<StatusType, { bg: string; text: string }> = {
-    'KRITIS':          { bg: COLORS.kritisBg, text: COLORS.kritisText },
-    'HAMPIR HABIS':    { bg: COLORS.hampirBg, text: COLORS.hampirText },
-    'AMAN':            { bg: COLORS.amanBg,   text: COLORS.amanText },
-    'Tidak Dipantau':  { bg: 'FFFFFFFF',      text: COLORS.textDark },
-  };
-
-  let rowNumber = 9;
+  let rowNumber = 6;
+  let globalNo = 0;
 
   groups.forEach((group) => {
     if (group.area != null) {
-      const divider = ws.insertRow(rowNumber, [group.area]);
-      ws.mergeCells(`A${rowNumber}:Q${rowNumber}`);
-      for (let c = 1; c <= 17; c++) {
-        divider.getCell(c).border = thinBorder;
-      }
-      const cell = divider.getCell(1);
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.dividerBg } } as ExcelJS.Fill;
-      cell.font = { bold: true, size: 10, color: { argb: COLORS.dividerText } };
-      cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
-      divider.height = 18;
+      writeAreaDivider(ws, rowNumber, group.area);
+      rowNumber++;
+    }
+    writeSubHeaderRow(ws, rowNumber);
+    rowNumber++;
+    group.items.forEach((it) => {
+      globalNo++;
+      writeItemRow(ws, rowNumber, globalNo, it);
+      rowNumber++;
+    });
+    rowNumber++;
+  });
+
+  // ─── UTILITAS SECTION ───────────────────────────────────────────
+  if (hasUtilitas) {
+    // Divider
+    writeAreaDivider(ws, rowNumber, 'UTILITAS');
+    rowNumber++;
+
+    // Gas/Minyak sub-section
+    if (utilitasBoolean.length > 0) {
+      writeUtilitasGasHeader(ws, rowNumber);
+      rowNumber++;
+      utilitasBoolean.forEach((it) => {
+        globalNo++;
+        writeUtilitasGasRow(ws, rowNumber, globalNo, it);
+        rowNumber++;
+      });
       rowNumber++;
     }
 
-    group.items.forEach((it, no) => {
-      const s1 = Number(it.step1) || 0;
-      const s2 = Number(it.step2) || 0;
-      const total = s1 + s2;
-      const threshold = parseThreshold(it.threshold);
-      const thresholdCell = threshold != null ? threshold : '';
-      const p1 = it.prevStep1 != null && it.prevStep1 !== '' ? Number(it.prevStep1) : null;
-      const p2 = it.prevStep2 != null && it.prevStep2 !== '' ? Number(it.prevStep2) : null;
-      // Total sebelumnya = Step1+Step2 sebelumnya (sumber kebenaran). Prev_Total yang
-      // tersimpan kadang 0/kosong padahal Step1/Step2 terisi → utamakan penjumlahan.
-      const prevTotal = (p1 != null || p2 != null)
-        ? (p1 || 0) + (p2 || 0)
-        : (it.prevTotal != null && it.prevTotal !== '' ? Number(it.prevTotal) : null);
-      const diff = prevTotal != null ? total - prevTotal : null;
-      const diffValue = diff ?? '';
-      const status = getStatus(s1, s2, threshold);
-      const rc = ROW_COLORS[status];
-
-      const newRow = ws.insertRow(rowNumber, [
-        no + 1,
-        it.namaBarang || '',
-        it.area || '',
-        it.satuan || '',
-        thresholdCell,
-        p1 ?? '',
-        p2 ?? '',
-        prevTotal ?? '',
-        s1,
-        s2,
-        total,
-        diffValue,
-        status,
-        it.statusIsi || '',
-        it.tglRefill || '',
-        it.tglPakai || '',
-        it.keterangan || '',
-      ]);
-
-      newRow.eachCell((cell, colNum) => {
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rc.bg } } as any;
-        cell.alignment = { horizontal: [1, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16].includes(colNum) ? 'center' : 'left', vertical: 'middle', wrapText: true };
-        cell.border = thinBorder;
-        if (colNum === 12) {
-          cell.numFmt = '+0;-0;0';
-          const isNeg = typeof diffValue === 'number' && diffValue < 0;
-          const isPos = typeof diffValue === 'number' && diffValue > 0;
-          cell.font = {
-            bold: true,
-            color: { argb: isNeg ? COLORS.kritisText : isPos ? COLORS.amanText : COLORS.textDark },
-            size: 9,
-          };
-        }
-        if (colNum === 13) {
-          cell.font = { bold: true, color: { argb: rc.text }, size: 9 };
-        }
-      });
-      newRow.height = 16;
+    // Token Listrik sub-section
+    if (utilitasNumeric.length > 0) {
+      writeUtilitasTokenHeader(ws, rowNumber);
       rowNumber++;
-    });
-  });
+      utilitasNumeric.forEach((it) => {
+        globalNo++;
+        writeUtilitasTokenRow(ws, rowNumber, globalNo, it);
+        rowNumber++;
+      });
+      rowNumber++;
+    }
+  }
 
+  // ─── CATATAN / NOTE ──────────────────────────────────────────────
   const note = String(input.note || '').trim();
   if (note) {
-    const noteHeaderRow = ws.insertRow(rowNumber, ['NOTE']);
-    ws.mergeCells(`A${rowNumber}:Q${rowNumber}`);
+    const noteHeaderRow = ws.insertRow(rowNumber, ['KETERANGAN / CATATAN:']);
+    ws.mergeCells(`A${rowNumber}:M${rowNumber}`);
     const nh = noteHeaderRow.getCell(1);
-    nh.font = { bold: true, size: 10, color: { argb: COLORS.white } };
+    nh.font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.note.size, color: { argb: COLORS.white } };
     nh.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerHasil } } as any;
     nh.alignment = { horizontal: 'center', vertical: 'middle' };
-    nh.border = thinBorder;
-    ws.getRow(rowNumber).height = 16;
+    applyBordersToRow(noteHeaderRow, 13);
+    ws.getRow(rowNumber).height = 18;
     rowNumber++;
 
     const noteRow = ws.insertRow(rowNumber, [note]);
-    ws.mergeCells(`A${rowNumber}:Q${rowNumber}`);
+    ws.mergeCells(`A${rowNumber}:M${rowNumber}`);
     const nc = noteRow.getCell(1);
     nc.alignment = { horizontal: 'left', vertical: 'top', wrapText: true };
-    nc.font = { size: 10, color: { argb: COLORS.textDark } };
-    nc.border = thinBorder;
-    ws.getRow(rowNumber).height = 80;
+    nc.font = { name: XLSX_FONT.family, size: XLSX_FONT.note.size, color: { argb: COLORS.textDark } };
+    applyBordersToRow(noteRow, 13);
+    ws.getRow(rowNumber).height = 60;
     rowNumber++;
   }
 
-  ws.columns = [
-    { width: 6 },   // No
-    { width: 26 },  // Nama Barang
-    { width: 16 },  // Area
-    { width: 10 },  // Satuan
-    { width: 11 },  // Batas Min
-    { width: 10 },  // Step 1 (prev)
-    { width: 10 },  // Step 2 (prev)
-    { width: 10 },  // Total (prev)
-    { width: 10 },  // Step 1 (curr)
-    { width: 10 },  // Step 2 (curr)
-    { width: 10 },  // Total (curr)
-    { width: 12 },  // Pemakaian
-    { width: 17 },  // Status (fits "HAMPIR HABIS" + filter icon)
-    { width: 13 },  // Status Isi
-    { width: 15 },  // Tgl Refill
-    { width: 15 },  // Tgl Pakai
-    { width: 24 },  // Keterangan
-  ];
-  ws.views = [{ state: 'frozen', xSplit: 2, ySplit: 8 }];
-  ws.autoFilter = 'A8:Q8';
+  // ─── FREEZE & FILTER ─────────────────────────────────────────────
+  ws.views = [{ state: 'frozen', xSplit: 0, ySplit: 5 }];
+  ws.autoFilter = 'A5:M5';
 
   const buffer = await wb.xlsx.writeBuffer() as any as Buffer;
   return { buffer, fileName: buildXlsxFileName(input) };

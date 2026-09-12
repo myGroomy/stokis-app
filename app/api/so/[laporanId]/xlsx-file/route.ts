@@ -6,7 +6,9 @@ import { resolveCabang } from '@/lib/google/registry';
 import { readSheetData, sheetToObjects } from '@/lib/google/sheets';
 import { generateXlsxReport, type XlsxItem } from '@/lib/domain/xlsx-report';
 import { getUrutanLaporan, getSesiLiveData } from '@/lib/domain/laporan-service';
+import { getMasterItems } from '@/lib/domain/master-item-service';
 import { parseThreshold } from '@/lib/domain/so';
+import { generateXlsxFromTemplate } from '@/lib/google/template-xlsx';
 
 function fmtDateValue(v: unknown): string {
   const d = normalizeDate(v);
@@ -90,6 +92,11 @@ export async function GET(
   // belum tersimpan di Laporan_SO.
   const live = await getSesiLiveData(spreadsheetId, String(laporan['Sesi_ID'] || ''));
 
+  // Fetch master items untuk mendapatkan Tipe_Input
+  const masterItems = await getMasterItems(cabangId);
+  const tipeInputMap = new Map<string, string>();
+  masterItems.forEach((m: any) => { tipeInputMap.set(String(m['Item_ID'] || ''), String(m['Tipe_Input'] || '')); });
+
   // Build XlsxItem[]
   const items: XlsxItem[] = detail.map((r) => {
     const itemId = String(r['Item_ID'] || '');
@@ -100,6 +107,7 @@ export async function GET(
       area: String(r['Area'] || ''),
       satuan: String(r['Satuan'] || ''),
       threshold: parseThreshold(r['Threshold']) ?? undefined,
+      tipeInput: tipeInputMap.get(itemId) || '',
       step1: Number(r['Step1']) || 0,
       step2: Number(r['Step2']) || 0,
       keterangan: String(r['Keterangan'] || ''),
@@ -107,7 +115,7 @@ export async function GET(
       prevStep2: r['Prev_Step2'] != null && String(r['Prev_Step2']) !== '' ? Number(r['Prev_Step2']) : null,
       prevTotal: r['Prev_Total'] != null && String(r['Prev_Total']) !== '' ? Number(r['Prev_Total']) : null,
       prevKeterangan: String(r['Prev_Keterangan'] || ''),
-      statusIsi: (r['Status_Isi'] === 'Isi' || r['Status_Isi'] === 'Kosong') ? r['Status_Isi'] as 'Isi' | 'Kosong' : (fb.statusIsi || ''),
+      statusIsi: (['Penuh', 'Dipakai', 'Habis'].includes(String(r['Status_Isi']))) ? r['Status_Isi'] as 'Penuh' | 'Dipakai' | 'Habis' : (fb.statusIsi || ''),
       tglRefill: String(r['Tgl_Refill'] || fb.tglRefill || ''),
       tglPakai: String(r['Tgl_Pakai'] || fb.tglPakai || ''),
     };
@@ -120,18 +128,41 @@ export async function GET(
 
   const urutanLaporan = await getUrutanLaporan(spreadsheetId);
 
-  const { buffer, fileName } = await generateXlsxReport({
-    laporanId,
-    cabangNama,
-    cabangKode,
-    tanggalOperasional,
-    shift,
-    petugas,
-    items,
-    groupMode: urutanLaporan,
-    note: detail[0]?.['Note'] ? String(detail[0]['Note']) : live.note,
-    previousSOInfo,
-  });
+  // Coba template dulu, fallback ke ExcelJS
+  let buffer: Buffer;
+  let fileName: string;
+  try {
+    const templateResult = await generateXlsxFromTemplate({
+      laporanId,
+      cabangNama,
+      cabangKode,
+      tanggalOperasional,
+      shift,
+      petugas,
+      items,
+      groupMode: urutanLaporan,
+      note: detail[0]?.['Note'] ? String(detail[0]['Note']) : live.note,
+      previousSOInfo,
+    });
+    buffer = templateResult.buffer;
+    fileName = templateResult.fileName;
+  } catch (templateErr) {
+    console.warn('[XlsxFile] Template approach gagal, fallback ExcelJS:', templateErr);
+    const fallback = await generateXlsxReport({
+      laporanId,
+      cabangNama,
+      cabangKode,
+      tanggalOperasional,
+      shift,
+      petugas,
+      items,
+      groupMode: urutanLaporan,
+      note: detail[0]?.['Note'] ? String(detail[0]['Note']) : live.note,
+      previousSOInfo,
+    });
+    buffer = fallback.buffer;
+    fileName = fallback.fileName;
+  }
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {

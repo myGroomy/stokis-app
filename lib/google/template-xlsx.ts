@@ -51,12 +51,33 @@ function isUtilitasNumeric(it: XlsxItem): boolean {
   return t.includes('single') || t.includes('dual');
 }
 
+/** Status sort rank: 0=KRITIS, 1=HAMPIR HABIS, 2=AMAN, 3=— */
+function regularStatusRank(s1: number, s2: number, threshold: number | null): number {
+  const total = s1 + s2;
+  if (threshold == null || threshold <= 0) return 3;
+  if (total <= threshold) return 0;
+  if (total <= threshold * 2) return 1;
+  return 2;
+}
+
+function utilgasStatusRank(statusIsi: string): number {
+  const s = (statusIsi || '').toLowerCase();
+  if (s === 'habis') return 0;
+  if (s === 'dipakai') return 1;
+  if (s === 'penuh') return 2;
+  return 3;
+}
+
+function utiltokenStatusRank(prevS2: string | number | null | undefined, threshold: number | null): number {
+  const val = Number(prevS2) || 0;
+  if (threshold == null || threshold <= 0) return 3;
+  if (val <= threshold) return 0;
+  if (val <= threshold * 2) return 1;
+  return 2;
+}
+
 /**
- * Generate XLSX dari template Google Sheets.
- * 1. Download template .xlsx dari Drive via API
- * 2. Buka dengan ExcelJS (formatting preserved)
- * 3. Isi data values + formulas
- * 4. Return buffer
+ * Generate XLSX dari template lokal → isi data dengan ExcelJS → return buffer.
  */
 export async function generateXlsxFromTemplate(
   input: XlsxReportInput
@@ -96,7 +117,7 @@ export async function generateXlsxFromTemplate(
     }
   });
 
-  // ── 4. Build data rows ──────────────────────────────────────────
+  // ── 4. Build data rows (pre-sorted per block) ─────────────────
   const currTgl = formatDateShort(input.tanggalOperasional);
   const prevTgl = formatDateShort(input.previousSOInfo?.tanggal);
   const prevShift = input.previousSOInfo?.shift || '-';
@@ -122,9 +143,13 @@ export async function generateXlsxFromTemplate(
     noteText?: string;
   }
 
-  const dataRows: DataRow[] = [];
+  interface Block {
+    name: string;
+    items: DataRow[];
+    headerType: 'regular' | 'utilgas' | 'utiltoken';
+  }
 
-  // Group regular items
+  // Group regular items by area
   const groupMode = input.groupMode === 'Area' ? 'Area' : 'Urutan_Input';
   const groups: Array<{ area?: string; items: XlsxItem[] }> = [];
 
@@ -140,14 +165,23 @@ export async function generateXlsxFromTemplate(
     groups.push({ items: regularItems });
   }
 
+  // Build area blocks with pre-sorting
+  const blocks: Block[] = [];
   let globalNo = 0;
 
   groups.forEach((group) => {
-    if (group.area != null) {
-      dataRows.push({ type: 'divider', areaName: group.area });
-      dataRows.push({ type: 'subheader' });
-    }
-    group.items.forEach((it) => {
+    const blockItems: DataRow[] = [];
+
+    // Pre-sort by status rank
+    const sorted = [...group.items].sort((a, b) => {
+      const aTh = parseThreshold(a.threshold);
+      const bTh = parseThreshold(b.threshold);
+      const aRank = regularStatusRank(Number(a.step1) || 0, Number(a.step2) || 0, aTh);
+      const bRank = regularStatusRank(Number(b.step1) || 0, Number(b.step2) || 0, bTh);
+      return aRank - bRank;
+    });
+
+    sorted.forEach((it) => {
       globalNo++;
       const s1 = Number(it.step1) || 0;
       const s2 = Number(it.step2) || 0;
@@ -159,56 +193,65 @@ export async function generateXlsxFromTemplate(
         ? (p1 || 0) + (p2 || 0)
         : (it.prevTotal != null && it.prevTotal !== '' ? Number(it.prevTotal) : null);
 
-      dataRows.push({
+      blockItems.push({
         type: 'item', no: globalNo, nama: it.namaBarang, satuan: it.satuan,
         threshold: thresholdVal, prevS1: p1, prevS2: p2, prevTotal,
         s1, s2, keterangan: it.keterangan,
       });
     });
+
+    blocks.push({ name: group.area || 'Area', items: blockItems, headerType: 'regular' });
   });
 
-  // Utilitas
-  if (utilitasBoolean.length > 0 || utilitasNumeric.length > 0) {
-    dataRows.push({ type: 'divider', areaName: 'UTILITAS' });
-    dataRows.push({ type: 'subheader' });
-
-    utilitasBoolean.forEach((it) => {
+  // Utilitas blocks
+  if (utilitasBoolean.length > 0) {
+    const blockItems: DataRow[] = [];
+    // Pre-sort by status (Habis first)
+    const sorted = [...utilitasBoolean].sort((a, b) =>
+      utilgasStatusRank(a.statusIsi || '') - utilgasStatusRank(b.statusIsi || '')
+    );
+    sorted.forEach((it) => {
       globalNo++;
       const threshold = parseThreshold(it.threshold);
-      dataRows.push({
+      blockItems.push({
         type: 'utilgas', no: globalNo, nama: it.namaBarang, satuan: it.satuan,
         threshold: threshold != null ? threshold : '',
         statusIsi: it.statusIsi || '', tglRefill: it.tglRefill, tglPakai: it.tglPakai,
         keterangan: it.keterangan,
       });
     });
+    blocks.push({ name: 'Utilitas Gas', items: blockItems, headerType: 'utilgas' });
+  }
 
-    utilitasNumeric.forEach((it) => {
+  if (utilitasNumeric.length > 0) {
+    const blockItems: DataRow[] = [];
+    // Pre-sort by status (Habis first)
+    const sorted = [...utilitasNumeric].sort((a, b) => {
+      const aTh = parseThreshold(a.threshold);
+      const bTh = parseThreshold(b.threshold);
+      return utiltokenStatusRank(a.prevStep2, aTh) - utiltokenStatusRank(b.prevStep2, bTh);
+    });
+    sorted.forEach((it) => {
       globalNo++;
       const threshold = parseThreshold(it.threshold);
       const p1 = it.prevStep1 != null && it.prevStep1 !== '' ? Number(it.prevStep1) : null;
-      dataRows.push({
+      blockItems.push({
         type: 'utiltoken', no: globalNo, nama: it.namaBarang, satuan: it.satuan,
         threshold: threshold != null ? threshold : '',
         prevS1: p1, prevS2: it.prevStep2, tglRefill: it.tglRefill, tglPakai: it.tglPakai,
         keterangan: it.keterangan,
       });
     });
+    blocks.push({ name: 'Utilitas Token', items: blockItems, headerType: 'utiltoken' });
   }
 
   const note = String(input.note || '').trim();
-  if (note) {
-    dataRows.push({ type: 'note', noteText: note });
-  }
 
   // ── 5. Update header rows (rows 1-5) ────────────────────────────
-  // Row 1: Title
   ws.getCell('E1').value = `LAPORAN STOCK OPNAME HARIAN ${input.cabangNama.toUpperCase()}`;
   ws.getCell('E1').font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.title.size, color: { argb: 'FF000000' } } as any;
-  // Row 2: Group labels
   ws.getCell('E2').font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.info.size, color: { argb: 'FF000000' } } as any;
   ws.getCell('H2').font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.info.size, color: { argb: 'FF000000' } } as any;
-  // Row 3: Info bar
   ws.getCell('A3').value = cabangLabel;
   ws.getCell('C3').value = currTgl;
   ws.getCell('D3').value = input.shift;
@@ -218,22 +261,22 @@ export async function generateXlsxFromTemplate(
   ws.getCell('J3').value = prevTgl;
   ws.getCell('K3').value = prevShift;
   ws.getCell('L3').value = prevPetugas;
-  // Row 3 fonts
   for (const addr of ['A3','C3','D3','E3','F3','H3','J3','K3','L3']) {
     ws.getCell(addr).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.info.size, color: { argb: 'FF000000' } } as any;
   }
-  // Row 4: Group headers
   ws.getCell('A4').font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.groupHeader.size, color: { argb: 'FF000000' } } as any;
   ws.getCell('K4').font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.groupHeader.size, color: { argb: 'FF000000' } } as any;
-  // Row 5: Column headers
   for (let c = 1; c <= 13; c++) {
     ws.getRow(5).getCell(c).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.colHeader.size, color: { argb: 'FF000000' } } as any;
   }
 
-  // ── 6. Clear old data rows (6+) and write new ───────────────────
-  // ExcelJS spliceRows silently no-ops when deleting the tail of the sheet
-  // (start + count > rowCount). The template's shared formulas survive and
-  // break writeBuffer. Un-merge + truncate rows instead.
+  // ── 6. Remove template tables + truncate rows 6+ ─────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tablesObj: any = (ws as any).tables || {};
+  Object.keys(tablesObj).forEach((name: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (ws as any).removeTable(name);
+  });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const w: any = ws;
   if (ws.rowCount > 5) {
@@ -244,216 +287,254 @@ export async function generateXlsxFromTemplate(
     w._rows.splice(5, w._rows.length - 5);
   }
 
-  // Now write new data rows starting at row 6
+  // ── 7. Write blocks ──────────────────────────────────────────────
+  const REGULAR_HEADERS = ['No', 'NAMA BARANG', 'SATUAN', 'THRESHOLD', 'STEP 1\nUTUH', 'STEP 2\nTERBUKA', 'TOTAL', 'STEP 1\nUTUH\n', 'STEP 2\nTERBUKA\n', 'TOTAL 2', 'PEMAKAIAN', 'STATUS\nSTOK', 'KETERANGAN'];
+  const GAS_HEADERS = ['No', 'NAMA BARANG', 'SATUAN', 'THRESHOLD', 'NILAI SAAT INI', 'STATUS ISI', 'TGL ISI', 'TGL RESTOCK', 'TGL PAKAI', 'PEMAKAIAN', 'STATUS STOK', 'KETERANGAN', '-'];
+  const TOKEN_HEADERS = ['No', 'NAMA BARANG', 'SATUAN', 'THRESHOLD', 'JUMLAH RESTOCK', 'TGL ISI', 'TGL RESTOCK', 'NILAI SAAT INI', 'TGL PAKAI', 'PEMAKAIAN', 'STATUS STOK', 'KETERANGAN', '-'];
+
+  interface BlockInfo {
+    block: Block;
+    headerRow: number;
+    firstDataRow: number;
+    lastDataRow: number;
+    isArea: boolean;
+  }
+  const blockInfos: BlockInfo[] = [];
   let currentRow = 6;
 
-  dataRows.forEach((dr) => {
-    const row = ws.getRow(currentRow);
+  blocks.forEach((block) => {
+    const isArea = block.headerType === 'regular' && block.name !== 'Area';
 
-    if (dr.type === 'divider') {
-      // Area divider row
+    // Divider (area blocks only)
+    if (isArea) {
+      const row = ws.getRow(currentRow);
       row.getCell(1).value = '';
-      row.getCell(2).value = `▶  ${dr.areaName}`;
+      row.getCell(2).value = `▶  ${block.name}`;
       for (let c = 3; c <= 13; c++) row.getCell(c).value = '';
-      // Apply divider styling
       row.getCell(2).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.divider.size, color: { argb: 'FF000000' } } as any;
       row.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD6E4F0' } } as any;
       row.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
-      // Merge B:M
       ws.mergeCells(`B${currentRow}:M${currentRow}`);
       row.height = 18;
-      // Apply borders to entire row
       for (let c = 1; c <= 13; c++) {
-        row.getCell(c).border = {
-          top: { style: 'thin' }, bottom: { style: 'thin' },
-          left: { style: 'thin' }, right: { style: 'thin' },
-        };
+        row.getCell(c).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
       }
-    } else if (dr.type === 'subheader') {
-      // Sub-header row — copy style from template
-      const headers = ['No', 'NAMA BARANG', 'SATUAN', 'THRESHOLD', 'STEP 1\nUTUH', 'STEP 2\nTERBUKA', 'TOTAL', 'STEP 1\nUTUH\n', 'STEP 2\nTERBUKA\n', 'TOTAL 2', 'PEMAKAIAN', 'STATUS\nSTOK', 'KETERANGAN'];
+      currentRow++;
+    }
+
+    // Subheader row
+    const headers = block.headerType === 'regular' ? REGULAR_HEADERS
+      : block.headerType === 'utilgas' ? GAS_HEADERS
+      : TOKEN_HEADERS;
+    const headerRow = currentRow;
+    {
+      const row = ws.getRow(currentRow);
       for (let c = 1; c <= 13; c++) {
         row.getCell(c).value = headers[c - 1];
         row.getCell(c).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.colHeader.size, color: { argb: 'FF000000' } } as any;
         row.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } } as any;
         row.getCell(c).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        row.getCell(c).border = {
-          top: { style: 'thin' }, bottom: { style: 'thin' },
-          left: { style: 'thin' }, right: { style: 'thin' },
-        };
+        row.getCell(c).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
       }
       row.height = 28;
-    } else if (dr.type === 'item') {
-      // Regular item row
-      const r = currentRow;
-      row.getCell(1).value = dr.no;
-      row.getCell(2).value = dr.nama || '';
-      row.getCell(3).value = dr.satuan || '';
-      row.getCell(4).value = dr.threshold ?? '';
-      row.getCell(5).value = dr.prevS1 ?? '';
-      row.getCell(6).value = dr.prevS2 ?? '';
-      row.getCell(7).value = dr.prevTotal ?? '';
-      row.getCell(8).value = dr.s1 || 0;
-      row.getCell(9).value = dr.s2 || 0;
-      row.getCell(10).value = { formula: `SUM(H${r},I${r})` };
-      row.getCell(11).value = { formula: `IF(COUNTA(G${r},J${r})=0,"",J${r}-G${r})` };
-      row.getCell(12).value = { formula: `IF(D${r}=0,"—",IF(J${r}<=D${r},"🔴 KRITIS",IF(J${r}<=D${r}*2,"🟠 HAMPIR HABIS","🟢 AMAN")))` };
-      row.getCell(13).value = dr.keterangan || '';
-
-      // Status color
-      const s1 = Number(dr.s1) || 0;
-      const s2 = Number(dr.s2) || 0;
-      const total = s1 + s2;
-      const th = typeof dr.threshold === 'number' ? dr.threshold : null;
-      let bgColor = 'FFFFFFFF';
-      let textColor = 'FF1E293B';
-      if (th != null && th > 0) {
-        if (total <= th) { bgColor = 'FFFEE2E2'; textColor = 'FFB91C1C'; }
-        else if (total <= th * 2) { bgColor = 'FFFEF9C3'; textColor = 'FFA16207'; }
-        else { bgColor = 'FFD1FAE5'; textColor = 'FF047857'; }
-      }
-
-      for (let c = 1; c <= 13; c++) {
-        row.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } } as any;
-        row.getCell(c).alignment = {
-          horizontal: [1, 4, 5, 6, 7, 8, 9, 10, 11].includes(c) ? 'center' : 'left',
-          vertical: 'middle', wrapText: true,
-        };
-        row.getCell(c).border = {
-          top: { style: 'thin' }, bottom: { style: 'thin' },
-          left: { style: 'thin' }, right: { style: 'thin' },
-        };
-        row.getCell(c).font = { name: XLSX_FONT.family, size: XLSX_FONT.data.size, color: { argb: 'FF000000' } } as any;
-      }
-      row.getCell(11).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.data.size, color: { argb: 'FF000000' } } as any;
-      row.getCell(11).numFmt = '+0;-0;0';
-      row.getCell(12).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.data.size, color: { argb: textColor } } as any;
-      row.height = 18;
-    } else if (dr.type === 'utilgas') {
-      // Utilitas Gas/Minyak row
-      const r = currentRow;
-      row.getCell(1).value = dr.no;
-      row.getCell(2).value = dr.nama || '';
-      row.getCell(3).value = dr.satuan || '';
-      row.getCell(4).value = dr.threshold ?? '';
-      row.getCell(5).value = dr.statusIsi || '';
-      row.getCell(7).value = dr.tglRefill || '';
-      row.getCell(9).value = dr.tglPakai || '';
-      row.getCell(11).value = { formula: `E${r}-H${r}` };
-      row.getCell(12).value = { formula: `IF(D${r}=0,"—",IF(H${r}<=D${r},"🔴 KRITIS",IF(H${r}<=D${r}*2,"🟠 HAMPIR HABIS","🟢 AMAN")))` };
-      row.getCell(13).value = dr.keterangan || '';
-
-      // Merge E:F, G:H, I:J
-      ws.mergeCells(`E${r}:F${r}`);
-      ws.mergeCells(`G${r}:H${r}`);
-      ws.mergeCells(`I${r}:J${r}`);
-
-      const th = typeof dr.threshold === 'number' ? dr.threshold : null;
-      let bgColor = 'FFFFFFFF';
-      if (th != null && th > 0) {
-        const val = Number(dr.statusIsi === 'Penuh' ? 1 : dr.statusIsi === 'Dipakai' ? 0.5 : 0);
-        if (val <= th) bgColor = 'FFFEE2E2';
-        else if (val <= th * 2) bgColor = 'FFFEF9C3';
-        else bgColor = 'FFD1FAE5';
-      }
-
-      for (let c = 1; c <= 13; c++) {
-        row.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } } as any;
-        row.getCell(c).alignment = {
-          horizontal: [1, 4, 5, 6, 7, 8, 9, 10, 11].includes(c) ? 'center' : 'left',
-          vertical: 'middle', wrapText: true,
-        };
-        row.getCell(c).border = {
-          top: { style: 'thin' }, bottom: { style: 'thin' },
-          left: { style: 'thin' }, right: { style: 'thin' },
-        };
-        row.getCell(c).font = { name: XLSX_FONT.family, size: XLSX_FONT.data.size, color: { argb: 'FF000000' } } as any;
-      }
-      [5, 8, 11].forEach((c) => {
-        row.getCell(c).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.data.size, color: { argb: 'FF000000' } } as any;
-      });
-      row.getCell(11).numFmt = '+0;-0;0';
-      row.height = 18;
-    } else if (dr.type === 'utiltoken') {
-      // Utilitas Token Listrik row
-      const r = currentRow;
-      row.getCell(1).value = dr.no;
-      row.getCell(2).value = dr.nama || '';
-      row.getCell(3).value = dr.satuan || '';
-      row.getCell(4).value = dr.threshold ?? '';
-      row.getCell(5).value = dr.prevS1 ?? ''; // Jumlah Restock
-      row.getCell(6).value = dr.tglRefill || '';
-      row.getCell(8).value = dr.prevS2 ?? ''; // Nilai Saat Ini
-      row.getCell(9).value = dr.tglPakai || '';
-      row.getCell(11).value = { formula: `E${r}-H${r}` };
-      row.getCell(12).value = { formula: `IF(D${r}=0,"—",IF(H${r}<=D${r},"🔴 KRITIS",IF(H${r}<=D${r}*2,"🟠 HAMPIR HABIS","🟢 AMAN")))` };
-      row.getCell(13).value = dr.keterangan || '';
-
-      ws.mergeCells(`E${r}:F${r}`);
-      ws.mergeCells(`G${r}:H${r}`);
-      ws.mergeCells(`I${r}:J${r}`);
-
-      const th = typeof dr.threshold === 'number' ? dr.threshold : null;
-      let bgColor = 'FFFFFFFF';
-      if (th != null && th > 0) {
-        const val = Number(dr.prevS2) || 0;
-        if (val <= th) bgColor = 'FFFEE2E2';
-        else if (val <= th * 2) bgColor = 'FFFEF9C3';
-        else bgColor = 'FFD1FAE5';
-      }
-
-      for (let c = 1; c <= 13; c++) {
-        row.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } } as any;
-        row.getCell(c).alignment = {
-          horizontal: [1, 4, 5, 6, 7, 8, 9, 10, 11].includes(c) ? 'center' : 'left',
-          vertical: 'middle', wrapText: true,
-        };
-        row.getCell(c).border = {
-          top: { style: 'thin' }, bottom: { style: 'thin' },
-          left: { style: 'thin' }, right: { style: 'thin' },
-        };
-        row.getCell(c).font = { name: XLSX_FONT.family, size: XLSX_FONT.data.size, color: { argb: 'FF000000' } } as any;
-      }
-      [5, 8, 11].forEach((c) => {
-        row.getCell(c).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.data.size, color: { argb: 'FF000000' } } as any;
-      });
-      row.getCell(11).numFmt = '+0;-0;0';
-      row.height = 18;
-    } else if (dr.type === 'note') {
-      // Note header
-      row.getCell(1).value = 'KETERANGAN / CATATAN:';
-      ws.mergeCells(`A${currentRow}:M${currentRow}`);
-      row.getCell(1).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.note.size, color: { argb: 'FFFFFFFF' } } as any;
-      row.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD97706' } } as any;
-      row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-      for (let c = 1; c <= 13; c++) {
-        row.getCell(c).border = {
-          top: { style: 'thin' }, bottom: { style: 'thin' },
-          left: { style: 'thin' }, right: { style: 'thin' },
-        };
-      }
-      row.height = 18;
       currentRow++;
-
-      // Note content
-      const noteRow = ws.getRow(currentRow);
-      noteRow.getCell(1).value = dr.noteText || '';
-      ws.mergeCells(`A${currentRow}:M${currentRow}`);
-      noteRow.getCell(1).alignment = { horizontal: 'left', vertical: 'top', wrapText: true };
-      noteRow.getCell(1).font = { name: XLSX_FONT.family, size: XLSX_FONT.note.size, color: { argb: 'FF000000' } } as any;
-      for (let c = 1; c <= 13; c++) {
-        noteRow.getCell(c).border = {
-          top: { style: 'thin' }, bottom: { style: 'thin' },
-          left: { style: 'thin' }, right: { style: 'thin' },
-        };
-      }
-      noteRow.height = 60;
     }
 
-    currentRow++;
+    // Data rows
+    const firstDataRow = currentRow;
+    block.items.forEach((dr) => {
+      const r = currentRow;
+      const row = ws.getRow(r);
+
+      if (dr.type === 'item') {
+        row.getCell(1).value = dr.no;
+        row.getCell(2).value = dr.nama || '';
+        row.getCell(3).value = dr.satuan || '';
+        row.getCell(4).value = dr.threshold ?? '';
+        row.getCell(5).value = dr.prevS1 ?? '';
+        row.getCell(6).value = dr.prevS2 ?? '';
+        row.getCell(7).value = dr.prevTotal ?? '';
+        row.getCell(8).value = dr.s1 || 0;
+        row.getCell(9).value = dr.s2 || 0;
+        row.getCell(10).value = { formula: `SUM(H${r},I${r})` };
+        row.getCell(11).value = { formula: `IF(COUNTA(G${r},J${r})=0,"",J${r}-G${r})` };
+        row.getCell(12).value = { formula: `IF(D${r}=0,"—",IF(J${r}<=D${r},"🔴 KRITIS",IF(J${r}<=D${r}*2,"🟠 HAMPIR HABIS","🟢 AMAN")))` };
+        row.getCell(13).value = dr.keterangan || '';
+
+        const th = typeof dr.threshold === 'number' ? dr.threshold : null;
+        const total = (Number(dr.s1) || 0) + (Number(dr.s2) || 0);
+        let bgColor = 'FFFFFFFF';
+        let textColor = 'FF1E293B';
+        if (th != null && th > 0) {
+          if (total <= th) { bgColor = 'FFFEE2E2'; textColor = 'FFB91C1C'; }
+          else if (total <= th * 2) { bgColor = 'FFFEF9C3'; textColor = 'FFA16207'; }
+          else { bgColor = 'FFD1FAE5'; textColor = 'FF047857'; }
+        }
+        for (let c = 1; c <= 13; c++) {
+          row.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } } as any;
+          row.getCell(c).alignment = { horizontal: [1,4,5,6,7,8,9,10,11].includes(c) ? 'center' : 'left', vertical: 'middle', wrapText: true };
+          row.getCell(c).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+          row.getCell(c).font = { name: XLSX_FONT.family, size: XLSX_FONT.data.size, color: { argb: 'FF000000' } } as any;
+        }
+        row.getCell(11).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.data.size, color: { argb: 'FF000000' } } as any;
+        row.getCell(11).numFmt = '+0;-0;0';
+        row.getCell(12).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.data.size, color: { argb: textColor } } as any;
+        row.height = 18;
+
+      } else if (dr.type === 'utilgas') {
+        // Gas: no merges — values in specific columns
+        row.getCell(1).value = dr.no;
+        row.getCell(2).value = dr.nama || '';
+        row.getCell(3).value = dr.satuan || '';
+        row.getCell(4).value = dr.threshold ?? '';
+        row.getCell(5).value = dr.statusIsi || '';
+        row.getCell(6).value = dr.statusIsi || '';
+        row.getCell(7).value = dr.tglRefill || '';
+        row.getCell(8).value = dr.tglRefill || '';
+        row.getCell(9).value = dr.tglPakai || '';
+        row.getCell(10).value = { formula: `E${r}-H${r}` };
+        row.getCell(11).value = { formula: `IF(D${r}=0,"—",IF(H${r}<=D${r},"🔴 KRITIS",IF(H${r}<=D${r}*2,"🟠 HAMPIR HABIS","🟢 AMAN")))` };
+        row.getCell(12).value = dr.keterangan || '';
+        row.getCell(13).value = '';
+
+        const th = typeof dr.threshold === 'number' ? dr.threshold : null;
+        let bgColor = 'FFFFFFFF';
+        if (th != null && th > 0) {
+          const val = Number(dr.statusIsi === 'Penuh' ? 1 : dr.statusIsi === 'Dipakai' ? 0.5 : 0);
+          if (val <= th) bgColor = 'FFFEE2E2';
+          else if (val <= th * 2) bgColor = 'FFFEF9C3';
+          else bgColor = 'FFD1FAE5';
+        }
+        for (let c = 1; c <= 13; c++) {
+          row.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } } as any;
+          row.getCell(c).alignment = { horizontal: [1,4,5,6,7,8,9,10,11].includes(c) ? 'center' : 'left', vertical: 'middle', wrapText: true };
+          row.getCell(c).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+          row.getCell(c).font = { name: XLSX_FONT.family, size: XLSX_FONT.data.size, color: { argb: 'FF000000' } } as any;
+        }
+        [5,8,10].forEach((c) => {
+          row.getCell(c).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.data.size, color: { argb: 'FF000000' } } as any;
+        });
+        row.getCell(10).numFmt = '+0;-0;0';
+        row.height = 18;
+
+      } else if (dr.type === 'utiltoken') {
+        // Token: no merges — values in specific columns
+        row.getCell(1).value = dr.no;
+        row.getCell(2).value = dr.nama || '';
+        row.getCell(3).value = dr.satuan || '';
+        row.getCell(4).value = dr.threshold ?? '';
+        row.getCell(5).value = dr.prevS1 ?? '';
+        row.getCell(6).value = dr.tglRefill || '';
+        row.getCell(7).value = dr.tglRefill || '';
+        row.getCell(8).value = dr.prevS2 ?? '';
+        row.getCell(9).value = dr.tglPakai || '';
+        row.getCell(10).value = { formula: `E${r}-H${r}` };
+        row.getCell(11).value = { formula: `IF(D${r}=0,"—",IF(H${r}<=D${r},"🔴 KRITIS",IF(H${r}<=D${r}*2,"🟠 HAMPIR HABIS","🟢 AMAN")))` };
+        row.getCell(12).value = dr.keterangan || '';
+        row.getCell(13).value = '';
+
+        const th = typeof dr.threshold === 'number' ? dr.threshold : null;
+        let bgColor = 'FFFFFFFF';
+        if (th != null && th > 0) {
+          const val = Number(dr.prevS2) || 0;
+          if (val <= th) bgColor = 'FFFEE2E2';
+          else if (val <= th * 2) bgColor = 'FFFEF9C3';
+          else bgColor = 'FFD1FAE5';
+        }
+        for (let c = 1; c <= 13; c++) {
+          row.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } } as any;
+          row.getCell(c).alignment = { horizontal: [1,4,5,6,7,8,9,10,11].includes(c) ? 'center' : 'left', vertical: 'middle', wrapText: true };
+          row.getCell(c).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+          row.getCell(c).font = { name: XLSX_FONT.family, size: XLSX_FONT.data.size, color: { argb: 'FF000000' } } as any;
+        }
+        [5,8,10].forEach((c) => {
+          row.getCell(c).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.data.size, color: { argb: 'FF000000' } } as any;
+        });
+        row.getCell(10).numFmt = '+0;-0;0';
+        row.height = 18;
+      }
+
+      currentRow++;
+    });
+
+    const lastDataRow = currentRow - 1;
+    blockInfos.push({ block, headerRow, firstDataRow, lastDataRow, isArea });
   });
 
-  // ── 7. Write buffer ──────────────────────────────────────────────
+  // ── 8. Write note section (outside all tables) ──────────────────
+  if (note) {
+    const noteHeaderRow = ws.getRow(currentRow);
+    noteHeaderRow.getCell(1).value = 'KETERANGAN / CATATAN:';
+    ws.mergeCells(`A${currentRow}:M${currentRow}`);
+    noteHeaderRow.getCell(1).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.note.size, color: { argb: 'FFFFFFFF' } } as any;
+    noteHeaderRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD97706' } } as any;
+    noteHeaderRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+    for (let c = 1; c <= 13; c++) {
+      noteHeaderRow.getCell(c).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+    }
+    noteHeaderRow.height = 18;
+    currentRow++;
+
+    const noteContentRow = ws.getRow(currentRow);
+    noteContentRow.getCell(1).value = note;
+    ws.mergeCells(`A${currentRow}:M${currentRow}`);
+    noteContentRow.getCell(1).alignment = { horizontal: 'left', vertical: 'top', wrapText: true };
+    noteContentRow.getCell(1).font = { name: XLSX_FONT.family, size: XLSX_FONT.note.size, color: { argb: 'FF000000' } } as any;
+    for (let c = 1; c <= 13; c++) {
+      noteContentRow.getCell(c).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+    }
+    noteContentRow.height = 60;
+    currentRow++;
+  }
+
+  // ── 9. Create Excel Tables per block ──────────────────────────────
+  const regularColNames = REGULAR_HEADERS.map(h => h.replace(/\n/g, '_x000a_'));
+  const gasColNames = GAS_HEADERS.map(h => h.replace(/\n/g, '_x000a_'));
+  const tokenColNames = TOKEN_HEADERS.map(h => h.replace(/\n/g, '_x000a_'));
+
+  blockInfos.forEach((info, idx) => {
+    const colNames = info.block.headerType === 'regular' ? regularColNames
+      : info.block.headerType === 'utilgas' ? gasColNames
+      : tokenColNames;
+    const tableName = `SO_Tabel_${idx + 1}`;
+    const tableRef = `A${info.headerRow}:M${info.lastDataRow}`;
+
+    try {
+      ws.addTable({
+        name: tableName,
+        ref: tableRef,
+        headerRow: true,
+        totalsRow: false,
+        columns: colNames.map(name => ({ name, filterButton: true })),
+        rows: info.block.items.map((dr) => {
+          if (dr.type === 'item') {
+            return [
+              dr.no, dr.nama || '', dr.satuan || '', dr.threshold ?? '',
+              dr.prevS1 ?? '', dr.prevS2 ?? '', dr.prevTotal ?? '',
+              dr.s1 || 0, dr.s2 || 0, '', '', '', dr.keterangan || '',
+            ];
+          }
+          if (dr.type === 'utilgas') {
+            return [
+              dr.no, dr.nama || '', dr.satuan || '', dr.threshold ?? '',
+              dr.statusIsi || '', dr.statusIsi || '', dr.tglRefill || '',
+              dr.tglRefill || '', dr.tglPakai || '', '', '', dr.keterangan || '', '',
+            ];
+          }
+          // utiltoken
+          return [
+            dr.no, dr.nama || '', dr.satuan || '', dr.threshold ?? '',
+            dr.prevS1 ?? '', dr.tglRefill || '', dr.tglRefill || '',
+            dr.prevS2 ?? '', dr.tglPakai || '', '', '', dr.keterangan || '', '',
+          ];
+        }),
+      });
+    } catch (err) {
+      console.warn(`Failed to create Table '${tableName}':`, err);
+    }
+  });
+
+  // ── 9. Write buffer ──────────────────────────────────────────────
   const buffer = (await wb.xlsx.writeBuffer()) as unknown as Buffer;
   return { buffer, fileName };
 }

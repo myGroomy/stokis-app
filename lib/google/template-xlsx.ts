@@ -51,6 +51,22 @@ function isUtilitasNumeric(it: XlsxItem): boolean {
   return t.includes('single') || t.includes('dual');
 }
 
+function regularStatus(s1: number, s2: number, threshold: number | null): string {
+  const total = s1 + s2;
+  if (threshold == null || threshold <= 0) return '—';
+  if (total <= threshold) return '🔴 KRITIS';
+  if (total <= threshold * 2) return '🟠 HAMPIR HABIS';
+  return '🟢 AMAN';
+}
+
+function utilTokenStatus(prevS2: string | number | null | undefined, threshold: number | null): string {
+  const val = Number(prevS2) || 0;
+  if (threshold == null || threshold <= 0) return '—';
+  if (val <= threshold) return '🔴 KRITIS';
+  if (val <= threshold * 2) return '🟠 HAMPIR HABIS';
+  return '🟢 AMAN';
+}
+
 /** Status sort rank: 0=KRITIS, 1=HAMPIR HABIS, 2=AMAN, 3=— */
 function regularStatusRank(s1: number, s2: number, threshold: number | null): number {
   const total = s1 + s2;
@@ -203,11 +219,15 @@ export async function generateXlsxFromTemplate(
     blocks.push({ name: group.area || 'Area', items: blockItems, headerType: 'regular' });
   });
 
-  // Utilitas blocks
-  if (utilitasBoolean.length > 0) {
+  // Utilitas blocks — Gas first, then Token, then Minyak
+  // Split boolean items into gas vs minyak by name keyword
+  const isMinyak = (it: XlsxItem) => /\bminyak|oil\b/i.test(it.namaBarang || '');
+  const utilGasItems = utilitasBoolean.filter(it => !isMinyak(it));
+  const utilMinyakItems = utilitasBoolean.filter(it => isMinyak(it));
+
+  if (utilGasItems.length > 0) {
     const blockItems: DataRow[] = [];
-    // Pre-sort by status (Habis first)
-    const sorted = [...utilitasBoolean].sort((a, b) =>
+    const sorted = [...utilGasItems].sort((a, b) =>
       utilgasStatusRank(a.statusIsi || '') - utilgasStatusRank(b.statusIsi || '')
     );
     sorted.forEach((it) => {
@@ -225,7 +245,6 @@ export async function generateXlsxFromTemplate(
 
   if (utilitasNumeric.length > 0) {
     const blockItems: DataRow[] = [];
-    // Pre-sort by status (Habis first)
     const sorted = [...utilitasNumeric].sort((a, b) => {
       const aTh = parseThreshold(a.threshold);
       const bTh = parseThreshold(b.threshold);
@@ -243,6 +262,24 @@ export async function generateXlsxFromTemplate(
       });
     });
     blocks.push({ name: 'Utilitas Token', items: blockItems, headerType: 'utiltoken' });
+  }
+
+  if (utilMinyakItems.length > 0) {
+    const blockItems: DataRow[] = [];
+    const sorted = [...utilMinyakItems].sort((a, b) =>
+      utilgasStatusRank(a.statusIsi || '') - utilgasStatusRank(b.statusIsi || '')
+    );
+    sorted.forEach((it) => {
+      globalNo++;
+      const threshold = parseThreshold(it.threshold);
+      blockItems.push({
+        type: 'utilgas', no: globalNo, nama: it.namaBarang, satuan: it.satuan,
+        threshold: threshold != null ? threshold : '',
+        statusIsi: it.statusIsi || '', tglRefill: it.tglRefill, tglPakai: it.tglPakai,
+        keterangan: it.keterangan,
+      });
+    });
+    blocks.push({ name: 'Utilitas Minyak', items: blockItems, headerType: 'utilgas' });
   }
 
   const note = String(input.note || '').trim();
@@ -347,6 +384,15 @@ export async function generateXlsxFromTemplate(
       const row = ws.getRow(r);
 
       if (dr.type === 'item') {
+        const th = typeof dr.threshold === 'number' ? dr.threshold : null;
+        const s1 = Number(dr.s1) || 0;
+        const s2 = Number(dr.s2) || 0;
+        const total = s1 + s2;
+        const pTotal = (dr.prevTotal != null && dr.prevTotal !== '') ? Number(dr.prevTotal) : null;
+        const pemakaian = (pTotal != null && pTotal !== 0) ? pTotal - total : '';
+        const total2 = total;
+        const statusStr = regularStatus(s1, s2, th);
+
         row.getCell(1).value = dr.no;
         row.getCell(2).value = dr.nama || '';
         row.getCell(3).value = dr.satuan || '';
@@ -354,15 +400,13 @@ export async function generateXlsxFromTemplate(
         row.getCell(5).value = dr.prevS1 ?? '';
         row.getCell(6).value = dr.prevS2 ?? '';
         row.getCell(7).value = dr.prevTotal ?? '';
-        row.getCell(8).value = dr.s1 || 0;
-        row.getCell(9).value = dr.s2 || 0;
-        row.getCell(10).value = { formula: `SUM(H${r},I${r})` };
-        row.getCell(11).value = { formula: `IF(COUNTA(G${r},J${r})=0,"",J${r}-G${r})` };
-        row.getCell(12).value = { formula: `IF(D${r}=0,"—",IF(J${r}<=D${r},"🔴 KRITIS",IF(J${r}<=D${r}*2,"🟠 HAMPIR HABIS","🟢 AMAN")))` };
+        row.getCell(8).value = s1;
+        row.getCell(9).value = s2;
+        row.getCell(10).value = total2;
+        row.getCell(11).value = pemakaian;
+        row.getCell(12).value = statusStr;
         row.getCell(13).value = dr.keterangan || '';
 
-        const th = typeof dr.threshold === 'number' ? dr.threshold : null;
-        const total = (Number(dr.s1) || 0) + (Number(dr.s2) || 0);
         let bgColor = 'FFFFFFFF';
         let textColor = 'FF1E293B';
         if (th != null && th > 0) {
@@ -376,13 +420,16 @@ export async function generateXlsxFromTemplate(
           row.getCell(c).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
           row.getCell(c).font = { name: XLSX_FONT.family, size: XLSX_FONT.data.size, color: { argb: 'FF000000' } } as any;
         }
-        row.getCell(11).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.data.size, color: { argb: 'FF000000' } } as any;
-        row.getCell(11).numFmt = '+0;-0;0';
+        row.getCell(10).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.data.size, color: { argb: 'FF000000' } } as any;
+        row.getCell(10).numFmt = '+0;-0;0';
         row.getCell(12).font = { name: XLSX_FONT.family, bold: true, size: XLSX_FONT.data.size, color: { argb: textColor } } as any;
         row.height = 18;
 
       } else if (dr.type === 'utilgas') {
-        // Gas: no merges — values in specific columns
+        const th = typeof dr.threshold === 'number' ? dr.threshold : null;
+        const pemakaian = (dr.statusIsi === 'Penuh') ? 'Penuh' : (dr.statusIsi === 'Dipakai') ? 'Dipakai' : 'Habis';
+        const statusStr = utilTokenStatus(dr.statusIsi, th);
+
         row.getCell(1).value = dr.no;
         row.getCell(2).value = dr.nama || '';
         row.getCell(3).value = dr.satuan || '';
@@ -392,12 +439,11 @@ export async function generateXlsxFromTemplate(
         row.getCell(7).value = dr.tglRefill || '';
         row.getCell(8).value = dr.tglRefill || '';
         row.getCell(9).value = dr.tglPakai || '';
-        row.getCell(10).value = { formula: `E${r}-H${r}` };
-        row.getCell(11).value = { formula: `IF(D${r}=0,"—",IF(H${r}<=D${r},"🔴 KRITIS",IF(H${r}<=D${r}*2,"🟠 HAMPIR HABIS","🟢 AMAN")))` };
+        row.getCell(10).value = pemakaian;
+        row.getCell(11).value = statusStr;
         row.getCell(12).value = dr.keterangan || '';
         row.getCell(13).value = '';
 
-        const th = typeof dr.threshold === 'number' ? dr.threshold : null;
         let bgColor = 'FFFFFFFF';
         if (th != null && th > 0) {
           const val = Number(dr.statusIsi === 'Penuh' ? 1 : dr.statusIsi === 'Dipakai' ? 0.5 : 0);
@@ -418,7 +464,12 @@ export async function generateXlsxFromTemplate(
         row.height = 18;
 
       } else if (dr.type === 'utiltoken') {
-        // Token: no merges — values in specific columns
+        const th = typeof dr.threshold === 'number' ? dr.threshold : null;
+        const p1 = Number(dr.prevS1) || 0;
+        const p2 = Number(dr.prevS2) || 0;
+        const pemakaian = (p1 > 0 || p2 > 0) ? p2 - p1 : '';
+        const statusStr = utilTokenStatus(dr.prevS2, th);
+
         row.getCell(1).value = dr.no;
         row.getCell(2).value = dr.nama || '';
         row.getCell(3).value = dr.satuan || '';
@@ -428,12 +479,11 @@ export async function generateXlsxFromTemplate(
         row.getCell(7).value = dr.tglRefill || '';
         row.getCell(8).value = dr.prevS2 ?? '';
         row.getCell(9).value = dr.tglPakai || '';
-        row.getCell(10).value = { formula: `E${r}-H${r}` };
-        row.getCell(11).value = { formula: `IF(D${r}=0,"—",IF(H${r}<=D${r},"🔴 KRITIS",IF(H${r}<=D${r}*2,"🟠 HAMPIR HABIS","🟢 AMAN")))` };
+        row.getCell(10).value = pemakaian;
+        row.getCell(11).value = statusStr;
         row.getCell(12).value = dr.keterangan || '';
         row.getCell(13).value = '';
 
-        const th = typeof dr.threshold === 'number' ? dr.threshold : null;
         let bgColor = 'FFFFFFFF';
         if (th != null && th > 0) {
           const val = Number(dr.prevS2) || 0;
@@ -459,6 +509,16 @@ export async function generateXlsxFromTemplate(
 
     const lastDataRow = currentRow - 1;
     blockInfos.push({ block, headerRow, firstDataRow, lastDataRow, isArea });
+
+    // Add 3 empty rows between area blocks (not utilitas)
+    if (isArea) {
+      for (let i = 0; i < 3; i++) {
+        const emptyRow = ws.getRow(currentRow);
+        for (let c = 1; c <= 13; c++) emptyRow.getCell(c).value = '';
+        emptyRow.height = 15;
+        currentRow++;
+      }
+    }
   });
 
   // ── 8. Write note section (outside all tables) ──────────────────
@@ -508,24 +568,38 @@ export async function generateXlsxFromTemplate(
         columns: colNames.map(name => ({ name, filterButton: true })),
         rows: info.block.items.map((dr) => {
           if (dr.type === 'item') {
+            const th = typeof dr.threshold === 'number' ? dr.threshold : null;
+            const s1 = Number(dr.s1) || 0;
+            const s2 = Number(dr.s2) || 0;
+            const total = s1 + s2;
+            const pTotal = (dr.prevTotal != null && dr.prevTotal !== '') ? Number(dr.prevTotal) : null;
+            const pemakaian = (pTotal != null && pTotal !== 0) ? pTotal - total : '';
             return [
               dr.no, dr.nama || '', dr.satuan || '', dr.threshold ?? '',
               dr.prevS1 ?? '', dr.prevS2 ?? '', dr.prevTotal ?? '',
-              dr.s1 || 0, dr.s2 || 0, '', '', '', dr.keterangan || '',
+              s1, s2, total, pemakaian, regularStatus(s1, s2, th), dr.keterangan || '',
             ];
           }
           if (dr.type === 'utilgas') {
+            const th = typeof dr.threshold === 'number' ? dr.threshold : null;
             return [
               dr.no, dr.nama || '', dr.satuan || '', dr.threshold ?? '',
               dr.statusIsi || '', dr.statusIsi || '', dr.tglRefill || '',
-              dr.tglRefill || '', dr.tglPakai || '', '', '', dr.keterangan || '', '',
+              dr.tglRefill || '', dr.tglPakai || '',
+              (dr.statusIsi === 'Penuh') ? 'Penuh' : (dr.statusIsi === 'Dipakai') ? 'Dipakai' : 'Habis',
+              utilTokenStatus(dr.statusIsi, th), dr.keterangan || '', '',
             ];
           }
           // utiltoken
+          const th = typeof dr.threshold === 'number' ? dr.threshold : null;
+          const p1 = Number(dr.prevS1) || 0;
+          const p2 = Number(dr.prevS2) || 0;
           return [
             dr.no, dr.nama || '', dr.satuan || '', dr.threshold ?? '',
             dr.prevS1 ?? '', dr.tglRefill || '', dr.tglRefill || '',
-            dr.prevS2 ?? '', dr.tglPakai || '', '', '', dr.keterangan || '', '',
+            dr.prevS2 ?? '', dr.tglPakai || '',
+            (p1 > 0 || p2 > 0) ? p2 - p1 : '',
+            utilTokenStatus(dr.prevS2, th), dr.keterangan || '', '',
           ];
         }),
       });

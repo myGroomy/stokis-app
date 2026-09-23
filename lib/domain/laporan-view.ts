@@ -5,7 +5,8 @@
 
 import { resolveCabang } from '@/lib/google/registry';
 import { getMasterItems } from './master-item-service';
-import { getLaporanById, getLaporanDetail, getSesiLiveData } from './laporan-service';
+import { getLaporanById, getLaporanDetail, getSesiLiveData, searchLaporan } from './laporan-service';
+import { formatDate } from './ids';
 import { parseThreshold } from './so';
 import {
   dateTypeStatus, expiryTypeStatus,
@@ -194,7 +195,11 @@ export async function buildLaporanView(
   // Previous SO info
   const prevTanggal = detailRows[0]?.['Prev_Tanggal'] ? String(detailRows[0]['Prev_Tanggal']) : '';
   const prevShift = String(detailRows[0]?.['Prev_Shift'] || '');
-  const prevPetugas = '';
+  const previousReports = prevTanggal
+    ? await searchLaporan(cabangId, { tanggal: formatDate(prevTanggal), shift: prevShift })
+    : [];
+  const previousReport = previousReports[previousReports.length - 1];
+  const prevPetugas = String(previousReport?.['Petugas'] || '');
 
   // Build items
   const allItems: ViewItem[] = detailRows.map((r) => {

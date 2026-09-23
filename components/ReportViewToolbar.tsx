@@ -1,15 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FileDown, Pencil, Printer } from 'lucide-react';
+import { FileDown, FileSpreadsheet, Pencil, Printer } from 'lucide-react';
 import { ShareReportButton } from '@/components/laporan-view/ShareReportButton';
 
 interface ReportViewToolbarProps {
   laporanId: string;
   cabangId: string;
+  linkPdf?: string;
 }
 
-export function ReportViewToolbar({ laporanId, cabangId }: ReportViewToolbarProps) {
+export function ReportViewToolbar({ laporanId, cabangId, linkPdf }: ReportViewToolbarProps) {
   const [canEdit, setCanEdit] = useState(false);
   const [checking, setChecking] = useState(true);
 
@@ -28,13 +29,20 @@ export function ReportViewToolbar({ laporanId, cabangId }: ReportViewToolbarProp
         download
         className="btn btn-outline btn-sm gap-1.5"
       >
-        <FileDown className="w-4 h-4" />
+        <FileSpreadsheet className="w-4 h-4" />
         <span className="hidden sm:inline">XLSX</span>
       </a>
-      <button type="button" onClick={() => window.print()} className="btn btn-outline btn-sm gap-1.5">
-        <Printer className="w-4 h-4" />
-        <span className="hidden sm:inline">Cetak</span>
-      </button>
+      {linkPdf ? (
+        <a href={linkPdf} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm gap-1.5">
+          <FileDown className="w-4 h-4" />
+          <span className="hidden sm:inline">PDF</span>
+        </a>
+      ) : (
+        <button type="button" onClick={() => window.print()} className="btn btn-outline btn-sm gap-1.5">
+          <Printer className="w-4 h-4" />
+          <span className="hidden sm:inline">PDF</span>
+        </button>
+      )}
       {!checking && canEdit && (
         <a
           href={`/laporan/${laporanId}/edit?cabang=${encodeURIComponent(cabangId)}`}

@@ -29,7 +29,7 @@ interface SaveLaporanPayload {
   linkXlsx?: string;
   linkXlsxFileId?: string;
   note?: string;
-  previousSOInfo?: { tanggal?: string; shift?: string } | null;
+  previousSOInfo?: { tanggal?: string; shift?: string; petugas?: string } | null;
 }
 
 interface SaveLaporanItem {
@@ -161,7 +161,7 @@ async function saveLaporanDetail(
     petugas: string;
     items: SaveLaporanItem[];
     note?: string;
-    previousSOInfo?: { tanggal?: string; shift?: string } | null;
+    previousSOInfo?: { tanggal?: string; shift?: string; petugas?: string } | null;
   }
 ): Promise<void> {
   const { spreadsheetId } = await resolveCabang(cabangId);

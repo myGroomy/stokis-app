@@ -38,7 +38,7 @@ export function ReportHeaderCard({
           </div>
 
           {variant === 'public' ? (
-            <ReportViewToolbar laporanId={laporanId} cabangId={cabangId} />
+            <ReportViewToolbar laporanId={laporanId} cabangId={cabangId} linkPdf={linkPdf} />
           ) : (
             <div className="flex flex-wrap items-center gap-1.5 shrink-0 no-print">
               <ShareReportButton laporanId={laporanId} cabangId={cabangId} />
@@ -53,12 +53,14 @@ export function ReportHeaderCard({
                 <Pencil className="w-4 h-4" />
                 <span className="hidden sm:inline">Edit</span>
               </a>
-              {linkXlsx ? (
-                <a href={linkXlsx} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm gap-1.5">
-                  <Table className="w-4 h-4" />
-                  <span className="hidden sm:inline">XLSX</span>
-                </a>
-              ) : null}
+              <a
+                href={`/api/so/${encodeURIComponent(laporanId)}/xlsx-file?cabang=${encodeURIComponent(cabangId)}`}
+                download
+                className="btn btn-outline btn-sm gap-1.5"
+              >
+                <Table className="w-4 h-4" />
+                <span className="hidden sm:inline">XLSX</span>
+              </a>
               {linkPdf ? (
                 <a href={linkPdf} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm gap-1.5">
                   <FileDown className="w-4 h-4" />

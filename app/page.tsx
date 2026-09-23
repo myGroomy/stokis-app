@@ -570,13 +570,16 @@ function formatWaktu(value: string): string {
   if (!value) return "-";
   const d = new Date(value);
   if (isNaN(d.getTime())) return String(value);
-  return d.toLocaleString("id-ID", {
+  const date = d.toLocaleDateString("id-ID", {
     day: "2-digit",
     month: "short",
     year: "numeric",
+  });
+  const time = d.toLocaleTimeString("id-ID", {
     hour: "2-digit",
     minute: "2-digit",
   });
+  return `${date} · ${time}`;
 }
 
 const quickActions = [
@@ -879,26 +882,21 @@ function UserHome() {
           <div className="card bg-base-100 border border-base-300 overflow-hidden">
             <div className="divide-y divide-base-300">
               {laporan.map((l) => (
-                <div key={l.Laporan_ID} className="flex items-center gap-3 px-4 py-3 hover:bg-base-200 transition-colors">
-                  <div className="p-2 rounded-lg bg-base-200 text-base-content/60 flex-shrink-0">
+                <div key={l.Laporan_ID} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-base-200 transition-colors sm:flex sm:gap-3">
+                  <div className="row-span-2 p-2 rounded-lg bg-base-200 text-base-content/60 flex-shrink-0 sm:row-span-1">
                     <Clock className="w-4 h-4" />
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 sm:flex-1">
                     <div className="font-semibold text-sm text-base-content whitespace-normal break-words">
                       {l.Petugas || "Petugas"}
                     </div>
-                    <div className="text-xs text-base-content/60 flex items-center gap-1.5">
-                      <Calendar className="w-3 h-3 inline" />
-                      {formatWaktu(l.Waktu_Dibuat)}
-                      {l.Shift ? (
-                        <>
-                          <span>·</span>
-                          <span className="badge badge-ghost badge-xs">{l.Shift}</span>
-                        </>
-                      ) : null}
+                    <div className="text-xs text-base-content/60 flex items-center gap-1.5 min-w-0">
+                      <Calendar className="w-3 h-3 flex-shrink-0" />
+                      <span className="tabular-nums whitespace-nowrap">{formatWaktu(l.Waktu_Dibuat)}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="col-start-2 flex items-center gap-1.5 flex-wrap min-w-0 sm:ml-auto sm:flex-nowrap sm:justify-end">
+                    {l.Shift ? <span className="badge badge-ghost badge-sm">{l.Shift}</span> : null}
                     {l.Jumlah_Kritis > 0 && (
                       <span className="badge badge-error badge-sm">{l.Jumlah_Kritis} Kritis</span>
                     )}

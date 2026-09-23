@@ -266,7 +266,7 @@ export default function LaporanPage() {
       .some((value) => String(value).trim().toLowerCase() === String(row.Petugas || '').trim().toLowerCase());
 
   return (
-    <div className="page-shell space-y-6">
+    <div className="page-shell space-y-4 sm:space-y-6">
       <motion.div
         key="header"
         initial={{ opacity: 0, y: 8 }}
@@ -305,9 +305,9 @@ export default function LaporanPage() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: 0.03 }}
-            className="card bg-base-100 border border-base-300 p-4 space-y-2"
+            className="card bg-base-100 border border-base-300 p-3 sm:p-4 space-y-1.5 sm:space-y-2"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
               <div className="space-y-0.5 flex-1">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
                   <ListOrdered className="w-3.5 h-3.5" />
@@ -322,7 +322,7 @@ export default function LaporanPage() {
                   value={urutanLaporan}
                   onChange={(e) => handleUrutanLaporanChange(e.target.value as UrutanLaporan)}
                   disabled={settingsSaving}
-                  className="select select-bordered min-h-[42px] text-sm w-full sm:w-auto"
+                  className="select select-bordered min-h-[38px] sm:min-h-[42px] text-sm w-full sm:w-auto"
                 >
                   <option value="Tipe_Input">Arsitektur Laporan (Default)</option>
                   <option value="Area">Per Kategori / Area</option>
@@ -345,9 +345,9 @@ export default function LaporanPage() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.05 }}
-          className="sticky top-16 z-40 card bg-base-100/95 backdrop-blur-md border border-base-300 shadow-md p-3 sm:p-4"
+          className="sticky top-16 z-40 card bg-base-100/95 backdrop-blur-md border border-base-300 shadow-md p-2.5 sm:p-4"
         >
-          <div className="grid grid-cols-2 lg:flex lg:flex-row lg:items-end gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 lg:flex lg:flex-row lg:items-end gap-1.5 sm:gap-3">
             <div className="space-y-1 flex-1">
               <label className="text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
                 <Calendar className="w-3.5 h-3.5" />
@@ -397,7 +397,7 @@ export default function LaporanPage() {
               </button>
             ) : null}
           </div>
-          <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-base-200 text-xs text-base-content/50">
+          <div className="flex items-center justify-between gap-2 mt-2 pt-2 sm:mt-3 sm:pt-3 border-t border-base-200 text-xs text-base-content/50">
             <span><strong className="text-base-content">{laporanList.length}</strong> laporan ditemukan</span>
             {hasFilters ? <span>Filter aktif</span> : <span>Terbaru ditampilkan lebih dulu</span>}
           </div>

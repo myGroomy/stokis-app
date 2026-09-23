@@ -735,14 +735,14 @@ function UserHome() {
         <h2 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider">
           Layanan
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-x-2 gap-y-6 sm:gap-3">
           {visibleQuickActions.map((a) => {
             const Icon = a.icon;
             return (
               <Link
                 key={a.href}
                 href={a.href}
-                className="group flex flex-col items-center gap-2.5 p-4 rounded-xl border border-base-200 hover:border-primary/20 hover:bg-primary/5 transition-all text-center"
+                className="group flex min-h-[142px] flex-col items-center justify-start gap-2 p-2.5 sm:p-4 rounded-xl border border-base-200 hover:border-primary/20 hover:bg-primary/5 transition-all text-center"
               >
                 <div className={`p-2.5 rounded-xl ${a.bg} ${a.color} group-hover:scale-110 transition-transform`}>
                   <Icon className="w-5 h-5" />
@@ -765,14 +765,14 @@ function UserHome() {
             <h2 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider pt-2">
               Administrasi
             </h2>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-x-2 gap-y-6 sm:gap-3">
               {adminActions.map((a) => {
                 const Icon = a.icon;
                 return (
                   <Link
                     key={a.href}
                     href={a.href}
-                    className="group flex flex-col items-center gap-2.5 p-4 rounded-xl border border-base-200 hover:border-primary/20 hover:bg-primary/5 transition-all text-center"
+                    className="group flex min-h-[142px] flex-col items-center justify-start gap-2 p-2.5 sm:p-4 rounded-xl border border-base-200 hover:border-primary/20 hover:bg-primary/5 transition-all text-center"
                   >
                     <div className={`p-2.5 rounded-xl ${a.bg} ${a.color} group-hover:scale-110 transition-transform`}>
                       <Icon className="w-5 h-5" />

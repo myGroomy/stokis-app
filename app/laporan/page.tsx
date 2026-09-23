@@ -345,11 +345,11 @@ export default function LaporanPage() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.05 }}
-          className="sticky top-16 z-40 card bg-base-100/95 backdrop-blur-md border border-base-300 shadow-md p-4"
+          className="sticky top-16 z-40 card bg-base-100/95 backdrop-blur-md border border-base-300 shadow-md p-3 sm:p-4"
         >
-          <div className="flex flex-col lg:flex-row lg:items-end gap-3">
-            <div className="space-y-1.5 flex-1">
-              <label className="text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
+          <div className="grid grid-cols-2 lg:flex lg:flex-row lg:items-end gap-2 sm:gap-3">
+            <div className="space-y-1 flex-1">
+              <label className="text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
                 <Calendar className="w-3.5 h-3.5" />
                 <span>Filter Tanggal</span>
               </label>
@@ -357,19 +357,19 @@ export default function LaporanPage() {
                 type="date"
                 value={filterTanggal}
                 onChange={(e) => setFilterTanggal(e.target.value)}
-                className="input input-bordered w-full min-h-[42px] text-sm"
+                className="input input-bordered w-full min-h-[38px] sm:min-h-[42px] px-2 sm:px-3 text-xs sm:text-sm"
               />
             </div>
 
-            <div className="space-y-1.5 flex-1">
-              <label className="text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
+            <div className="space-y-1 flex-1">
+              <label className="text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
                 <Clock className="w-3.5 h-3.5" />
                 <span>Filter Shift</span>
               </label>
               <select
                 value={filterShift}
                 onChange={(e) => setFilterShift(e.target.value)}
-                className="select select-bordered w-full min-h-[42px] text-sm"
+                className="select select-bordered w-full min-h-[38px] sm:min-h-[42px] px-2 sm:px-3 text-xs sm:text-sm"
               >
                 <option value="">Semua Shift</option>
                 <option value="Opening">Opening</option>
@@ -377,8 +377,8 @@ export default function LaporanPage() {
               </select>
             </div>
 
-            <div className="space-y-1.5 flex-[1.5]">
-              <label className="text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
+            <div className="col-span-2 space-y-1 lg:col-span-1 flex-[1.5]">
+              <label className="text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 text-base-content/60">
                 <User className="w-3.5 h-3.5" />
                 <span>Pencarian Petugas</span>
               </label>
@@ -387,12 +387,12 @@ export default function LaporanPage() {
                 placeholder="Ketik nama petugas..."
                 value={filterPetugas}
                 onChange={(e) => handlePetugasChange(e.target.value)}
-                className="input input-bordered w-full min-h-[42px] text-sm"
+                className="input input-bordered w-full min-h-[38px] sm:min-h-[42px] px-2 sm:px-3 text-xs sm:text-sm"
               />
             </div>
 
             {hasFilters ? (
-              <button type="button" onClick={clearFilters} className="btn btn-ghost min-h-[42px] text-sm">
+              <button type="button" onClick={clearFilters} className="btn btn-ghost min-h-[38px] sm:min-h-[42px] h-auto px-2 sm:px-3 text-xs sm:text-sm col-span-2 lg:col-span-1">
                 Reset filter
               </button>
             ) : null}

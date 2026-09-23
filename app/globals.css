@@ -306,14 +306,20 @@
    PRINT STYLES
    ============================================= */
 @media print {
-  body { background: white !important; color: oklch(0.18 0.03 260) !important; }
+  @page { size: A4 landscape; margin: 10mm; }
+  html, body { background: white !important; color: oklch(0.18 0.03 260) !important; }
+  body, main, #main-content { overflow: visible !important; }
   .no-print, nav, .navbar, .btn, .badge-outline { display: none !important; }
   .card { box-shadow: none !important; border: 1px solid oklch(0.90 0.004 260) !important; }
-  .table-xs { font-size: 11px !important; }
-  .overflow-x-auto { overflow: visible !important; }
+  .table-xs, .lv-table-wrap table { font-size: 9px !important; }
+  .overflow-x-auto, .lv-table-wrap { overflow: visible !important; width: 100% !important; }
   .lv-body { display: block !important; }
-  .lv-table-wrap { overflow: visible !important; }
-  tr, section, .card-body { page-break-inside: avoid; }
+  .lv-table-wrap table { width: 100% !important; table-layout: auto !important; }
+  .lv-table-wrap th, .lv-table-wrap td { padding: 3px 4px !important; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: auto; }
+  section { page-break-inside: auto; }
+  .card-body { page-break-inside: avoid; }
   a[href]::after { content: none !important; }
 }
 

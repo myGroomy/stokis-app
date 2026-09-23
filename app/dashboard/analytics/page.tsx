@@ -150,7 +150,7 @@ export default function AnalyticsPage() {
 
         {error && <div className="alert alert-error border border-error/20 text-sm">{error}</div>}
 
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Ringkasan analytics">
+        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Ringkasan analytics">
           {[
             { label: 'Item dianalisis', value: items.length, icon: Package, tone: 'text-primary', note: 'dengan perubahan tercatat' },
             { label: 'Catatan perubahan', value: items.reduce((sum, item) => sum + item.tercatat, 0), icon: Activity, tone: 'text-info', note: 'pengamatan dalam periode' },
